@@ -113,9 +113,11 @@ cd program
 # 1. print the plan without running anything
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 -DryRun
 
-# 2. smoke test, a few minutes
+# 2. smoke test, a few minutes (must be ISOLATED from the full run, else the
+#    driver refuses with exit 3 -- see docs/48 section 4.5.1)
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
-  -Models medgemma_4b_it -Layers openi,padchest -Limit 4 -NoAblation
+  -Models medgemma_4b_it -Layers openi,padchest -Limit 4 -NoAblation `
+  -OutputRoot outputs\pretest -StateFile outputs\state\pretest_state.json
 
 # 3. full run (delivered study: 7 models x 3 layers = 351,214 calls, ~245.7 h
 #    on one RTX 4080 SUPER), run as two passes:

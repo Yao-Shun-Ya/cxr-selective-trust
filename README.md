@@ -263,18 +263,25 @@ cd D:\Paper\program
 # 1. 只看计划（不跑任何东西）
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 -DryRun
 
-# 2. 小烟测（几分钟）
+# 2. 小烟测（几分钟）——必须与全跑隔离，否则驱动拒绝启动（exit 3）
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
-  -Models medgemma_4b_it -Layers openi,padchest -Limit 4 -NoAblation
+  -Models medgemma_4b_it -Layers openi,padchest -Limit 4 -NoAblation `
+  -OutputRoot outputs\pretest -StateFile outputs\state\pretest_state.json
 
-# 3. 正式全跑
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1
+# 3. 正式全跑：七模型分两趟（6 个守约模型一个矩阵 + LLaVA-Med 单独一趟）
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
+  -Models medgemma_4b_it,medgemma_15_4b_it,qwen25_vl_7b_instruct,`
+qwen3_vl_8b_instruct,chexagent_8b,internvl3_5_8b
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
+  -Models llava_med_v1_5_7b
 ```
 
-* 默认 5 模型 × 3 层 = **261,754 次模型调用 / 143.9 h（6.0 天）**（`-DryRun` 实测输出）。
+* 交付研究 7 模型 × 3 层 = **351,214 次模型调用 / 245.7 h（10.2 天）**；驱动默认 5 模型 =
+  **261,754 次调用 / 143.9 h（6.0 天）**（`-DryRun` 实测输出）。
 * 常用参数：`-Models` / `-Layers nih,padchest,openi` / `-Limit` / `-BatchSize` /
   `-NoAblation` / `-Reset` / `-DryRun`。LLaVA-Med 与 InternVL 是最慢的两个模型，
-  不进默认矩阵，需要时用 `-Models` 显式加入。
+  不进默认矩阵；交付研究用 `-Models` 显式加入（InternVL 进六模型矩阵，LLaVA-Med 单独一趟，
+  其 prose 阶段记为 contract-exempt，留证但排除出所有定量指标）。
 * **中断后重跑同一条命令即可续跑**：已完成 stage 会被 skip，未完成的由 runner 从
   durable 字节偏移继续（`DurableJsonl`：append → fsync → 原子字节偏移 sidecar）。
 * 状态文件：`program\outputs\state\run_all_layers_state.json`；
