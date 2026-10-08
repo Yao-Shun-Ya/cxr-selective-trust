@@ -1,4 +1,4 @@
-\begin{thebibliography}{14}
+\begin{thebibliography}{18}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -40,6 +40,12 @@ Zijie Cheng, Ariel~Yuhan Ong, Siegfried~K. Wagner, David~A. Merle, Lie Ju,
 \newblock \doi{10.1038/s41746-025-02108-w}.
 \newblock URL \url{https://www.nature.com/articles/s41746-025-02108-w}.
 
+\bibitem[Chowdhury and Miah(2026)]{chowdhury2026mirage}
+Sayeed~Shafayet Chowdhury and Md.~Shaown Miah.
+\newblock Detect before you leap: Mirage detection in vision--language models,
+  2026.
+\newblock URL \url{https://arxiv.org/abs/2606.00435}.
+
 \bibitem[Dhinagar et~al.(2026)Dhinagar, Jagad, Senthilkumar, Thomopoulos, Khan,
   and Liew]{dhinagar2026calm}
 Nikhil~J. Dhinagar, Chirag Jagad, Pavithra Senthilkumar, Sophia~I. Thomopoulos,
@@ -74,6 +80,20 @@ Yu~Gu, Jingjing Fu, Xiaodong Liu, et~al.
 \newblock URL \url{https://arxiv.org/abs/2509.18234}.
 \newblock Author list to verify.
 
+\bibitem[Jiang et~al.(2026)Jiang, Chen, Kang, Kwon, Pan,
+  et~al.]{jiang2026medvigil}
+Hanqi Jiang, Junhao Chen, Mingyu Kang, Hyeokjae Kwon, Yi~Pan, et~al.
+\newblock Medvigil: Evaluating trustworthy medical vlms under broken visual
+  evidence, 2026.
+\newblock URL \url{https://arxiv.org/abs/2605.07919}.
+
+\bibitem[Khanmohammadi et~al.(2026)Khanmohammadi, Thind, and
+  Ghassemi]{khanmohammadi2026calibrated}
+Reza Khanmohammadi, Kundan Thind, and Mohammad~M. Ghassemi.
+\newblock Calibrated triage, not autonomy: Confidence estimation for medical
+  vision-language models, 2026.
+\newblock URL \url{https://arxiv.org/abs/2606.15910}.
+
 \bibitem[Li et~al.(2023)Li, Wong, Zhang, Usuyama, Liu, Yang, Naumann, Poon, and
   Gao]{li2024llavamed}
 Chunyuan Li, Cliff Wong, Sheng Zhang, Naoto Usuyama, Haotian Liu, Jianwei Yang,
@@ -89,6 +109,14 @@ Xueyang Li, Mingze Jiang, Gelei Xu, Jun Xia, Mengzhao Jia, Danny Chen, and Yiyu
   Shi.
 \newblock At-cxr: Uncertainty-aware agentic triage for chest x-rays, 2025.
 \newblock URL \url{https://arxiv.org/abs/2508.19322}.
+
+\bibitem[Lotfinia et~al.(2026)Lotfinia, Ziegelmayer, Adams, Truhn, Maier, and
+  Tayebi~Arasteh]{lotfinia2026image}
+Mahshad Lotfinia, Sebastian Ziegelmayer, Lisa Adams, Daniel Truhn, Andreas
+  Maier, and Soroosh Tayebi~Arasteh.
+\newblock Vision-language models for chest radiography do not always need the
+  image, 2026.
+\newblock URL \url{https://arxiv.org/abs/2606.17710}.
 
 \bibitem[Nguyen et~al.(2026)Nguyen, Nguyen, Do, and Doan]{nguyen2026answer}
 Duy~A. Nguyen, Tuan~T. Nguyen, Minh Do, and Khoa Doan.

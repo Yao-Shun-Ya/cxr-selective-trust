@@ -8,6 +8,8 @@ A third, subtler hazard follows from where these failures concentrate. On a labe
 
 Existing work has advanced each dimension separately. Calibration and selective prediction have been applied to medical VLMs and multi-centre imaging (Dhinagar et al., 2026; Nguyen et al., 2026; Li et al., 2025), and uncertainty-aware CXR triage has achieved strong risk--coverage trade-offs on NIH ChestX-ray14 \citep{li2025atcxr}. Robustness studies have quantified degradation under image artefacts \citep{cheng2025robustness}, and negative results have shown that vision-language pretraining does not automatically transfer to dense multi-label CXR classification \citep{fisher2025negative}. Grounding and hallucination studies have shown that medical VLMs may exploit text shortcuts (Buckley et al., 2026; Zafar et al., 2026; Heiman et al., 2025). Yet it remains unclear how these dimensions interact: whether a model that appears selective and well calibrated is actually using the image, where shift-induced degradation concentrates, and whether the resulting failure modes are shared across models.
 
+A fourth, concurrent line of work has begun to audit image use by intervention rather than by benchmark accuracy. Lotfinia et al.\ (2026) swap in same-label patients and mask annotated or irrelevant regions to sort CXR systems into image-using, image-ignoring, and unstable regimes, and MedVIGIL frames the same concern as an evidence contract over text- and image-side probes \citep{lotfinia2026image,jiang2026medvigil}. The consequential question for selective trust is whether such grounding failures can be detected automatically: Khanmohammadi et al.\ (2026) find that nine confidence estimators, including a grounding-aware one, fail to detect image ignorance, while Chowdhury and Miah (2026) show that an external frozen-CLIP probe succeeds, cutting the mirage rate on degenerate inputs from 21.7--66.6\% to 2.7--3.3\% \citep{khanmohammadi2026calibrated,chowdhury2026mirage}. The gap between these two results leaves open a third possibility we pursue here: a model's own output disagreement under counterfactual inputs --- computed without labels and without a separate vision encoder --- may itself serve as the detection signal.
+
 This paper studies these questions across seven open-source models. The overall framework is summarised in Figure~\ref{fig:framework}.
 
 \begin{enumerate}
@@ -24,9 +26,10 @@ The results are revealing. Both primary models produce valid structured outputs 
 Our contributions are:
 
 \begin{itemize}
-\item \textbf{A seven-model CXR VLM shift benchmark} covering six image-quality axes, three severity levels, structured outputs, calibration, and selective-prediction metrics.
+\item \textbf{A three-layer evidence benchmark} for CXR VLMs --- synthetic in-domain image-quality shift (six axes, three severities), cross-hospital native shift, and free-text report generation --- under one shared structured prompt and parser.
+\item \textbf{A label-free, encoder-free visual-reliance signal (VRS)} that certifies whether a model's output changes when the image is replaced by a degenerate counterfactual, computed from the model's own probabilities with no labels and no separate vision encoder, and reported as an error-versus-coverage curve.
 \item \textbf{A three-tier image-reliance spectrum} showing that visual grounding grades continuously across seven models rather than splitting into a simple binary.
-\item \textbf{An accuracy-paradox analysis} demonstrating that degradation selectively suppresses positive recall while macro accuracy stays flat, and that this effect is degradation-type-specific.
+\item \textbf{An accuracy-paradox result and a label-level, recall-first reporting protocol}: degradation selectively suppresses positive recall while macro accuracy stays flat, and this effect is degradation-type-specific, so robustness must be reported as label-level sensitivity rather than accuracy.
 \item \textbf{A failure-mode taxonomy} distinguishing default-normal, refusal-to-answer, and prose-without-the-structured-contract failures, none of which requires a parse error.
 \item \textbf{A shift-aware selective trust framework} (conceptual blueprint) that integrates calibration, uncertainty, shift response, positive recall, and image reliance for accept / clarify / abstain decisions.
 \end{itemize}
