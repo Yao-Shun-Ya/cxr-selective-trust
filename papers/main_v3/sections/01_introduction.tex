@@ -1,0 +1,34 @@
+\section{Introduction}
+
+Chest radiography is among the most frequently performed diagnostic imaging examinations worldwide, and its volume makes it an attractive target for automated assistance. Recent medical vision-language models (VLMs) have shown promise in report generation, visual question answering, and structured finding prediction (Chen et al., 2024; Sellergren et al., 2025; Bai et al., 2025). Clinical deployment, however, requires more than average accuracy: a model must know when it can be trusted, especially when the input distribution differs from the development setting.
+
+Two difficulties make this problem especially acute for CXR VLMs. First, distribution shift is pervasive; images may be acquired with different equipment, exposure, compression, or resolution, and prior work has shown that medical VLMs are sensitive to image artefacts (Cheng et al., 2025; Gu et al., 2025). Second, apparent reliability can be misleading: a model may produce structurally valid predictions, assign high confidence, and appear well calibrated or selective while relying primarily on textual or label priors rather than visual evidence (Buckley et al., 2026; Felizzi et al., 2025; Zafar et al., 2026). Recent work has shown that multimodal medical models can maintain high accuracy when the image is replaced by a blank placeholder, and that accuracy alone can overstate visual grounding (Felizzi et al., 2025; Buckley et al., 2026; Zafar et al., 2026).
+
+A third, subtler hazard follows from where these failures concentrate. On a label-imbalanced benchmark, a model that defaults to the majority finding can report respectable macro accuracy even as it misses the pathology it exists to find. If shift then degrades the input, the loss need not appear in accuracy at all; it can be confined to the sensitivity of the minority, clinically consequential labels. A robustness evaluation that reports only accuracy would therefore declare a progressively blind model ``robust.'' We show that this is not a hypothetical: in a multi-model pre-run, degradation suppresses positive recall while leaving macro accuracy essentially flat.
+
+Existing work has advanced each dimension separately. Calibration and selective prediction have been applied to medical VLMs and multi-centre imaging (Dhinagar et al., 2026; Nguyen et al., 2026; Li et al., 2025), and uncertainty-aware CXR triage has achieved strong risk--coverage trade-offs on NIH ChestX-ray14 \citep{li2025atcxr}. Robustness studies have quantified degradation under image artefacts \citep{cheng2025robustness}, and negative results have shown that vision-language pretraining does not automatically transfer to dense multi-label CXR classification \citep{fisher2025negative}. Grounding and hallucination studies have shown that medical VLMs may exploit text shortcuts (Buckley et al., 2026; Zafar et al., 2026; Heiman et al., 2025). Yet it remains unclear how these dimensions interact: whether a model that appears selective and well calibrated is actually using the image, where shift-induced degradation concentrates, and whether the resulting failure modes are shared across models.
+
+This paper studies these questions across seven open-source models. The overall framework is summarised in Figure~\ref{fig:framework}.
+
+\begin{enumerate}
+\item \textbf{RQ1:} How do open-source CXR VLMs behave under cross-condition image-quality shift?
+\item \textbf{RQ2:} Does model confidence remain calibrated under shift?
+\item \textbf{RQ3:} Can uncertainty and calibration support selective prediction?
+\item \textbf{RQ4:} Are reliability estimates grounded in visual evidence, and does image reliance distribute as a spectrum across models?
+\end{enumerate}
+
+We use openly available models and data. Seven models spanning six families --- MedGemma-4B-IT, MedGemma-1.5-4B-IT, LLaVA-Med-1.5-7B, CheXagent-8B, Qwen2.5-VL-7B-Instruct, Qwen3-VL-8B-Instruct, and InternVL3.5-8B --- are evaluated on a stratified NIH ChestX-ray14 pilot (1,000 studies for the two primary models and a 100-study pre-run across all seven), a six-axis image-quality shift benchmark (blur, noise, JPEG, brightness, contrast, and resolution) at three severity levels, counterfactual image-reliance tests (blank, strong blur, and shuffled images), and a 264-sample CheXpert-plus-RRG external report set. All models share one structured JSON prompt and parser, enabling direct comparison.
+
+The results are revealing. Both primary models produce valid structured outputs with zero parse failures, yet their trustworthiness profiles diverge sharply: MedGemma-4B is strongly image-dependent but only moderately discriminative and poorly calibrated on held-out data, whereas Qwen2.5-VL is effectively image-invariant while still emitting valid JSON and apparently favourable selective metrics. Extending to all seven models shows that this is not a two-model anomaly but a spectrum: visual reliance grades continuously from strongly image-dependent to image-blind, and the image-blind models sit at an unsafe corner in which low visual reliance compounds with a default-normal prediction strategy. The shift benchmark further shows that degradation is heterogeneous and non-monotonic in macro accuracy, but that the meaningful signal is carried by positive recall, where resolution and noise act as the dominant degradations. In the external report set, hallucination and omission remain present. Together these findings motivate a shift-aware selective trust framework that jointly evaluates calibration, uncertainty, shift response, positive recall, and visual-evidence reliance; at this stage the framework is presented as a conceptual blueprint whose predictive components await ablation in the full run.
+
+Our contributions are:
+
+\begin{itemize}
+\item \textbf{A seven-model CXR VLM shift benchmark} covering six image-quality axes, three severity levels, structured outputs, calibration, and selective-prediction metrics.
+\item \textbf{A three-tier image-reliance spectrum} showing that visual grounding grades continuously across seven models rather than splitting into a simple binary.
+\item \textbf{An accuracy-paradox analysis} demonstrating that degradation selectively suppresses positive recall while macro accuracy stays flat, and that this effect is degradation-type-specific.
+\item \textbf{A failure-mode taxonomy} distinguishing default-normal, refusal-to-answer, and prose-without-the-structured-contract failures, none of which requires a parse error.
+\item \textbf{A shift-aware selective trust framework} (conceptual blueprint) that integrates calibration, uncertainty, shift response, positive recall, and image reliance for accept / clarify / abstain decisions.
+\end{itemize}
+
+The remainder of the paper is organised as follows. Section 2 reviews related work. Section 3 describes the methods. Section 4 presents the results. Section 5 discusses implications and limitations, and Section 6 concludes.

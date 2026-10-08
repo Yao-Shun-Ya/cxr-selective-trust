@@ -39,10 +39,10 @@
 |---|---|
 | 阶段 | **Phase 5：6K Curated Benchmark 代码架构就绪，等待 GPU** |
 | 数据 | **已锁定 6,000 例精筛多中心数据**：NIH (评测集 1,732), PadChest (1500, 地理偏移), Open-i (947, 报告生成) |
-| 三层次评测 | **一键驱动已就绪**：`program\scripts\run_all_layers.ps1`（默认 261,754 次调用 / 143.9 h）；崩溃安全与测试全通过；**GPU 上尚未完整跑过一遍**。协议见 `docs/48` |
+| 三层次评测 | **一键驱动已就绪**：`program\scripts\run_all_layers.ps1`（默认 261,754 次调用 / 143.9 h）；崩溃安全与测试全通过；**7 模型 × 100 张 NIH 预跑已全部跑完**（发现见 `docs/50`/`docs/52`），**正式 6K 全跑尚未开跑**。协议见 `docs/48` |
 | 模型 | **已锁定**：CheXagent-8b + MedGemma-4B-IT + Qwen2.5-VL-7B-Instruct；三层默认矩阵另含 `google/medgemma-1.5-4b-it` 与 Qwen3-VL-8B。注意不存在 "MedGemma-15B"：`1.5` 是 MedGemma 的修订版本号，两个 MedGemma 检查点均为 4B |
 | 学术准则 | **严格遵循 `docs/42` 学术诚信红线**：拥抱 Negative Findings (零数据预支，无阈值捏造)，基准退回 `main_v2.pdf`。 |
-| 核心现象 | shift 响应非单调；Qwen2.5-VL 存在极端的“无图盲猜（Visual Reliance ≈ 0）”语言先验幻觉。 |
+| 核心现象 | shift 响应非单调；Qwen2.5-VL 存在极端的“无图盲猜（Visual Reliance ≈ 0）”语言先验幻觉；预跑深挖另见：图像依赖呈三梯队谱系、退化打击的是**阳性召回**而非宏观准确率（`docs/52`）。 |
 | 工程架构 | `program/` 已重构三大主脚本支持自适应 Batch 并行与 OOM 防御回退。 |
 | 决策原则 | **真实硬件上机前，不虚构任何统计数据，让物理实证说话。** |
 

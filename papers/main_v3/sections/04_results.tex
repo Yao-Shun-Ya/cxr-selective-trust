@@ -1,0 +1,337 @@
+\section{Results}
+
+We report results in the order of the evaluation tiers of Section~3.2: first the
+seven-model pre-run observations (image reliance, degradation, and failure
+modes), then the two-primary-model NIH pilot and shift benchmark, then the
+external report evaluation. Pre-run quantities are point estimates on 100 images
+per model and are labelled as such wherever they appear.
+
+\subsection{Structured outputs and parse stability}
+
+The two primary models produced structurally valid JSON for all 1,000 NIH pilot studies after the prompt and parser were finalised (Table~\ref{tab:parse}). Parse stability, however, did not imply reliable image understanding, as the following subsections show.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lll}
+\hline
+Model & Samples & Parse failures \\
+MedGemma-4B-IT & 1000 & 0 \\
+Qwen2.5-VL-7B & 1000 & 0 \\
+\hline
+\end{tabular}
+\caption{Structured output parse stability on the NIH pilot.}
+\label{tab:parse}
+\end{table}
+
+\subsection{Seven-model image-reliance spectrum}
+
+Across all seven models, replacing the image with a blank produces a graded
+change in the models' positive probabilities, from a large change to none at all
+(Table~\ref{tab:reliance-spectrum}). Three tiers emerge mechanically: two models
+that read the image (visual-reliance signal $\geq 0.33$), two that are partially
+dependent (0.13--0.16), and two that are effectively image-blind ($\leq 0.012$),
+with CheXagent's probabilities byte-stable across every degenerate input. Every
+model is more sensitive to the blank than to blur or shuffle, which is what a
+model that reads pixels should do; the image-blind models show no such ordering.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lcccc}
+\hline
+Model & VRS blank & VRS blur & VRS shuffle & Status flip (blank) \\
+\hline
+InternVL3.5-8B & 0.363 & 0.248 & 0.262 & 0.393 \\
+MedGemma-4B-IT & 0.334 & 0.210 & 0.187 & 0.498 \\
+MedGemma-1.5-4B-IT (bf16) & 0.283 & 0.235 & 0.269 & 0.511 \\
+Qwen3-VL-8B-Instruct & 0.156 & 0.163 & 0.241 & 0.189 \\
+MedGemma-1.5-4B-IT (4-bit) & 0.128 & 0.120 & 0.118 & 0.228 \\
+Qwen2.5-VL-7B-Instruct & 0.012 & 0.012 & 0.028 & 0.015 \\
+CheXagent-8B & 0.000 & 0.000 & 0.000 & 0.000 \\
+\hline
+\end{tabular}
+\caption{Visual-reliance signal (VRS) and blank-image status-flip rate on the
+seven-model pre-run (n=100 images per model). Models are ordered by VRS under the
+blank condition.}
+\label{tab:reliance-spectrum}
+\end{table}
+
+The gradient is not a binary split. The two within-family pairs refine it:
+MedGemma-1$\rightarrow$1.5 keeps the family image-dependent, while
+Qwen2.5-VL$\rightarrow$Qwen3-VL moves a family from image-blind to partially
+dependent, so generational change can alter image reliance within a family. A
+precision interaction is visible on the one model with both a 4-bit and a bf16
+row (MedGemma-1.5): the 4-bit VRS (0.128) is less than half the bf16 VRS
+(0.283), an observed association on a single model rather than a controlled
+ablation.
+
+\subsection{Two primary models on the NIH pilot}
+
+Macro metrics across the eight findings for the two primary models are shown in
+Table~\ref{tab:main}.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lllllll}
+\hline
+Model & Split & Macro AUROC & Macro ECE & Macro Brier & Macro AURC & Mean coverage @5\% risk \\
+MedGemma & internal\_train & 0.651 & 0.129 & 0.119 & 0.120 & 0.733 \\
+MedGemma & source\_val & 0.627 & 0.147 & 0.119 & 0.137 & 0.713 \\
+MedGemma & internal\_test & 0.622 & 0.220 & 0.188 & 0.228 & 0.357 \\
+Qwen2.5-VL & internal\_train & 0.500 & 0.088 & 0.087 & 0.071 & 0.662 \\
+Qwen2.5-VL & source\_val & 0.502 & 0.070 & 0.070 & 0.061 & 0.662 \\
+Qwen2.5-VL & internal\_test & 0.509 & 0.153 & 0.154 & 0.117 & 0.398 \\
+\hline
+\end{tabular}
+\caption{Macro performance and calibration on NIH data.}
+\label{tab:main}
+\end{table}
+
+MedGemma showed moderate but non-trivial discrimination (macro AUROC 0.62--0.65)
+and clear calibration degradation on \texttt{internal\_test} (macro ECE 0.220).
+Qwen2.5-VL remained close to chance discrimination (macro AUROC $\approx$ 0.50),
+despite acceptable-looking calibration and selective metrics.
+
+On 300 NIH images, MedGemma changed many predictions under counterfactual image
+conditions while Qwen2.5-VL changed almost none (Table~\ref{tab:image-reliance},
+Figure~\ref{fig:image-reliance}).
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lll}
+\hline
+Condition & MedGemma image sensitivity & Qwen2.5-VL image sensitivity \\
+blank gray & 1.000 & 0.0033 \\
+strong blur & 0.947 & 0.0033 \\
+shuffled image & 0.877 & 0.0033 \\
+\hline
+\end{tabular}
+\caption{Image reliance on 300 NIH studies.}
+\label{tab:image-reliance}
+\end{table}
+
+Qwen2.5-VL predicted \texttt{no\_finding = positive} for 988/1000 studies and had
+macro AUROC $\approx$ 0.50 across all eight findings. Its apparently low
+selective risk and high selective accuracy therefore reflected a degenerate
+prediction strategy rather than reliable image interpretation.
+
+\textbf{Finding:} Structured output validity, low selective risk, and high selective
+accuracy can coexist with image invariance.
+
+\subsection{Shift effects are heterogeneous and non-monotonic in accuracy}
+
+MedGemma macro AUROC and ECE under shift are shown in Table~\ref{tab:shift}.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{llll}
+\hline
+Condition & Severity & Macro AUROC & Macro ECE \\
+clean & none & 0.620 & 0.165 \\
+blur & mild & 0.612 & 0.167 \\
+blur & moderate & 0.603 & 0.164 \\
+blur & severe & 0.615 & 0.142 \\
+noise & mild & 0.675 & 0.155 \\
+noise & moderate & 0.704 & 0.155 \\
+noise & severe & 0.520 & 0.145 \\
+JPEG & mild & 0.591 & 0.169 \\
+JPEG & moderate & 0.710 & 0.153 \\
+JPEG & severe & 0.621 & 0.148 \\
+brightness & mild & 0.614 & 0.175 \\
+brightness & moderate & 0.600 & 0.164 \\
+brightness & severe & 0.597 & 0.166 \\
+contrast & mild & 0.670 & 0.165 \\
+contrast & moderate & 0.620 & 0.166 \\
+contrast & severe & 0.617 & 0.166 \\
+resolution & mild & 0.633 & 0.152 \\
+resolution & moderate & 0.705 & 0.138 \\
+resolution & severe & 0.581 & 0.109 \\
+\hline
+\end{tabular}
+\caption{MedGemma macro AUROC and ECE under image-quality shift.}
+\label{tab:shift}
+\end{table}
+
+Image sensitivity generally increased with severity (e.g., noise 0.53 $\rightarrow$ 0.70 $\rightarrow$ 0.79; resolution 0.37 $\rightarrow$ 0.60 $\rightarrow$ 0.71), but AUROC did not follow a monotonic degradation pattern. Several shifts even improved calibration. Paired macro bootstrap tests on MedGemma showed no shift produced a significant AUROC decrease; JPEG moderate ($\Delta$AUROC = +0.069, p = 0.05) and resolution moderate ($\Delta$AUROC = +0.068, p = 0.10) were nominally positive, and several conditions significantly improved ECE, while only brightness mild significantly increased ECE ($\Delta$ECE = +0.010, p = 0.04).
+
+\textbf{Finding:} Distribution shift does not produce a simple monotonic degradation
+of CXR VLM reliability as measured by macro accuracy or calibration. Shift response
+is condition-specific.
+
+\subsection{Degradation suppresses positive recall, not macro accuracy}
+
+Macro accuracy hides the clinically meaningful effect of shift. Across the seven
+parse-complete models in the pre-run, macro accuracy stays flat through the shift
+cells ($\approx$0.59--0.72, within $\pm$0.03 between clean and severe). The
+flatness is an accuracy paradox: the pathology labels are minority classes (236
+positive instances per cell), so a model that defaults to ``negative everywhere''
+scores a respectable accuracy. The signal sits in the positive recall of the
+pathology labels, where the dose-response is clear and degradation-type-specific
+(Table~\ref{tab:recall}).
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lcccc}
+\hline
+Model & Recall clean & Resolution severe & Noise severe & Blur severe \\
+\hline
+MedGemma-1.5-4B-IT & 0.64 & 0.46 & 0.41 & 0.60 \\
+MedGemma-4B-IT & 0.59 & 0.34 & 0.32 & 0.53 \\
+InternVL3.5-8B & 0.46 & 0.26 & 0.43 & 0.43 \\
+Qwen3-VL-8B-Instruct & 0.21 & 0.13 & 0.13 & 0.09 \\
+Qwen2.5-VL-7B-Instruct & 0.02 & 0.00 & 0.00 & 0.00 \\
+CheXagent-8B & 0.00 & 0.04 & 0.05 & 0.01 \\
+\hline
+\end{tabular}
+\caption{Pathology positive recall under the three counterfactual and three
+severity conditions, pre-run (n=100). Resolution and noise suppress recall across
+all image-reading models; blur leaves it near the clean level.}
+\label{tab:recall}
+\end{table}
+
+Three observations follow. First, resolution and noise are the two degradations
+that cut recall across every image-reading model (MedGemma-1.5, MedGemma-4B,
+InternVL3.5, Qwen3-VL), while blur, brightness, and contrast leave recall near the
+clean level. Resolution and noise are the clinically relevant pair -- JPEG-style
+downsampling and low-dose photon noise. Second, the dose-response is monotone in
+severity within those conditions (e.g.\ MedGemma-4B recall 0.59 $\rightarrow$ 0.50
+$\rightarrow$ 0.34 down the resolution ladder). Third, Qwen2.5-VL and CheXagent have
+no recall to lose: their failure is already complete on clean images, so degradation
+cannot make it worse.
+
+This is a pre-run observation, not a fitted production claim; the full run
+re-censuses these curves and is the arbiter of whether the degradation-type
+ranking (resolution $\approx$ noise $>$ JPEG $>$ blur/brightness/contrast)
+holds at scale. We report it because it is parameterised and falsifiable, and
+because macro accuracy -- the quantity a majority-reporting model excels at --
+would not have exposed it.
+
+\textbf{Finding:} On an imbalanced benchmark, shift degradation concentrates in
+positive recall rather than macro accuracy, and the effect is
+degradation-type-specific.
+
+\subsection{An image-blind, default-normal model}
+
+Three independent quantities place Qwen2.5-VL at an unsafe corner: its VRS is
+0.012 (Table~\ref{tab:reliance-spectrum}), its pathology recall is $\approx$0.02
+(Table~\ref{tab:recall}), and its \texttt{no\_finding} report rate rises from 0.930
+on clean images to 0.990 at severe degradation (Table~\ref{tab:nofind}). The model
+does not read the image and it reports ``no finding'' almost always, \emph{more}
+often as the image degrades -- the hardest cases are the ones it most confidently
+declares normal.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lcccc}
+\hline
+Model & Clean & Mild & Moderate & Severe \\
+\hline
+Qwen2.5-VL-7B-Instruct & 0.930 & 0.940 & 0.973 & 0.990 \\
+Qwen3-VL-8B-Instruct & 0.649 & 0.638 & 0.609 & 0.642 \\
+InternVL3.5-8B & 0.200 & 0.217 & 0.215 & 0.237 \\
+MedGemma-4B-IT & 0.010 & 0.008 & 0.008 & 0.015 \\
+MedGemma-1.5-4B-IT & 0.000 & 0.000 & 0.003 & 0.025 \\
+CheXagent-8B & 0.000 & 0.000 & 0.000 & 0.000 \\
+\hline
+\end{tabular}
+\caption{Probability of reporting \texttt{no\_finding} across shift severity,
+pre-run (n=100). Qwen2.5-VL is the only model whose default-normal rate rises with
+degradation.}
+\label{tab:nofind}
+\end{table}
+
+The claim carried forward is the compound -- low visual reliance \emph{and} a
+high default-normal rate in the same model -- because either alone is ambiguous.
+A model with low VRS but balanced predictions, or one that defaults normal while
+still reading the image, would not occupy the same unsafe corner.
+
+\subsection{Failure modes without a parse error}
+
+The seven models separate into three failure modes, none of which requires a
+parse failure. Qwen2.5-VL is default-normal (Section~4.6). LLaVA-Med answers in
+prose and never honours the structured contract, so its rows carry no parseable
+JSON despite a well-formed pipeline. CheXagent is the refusing mode: on the shift
+stage it emits \texttt{positive} exactly 8 times out of 15,200 label slots,
+\texttt{not\_mentioned} on 77\% of slots, and never reports
+\texttt{no\_finding = positive}. Its bare-label reply is effectively ``there is
+something wrong, but I will not say what'' -- mechanically the opposite of
+Qwen2.5-VL, which fills every slot and says ``healthy.''
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lccccc}
+\hline
+Model & Positive & Negative & Uncertain & Not mentioned & No-finding rate \\
+\hline
+CheXagent-8B & 8 & 2{,}902 & 419 & 11{,}711 (77\%) & 0.000 \\
+Qwen2.5-VL-7B-Instruct & 1{,}912 & 13{,}288 & 0 & 0 & 0.930--0.990 \\
+\hline
+\end{tabular}
+\caption{Label-slot usage on the shift stage, pre-run (n=100). CheXagent refuses
+most slots; Qwen2.5-VL fills them with a default normal.}
+\label{tab:slot}
+\end{table}
+
+The three failure shapes -- default-normal, refusal-to-answer, and
+prose-without-the-contract -- are a taxonomy the pipeline distinguishes without
+resorting to parse-error penalties, and each invites a different clinical guard.
+
+\subsection{Selective prediction}
+
+On pooled \texttt{internal\_test} label-instances, MedGemma achieved a macro AURC
+of 0.201 and coverage at 5\% risk of 0.002 by the fitted temperature scaler,
+while Qwen2.5-VL achieved a lower AURC (0.095) but higher coverage at 10\% risk
+(0.897) and higher selective accuracy at 80\% coverage (0.901). Qwen2.5-VL's
+selective metrics appear strong but are driven by image-invariant majority
+prediction rather than visual understanding, so they are not valid as clinical
+evidence. Selective risk must therefore be conditioned on image reliance.
+
+\subsection{CheXpert-plus-RRG external report evaluation}
+
+On 264 RRG images, MedGemma produced an overall hallucination rate of 0.135, a
+negation-failure rate of 0.006, and an omission rate of 0.122
+(Table~\ref{tab:rrg}, Figure~\ref{fig:rrg-errors}).
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lll}
+\hline
+Finding & Hallucination & Omission \\
+atelectasis & 0.443 & 0.057 \\
+cardiomegaly & 0.449 & 0.003 \\
+consolidation & 0.019 & 0.127 \\
+edema & 0.051 & 0.166 \\
+no\_finding & 0.083 & 0.252 \\
+pleural\_effusion & 0.019 & 0.213 \\
+pneumonia & 0.019 & 0.054 \\
+pneumothorax & 0.000 & 0.105 \\
+\hline
+\end{tabular}
+\caption{Finding-level report errors on CheXpert-plus-RRG.}
+\label{tab:rrg}
+\end{table}
+
+The high atelectasis/cardiomegaly hallucination rates may partly reflect model
+over-calling and limitations of the rule-based evidence extractor. On the first
+50 RRG images, the original-vs-blank status-flip rate was 0.4525, indicating that
+MedGemma still depends on the image in this external set.
+
+\subsection{Summary of empirical findings}
+
+\begin{enumerate}
+\item Visual reliance grades continuously across seven models, from image-dependent to image-blind.
+\item An image-blind model can emit valid structured outputs and apparently favourable selective metrics.
+\item Degradation concentrates in positive recall rather than macro accuracy, and is degradation-type-specific (resolution and noise dominate).
+\item An image-blind model can compound with a default-normal strategy, so the hardest cases are declared normal.
+\item Failure modes (default-normal, refusal, prose-without-contract) exist without any parse error.
+\item Image-quality shift does not monotonically degrade macro accuracy or calibration.
+\item External report evaluation exposes both hallucination and omission behaviour.
+\end{enumerate}

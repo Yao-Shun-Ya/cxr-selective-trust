@@ -132,7 +132,9 @@ Analysis afterwards (CPU only): `scripts\42_geographic_shift_analysis.py`,
 ## 6. Honest status of the headline numbers
 
 The Phase-5 three-layer matrix is **implemented and self-tested but has never been run to
-completion on GPU**. The numbers currently in `papers/main_v2/main.pdf` come from the
+completion on GPU**. A 7-model × 100-image NIH *pilot* has been run end to end; its numbers
+are pilot numbers kept in working notes, not headline numbers. The numbers currently in
+`papers/main_v2/main.pdf` come from the
 earlier pilot and stage-2 runs, and the manuscript labels them as such. Do not read the
 261,754-call matrix as completed work. See
 `docs/42_academic_integrity_and_writing_standards.md` for the rules that govern this.

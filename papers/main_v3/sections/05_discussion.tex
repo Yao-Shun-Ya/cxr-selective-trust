@@ -1,0 +1,78 @@
+\section{Discussion}
+
+\subsection{Principal findings}
+
+Our results expose a gap between structural validity and clinical reliability in open-source CXR VLMs. Both primary models produced valid structured JSON with zero parse failures on 1,000 NIH studies, yet their trustworthiness profiles differed fundamentally: MedGemma-4B was strongly image-dependent but only moderately discriminative and poorly calibrated on held-out data, whereas Qwen2.5-VL was effectively image-invariant, predicted \texttt{no\_finding} for 988/1,000 studies, and remained at chance discrimination while still emitting valid outputs and apparently favourable selective metrics.
+
+Extending from two models to seven shows that this is not a two-model anomaly but a spectrum. Visual reliance grades continuously from image-dependent to image-blind, and the models at the low-reliance end occupy an unsafe corner in which low visual grounding compounds with a default-normal prediction strategy. The most important implication is that conventional reliability metrics can be gamed by degenerate prediction behaviour: a model that systematically predicts the majority finding can achieve low empirical error, attractive calibration on some labels, and apparently strong selective performance, without using the image. This is consistent with recent evidence that multimodal medical models exploit text or prior shortcuts (Buckley et al., 2026; Zafar et al., 2026; Felizzi et al., 2025), and extends it to the selective-trust setting.
+
+\subsection{The accuracy paradox and where degradation concentrates}
+
+A second, subtler implication follows from where degradation concentrates. Because the pathology labels are minority classes, macro accuracy stays flat through the shift cells even as positive recall falls sharply for the image-reading models. A robustness benchmark that reports only accuracy -- or any aggregate the majority class dominates -- would declare a progressively degrading model robust. We find this in the pre-run: resolution and noise cut pathology recall across every model that reads the image, while blur, brightness, and contrast leave recall near the clean level, and the dose-response is monotone in severity within the killing conditions. The degradation-type ranking (resolution $\approx$ noise $>$ JPEG $>$ blur/brightness/contrast) is parameterised and falsifiable, and it names the two clinically frequent artifacts, JPEG-style downsampling and low-dose photon noise, as the ones a triage system must survive.
+
+We do not claim this ranking is proven at pre-run scale; we report it as the pre-run's most falsifiable prediction and the specific hypothesis the full run is designed to confirm or reject. Its value here is methodological: it demonstrates that robustness cannot be summarised by a single accuracy curve, and that the right metric (positive recall of the minority labels) exposes effects the wrong metric (macro accuracy) hides.
+
+\subsection{A failure-mode taxonomy independent of parse errors}
+
+The three failure modes we observe -- default-normal (Qwen2.5-VL), refusal-to-answer (CheXagent), and prose-without-the-contract (LLaVA-Med) -- occur without a single parse error. They are therefore invisible to a pipeline that scores only parse success or aggregate accuracy, yet each invites a different clinical guard. A default-normal model needs a prevalence gate; a refusing model needs a coverage gate that detects empty ``not mentioned'' slots; a prose model needs a contract checker before its output can feed a structured decision rule. The taxonomy is a descriptive result assembled from measured cells rather than an a priori classification scheme, and it frames image reliance and failure mode as two separable axes: a model can read the image and still default normal, or be image-blind and still refuse.
+
+\subsection{Shift effects are heterogeneous and non-monotonic}
+
+Contrary to the assumption that distribution shift monotonically degrades CXR VLM reliability, we observed heterogeneous and non-monotonic effects in macro accuracy and calibration. Several blur, noise, JPEG, and resolution conditions did not reduce macro AUROC, and some significantly improved ECE, while image sensitivity generally increased with severity. The dissociation between a model's response to perturbation and its ranking metrics reinforces that image sensitivity alone is not a sufficient reliability measure: a model may change its predictions under shift without becoming less discriminative, or may remain confidently wrong. This is the mirror image of the recall result -- where accuracy hides degradation, shift response can also overstate it -- and both point to the same conclusion: no single metric, and no single signal, is adequate.
+
+\subsection{Implications for selective trust}
+
+The results support a three-way decision policy -- accept, clarify/escalate, or abstain -- in which accept requires not only high calibrated confidence but also evidence of image reliance and acceptable shift-conditioned recall, and in which the failure-mode guard is tailored to the model's observed failure shape (Figure~\ref{fig:workflow}). The framing shifts the research question from ``how accurate is the VLM?'' to ``when should this VLM be trusted, and is that trust grounded in visual evidence?''
+
+Our shift-aware selective trust framework operationalises this question by combining prediction confidence, uncertainty, calibration, shift response, positive recall, and image reliance. It is presented here as a conceptual blueprint: the empirical results motivate each component, but the framework's predictive value -- whether conditioning on visual reliance and positive recall improves risk--coverage over confidence alone -- has not yet been demonstrated by ablation, and we make no claim that it does until that ablation is run. In keeping with this, we describe the mechanism each component is intended to capture, and defer any fitted aggregation weights or threshold selection to the hold-out protocol of the full run.
+
+\subsection{Limitations}
+
+Our study is a pilot and has several limitations.
+
+\textbf{Sample size and tiers.} The distinction between a 1,000-study pilot, a
+100-study pre-run across seven models, and a planned full run matters for every
+number in this paper. The pre-run's image-reliance spectrum, recall dose-response,
+and failure-mode taxonomy are point estimates on 100 images per model and must be
+re-censused at the full scale before they are treated as production results. The
+full three-layer run is designed around a five-model subset; LLaVA-Med is excluded
+because it answers in prose rather than in the structured contract, and InternVL is
+opt-in because its single-image throughput makes it the slowest model in the
+matrix. Our image-reliance and failure-mode claims therefore span all seven models
+only at pre-run scale, and the full-scale claims are restricted to the five-model
+subset plus the two primary models' larger pilot.
+
+\textbf{Model scale is untested.} All seven models have between 4B and 8B
+parameters. We therefore cannot say whether the dissociation between structural
+validity, calibration, and image reliance persists, weakens, or reverses at larger
+scale, and we make no claim about it. What our results do support is that the
+dissociation is not an artefact of a single architecture or a single domain: it
+appears across six model families, across medical and general-purpose models, and
+across two within-family generational updates that did not remove it. Two
+larger-model candidates were evaluated and could not be measured reliably and are
+reported rather than silently substituted with a partially loaded model.
+
+\textbf{Quantisation and precision.} 4-bit quantisation is used for the primary
+configuration and bfloat16 for the precision comparison; the two do not coincide
+across models, and quantisation may itself suppress image dependence (the
+MedGemma-1.5 4-bit vs.\ bf16 VRS difference). We report this as an observed
+association on one model, not as a controlled ablation, and we do not claim a
+causal mechanism.
+
+\textbf{Evidence extraction.} The CheXpert-plus-RRG report-evidence extractor is a
+keyword and negation-window rule (\texttt{rule\_based\_v0}) and is not a
+substitute for a validated report labeller or human adjudication. The high
+atelectasis/cardiomegaly hallucination rates likely combine model over-calling
+with extractor limitations. No radiologist reader study or prospective clinical
+evaluation was performed, and models were evaluated zero-shot.
+
+\subsection{Future work}
+
+Future work should: (1) run the full three-layer evaluation to re-census the
+pre-run spectrum, recall dose-response, and failure taxonomy, and to arbitrate the
+degradation-type ranking; (2) ablate the shift-aware selective trust framework so
+that its predictive value, if any, is demonstrated rather than assumed; (3)
+validate report evidence with a dedicated report labeller and human adjudication;
+(4) test the dissociation at larger model scale; (5) evaluate the
+accept/clarify/abstain policy in a reader study; and (6) extend the failure-mode
+guards to other modalities and multi-image clinical settings.

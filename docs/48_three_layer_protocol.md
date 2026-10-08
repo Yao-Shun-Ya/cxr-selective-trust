@@ -265,18 +265,14 @@ On open, before any work is scheduled:
 | `10_run_chexpert_rrg.py` | **yes** | adopted later. It used to open the file with `"a" if done else "w"`, so a file holding only failed rows looked empty and was wiped on the next run |
 | `21_prompt_ablation.py` | **yes** | adopted later. `raw_outputs.jsonl` and the parsed file are two durable streams, so the audit trail can never disagree with the parsed records about how many calls happened |
 
-The last two are listed honestly and are also the debug sweep's WARN 3 (§6).
-`21_prompt_ablation.py` is still re-runnable — the driver passes `--resume`, and
-the script then skips `image_id`s already parsed successfully in that cell — but
-that is the **older, weaker resume key** described in the `DurableJsonl`
-docstring: it is derived from `parse_success`, so a truncated reply is treated
-like an empty one and there is no way to tell "never attempted" from "attempted
-and failed". It also does **not** fsync and does **not** truncate a torn tail, so
-a power cut in the middle of that stage can leave a partial line. Note that
-without `--resume` the script opens the cell file in `"w"` mode and overwrites
-it — always let the driver pass the flag.
+Both adopted `DurableJsonl` later than the other four; the flush-only mode they
+once had no longer exists — `45_debug_sweep.py` rejects any non-durable
+prediction writer as a hard **error** (§6.1.4). One caveat remains: without
+`--resume`, `21_prompt_ablation.py` opens the cell file in `"w"` mode and redoes
+the cell from scratch — always let the driver pass the flag so a completed cell
+is not overwritten.
 
-Guarantees common to all four durable runners: a Ctrl-C or crash loses **at most
+Guarantees common to all six durable runners: a Ctrl-C or crash loses **at most
 the in-flight batch**; the next invocation continues instead of redoing work; a
 torn final line cannot survive a reopen; and a failed row is retried rather than
 recorded as a permanent hole.
@@ -371,7 +367,7 @@ evaluation manifests reference is on disk; label columns are the strings
 `positive`/`negative`; no label column is constant; local imports resolve; every
 script the orchestrators invoke exists. It writes its findings to
 `outputs/state/debug_sweep.json` and returns 1 on errors (and on warnings with
-`--strict`). Current state: **0 errors, 3 warnings** (see §6 for the three
+`--strict`). Current state: **0 errors, 2 warnings** (see §6 for the two
 warnings and their resolutions).
 
 ### 4.3 Crash-safety tests
@@ -756,7 +752,7 @@ and `padchest_shift.csv.bak` (106,676 bytes).
 | `41_test_durable.py` — 37 assertions, passing | `scripts/41_test_durable.py` (new) | torn tail, unflushed tail, stale/missing sidecar, retry not duplicating |
 | `41_test_runner_resume.py` — 40 assertions, passing, real subprocesses with a stub | `scripts/41_test_runner_resume.py`, `scripts/_stub/` (new) | "resumable" spans process boundaries and can only be tested by really killing and restarting a run |
 | `39_preflight.py` — CPU-only environment/checkpoint/GPU check | `scripts/39_preflight.py` (new) | the first full run lost ~1 h to a wrong interpreter and unusable checkpoints |
-| `45_debug_sweep.py` — repository debug sweep, 0 errors / 3 warnings | `scripts/45_debug_sweep.py` (new) | the failures that cost time all exit 0 and produce wrong or empty work |
+| `45_debug_sweep.py` — repository debug sweep, 0 errors / 2 warnings | `scripts/45_debug_sweep.py` (new) | the failures that cost time all exit 0 and produce wrong or empty work |
 | `25_format_external_manifests.py` rewritten negation-aware | `scripts/25_format_external_manifests.py` | old version wrote 0/1 labels, dropped `patient_id`/`split`, and read `"no pleural effusion"` as a positive |
 | `40_build_eval_manifest.py` + `nih_eval_1732.csv` | `scripts/40_build_eval_manifest.py` | killed the `--limit`-on-training-data trap and repaired a constant `no_finding` column (0 → 347 positives) |
 | `--split` filter + shuffle-before-limit in `06`, `08`, `21` | those scripts | `--limit` takes the first N rows, which is not a sample |
