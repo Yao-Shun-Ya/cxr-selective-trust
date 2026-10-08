@@ -8,7 +8,7 @@
 #                                    own question. See docs\48_three_layer_protocol.md.
 #   scripts\run_all_experiments.ps1  (this file) the NIH layer only: 19-cell synthetic
 #                                    shift + reliance + bf16 control + prompt ablation.
-#                                    309.9 h for all 7 models, 51 h for the default 5.
+#                                    223.5 h for all 7 models, 133.0 h for the default 5.
 #                                    Still correct and still supported; use it when the
 #                                    external layers are not wanted or are already done.
 #

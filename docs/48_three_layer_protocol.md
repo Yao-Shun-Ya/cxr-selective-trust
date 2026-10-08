@@ -29,14 +29,17 @@ one-button driver is `program/scripts/run_all_layers.ps1`.
 | Cells / image | shift **19**, reliance **4**, precision **4**, ablation **10** | **2** | **2** |
 | Runner(s) | `scripts/08_shift_benchmark.py`, `scripts/06_image_reliance.py`, `scripts/21_prompt_ablation.py` | `scripts/43_run_padchest_shift.py` | `scripts/44_run_openi_report.py` |
 | Output dir | `outputs/matrix/nih_eval/<model>/` | `outputs/matrix/padchest/<model>/` | `outputs/matrix/openi/<model>/` |
-| Calls (5 models) | 237,284 | 15,000 | 9,470 |
-| Est. wall clock (5 models) | ≈ 133.0 h | ≈ 6.7 h | ≈ 4.3 h |
+| Calls (7 models) | 316,956 | 21,000 | 13,258 |
+| Est. wall clock (7 models) | ≈ 223.5 h | ≈ 13.6 h | ≈ 8.6 h |
 
 Layer totals above are the sum of the per-stage `est` column printed by
-`run_all_layers.ps1 -DryRun`; the grand total it prints is **261,754 model calls,
-143.9 h (6.0 days)** — re-derived 2026-10-08 from measured per-`(model, layer,
-stage)` rates after the chexagent greedy-decoding and medgemma_15 2048-token
-fixes moved it down from 173.6 h; see §7 «2026-10-06» and docs/50 §2.11.
+`run_all_layers.ps1 -DryRun`; the grand total it prints for the delivered
+seven-model run is **351,214 model calls, 245.7 h (10.2 days)** — re-derived
+2026-10-08 from measured per-`(model, layer, stage)` rates after the chexagent
+greedy-decoding and medgemma_15 2048-token fixes moved it down from 173.6 h;
+see §7 «2026-10-06» and docs/50 §2.11. The delivered run is executed as two
+passes — the six contract-compliant models as one matrix (229.3 h) and
+LLaVA-Med separately (16.4 h); §4.6 gives the exact commands.
 
 ### 1.1 NIH — in-domain synthetic shift (1,732 images)
 
@@ -127,16 +130,17 @@ So the budget was re-allocated rather than reduced:
 | Design | Cost | Verdict |
 |---|---|---|
 | 19-cell synthetic grid on all three layers, 5–7 models | **≈ 355.3 h (14.8 days)** for 7 models, ≈ 175.0 h for 5 | answers the synthetic question three times, and on Open-i against `unknown` labels |
-| Per-layer design as implemented, 5 models | **143.9 h (6.0 days)**, 261,754 calls | NIH answers synthetic shift, PadChest answers transfer, Open-i answers hallucination |
+| Per-layer design as implemented, 5 models (the driver's budget default) | **143.9 h (6.0 days)**, 261,754 calls | NIH answers synthetic shift, PadChest answers transfer, Open-i answers hallucination |
+| Per-layer design as implemented, 7 models (the delivered study) | **245.7 h (10.2 days)**, 351,214 calls | the same per-layer design at full model coverage: the six contract-compliant models as one matrix, LLaVA-Med as a separate contract-exempt pass |
 
 Both figures are reported together on purpose. The per-layer design is **not a
 shortcut**: the NIH layer still runs the full 19-cell grid on the full 1,732-image
-evaluation set for all five models (5 × 32,908 calls), which is where the
+evaluation set for all seven models (7 × 32,908 calls), which is where the
 synthetic-robustness evidence lives. What was dropped is 17 additional cells on
 each of the 1,500 PadChest images and each of the 947 Open-i images — i.e.
-`17 × 1,500 = 25,500` and `17 × 947 = 16,099` cells per model, or **127,500 and
-80,495 model calls across the five-model matrix** — that would have re-measured an
-already-measured axis and, on Open-i, measured it against something that is not
+`17 × 1,500 = 25,500` and `17 × 947 = 16,099` cells per model, or **178,500 and
+112,679 model calls across the seven-model matrix** — that would have re-measured
+an already-measured axis and, on Open-i, measured it against something that is not
 ground truth.
 
 For scale, two further configurations, both now reproducible:
@@ -150,8 +154,9 @@ Every hours figure here is now produced by **two independent computations that
 agree exactly**:
 
 * `powershell -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 -DryRun`
-  — the delivered driver, which computes 143.9 h / 261,754 calls for the default
-  five-model three-layer run and 245.7 h / 351,214 calls for all seven models.
+  — the delivered driver, which computes 143.9 h / 261,754 calls for the
+  five-model budget run and 245.7 h / 351,214 calls for the delivered seven-model
+  run (six contract-compliant models as one matrix, LLaVA-Med separate).
 * `.venv-vl\Scripts\python.exe scripts\47_cost_table.py` — a standalone cost table
   using the same cost model, which reproduces both figures line by line and adds
   the configurations the driver is not run in.
@@ -176,8 +181,10 @@ The lesson is worth keeping: an ETA is a measurement, not a forecast. If it is
 not produced by a command you can re-run, it will drift.
 
 The two slowest measured models — `llava_med_v1_5_7b` (1.66 s/call) and
-`internvl3_5_8b` (6.03 s/call) — are therefore **left out of the default matrix**
-and are opt-in via `-Models` (§4.6). They remain fully runnable.
+`internvl3_5_8b` (6.03 s/call) — are **left out of the driver's default matrix**
+and are opt-in via `-Models` (§4.6). Both are part of the delivered study:
+`internvl3_5_8b` joins the six-model contract-compliant matrix, and
+`llava_med_v1_5_7b` runs as a separate contract-exempt pass.
 
 **What each layer buys, stated as a claim it can support**
 
@@ -194,9 +201,10 @@ and are opt-in via `-Models` (§4.6). They remain fully runnable.
 
 ## 3. Crash safety
 
-The full run is **>5 days of continuous GPU time** (and >10 days if the opt-in
-models are added). A power cut, a driver reset or a Ctrl-C during that window is
-a realistic event, not an edge case, so resumability is a design requirement.
+The delivered full run is **245.7 h ≈ 10.2 days of continuous GPU time**
+(143.9 h ≈ 6.0 days for the five-model budget default). A power cut, a driver
+reset or a Ctrl-C during that window is a realistic event, not an edge case, so
+resumability is a design requirement.
 
 ### 3.1 How `DurableJsonl` works
 
@@ -400,9 +408,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 -
 ```
 
 Prints per-stage call counts and hour estimates, the data manifest of each layer
-and the TOTAL, then exits 0. Current output: **`TOTAL: 261,754 model calls,
-143.9h (6.0 days of GPU time)`**, with a `rate src` column marking each stage's
-rate as `measured` / `proxy-nih` / `default`.
+and the TOTAL, then exits 0. The default (five-model) output ends
+**`TOTAL: 261,754 model calls, 143.9h (6.0 days of GPU time)`**; the delivered
+seven-model run (six contract-compliant models plus LLaVA-Med) ends
+**`TOTAL: 351,214 model calls, 245.7h (10.2 days of GPU time)`**. A `rate src`
+column marks each stage's rate as `measured` / `proxy-nih` / `default`.
 
 ### 4.5 Smoke run (minutes, on the GPU)
 
@@ -499,20 +509,35 @@ Useful variations (all flags are declared in the driver's `param` block):
 | `-Reset` | delete the state file and re-enter every stage |
 | `-DryRun` | plan and exit |
 
-The default matrix is **5 models**: `medgemma_4b_it`, `medgemma_15_4b_it`,
-`qwen25_vl_7b_instruct`, `qwen3_vl_8b_instruct`, `chexagent_8b`. Adding the two
-opt-in models:
+The driver's default matrix is **5 models**: `medgemma_4b_it`,
+`medgemma_15_4b_it`, `qwen25_vl_7b_instruct`, `qwen3_vl_8b_instruct`,
+`chexagent_8b`. The delivered study runs **all seven** in two passes.
+
+Pass 1 — the six contract-compliant models as one matrix (229.3 h), adding
+`internvl3_5_8b` to the default five:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
-  -Models chexagent_8b,qwen3_vl_8b_instruct,qwen25_vl_7b_instruct,medgemma_4b_it,`
-medgemma_15_4b_it,internvl3_5_8b,llava_med_v1_5_7b
+  -Models medgemma_4b_it,medgemma_15_4b_it,qwen25_vl_7b_instruct,`
+qwen3_vl_8b_instruct,chexagent_8b,internvl3_5_8b
 ```
 
-`llava_med_v1_5_7b` and `internvl3_5_8b` are omitted from the default matrix
-because they are the two slowest measured models (1.66 s/call and 6.03 s/call
-respectively). Both remain runnable via `-Models`; a full 7-model NIH-only run is
-recorded at 270.4 h.
+Pass 2 — `llava_med_v1_5_7b` (16.4 h) as a separate contract-exempt pass:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
+  -Models llava_med_v1_5_7b
+```
+
+`llava_med_v1_5_7b` runs in its own pass because it answers in prose and never
+satisfies the JSON contract; its stages are recorded as **contract-exempt** — the
+prose is kept as evidence for the prose-without-the-contract failure mode, and
+every stage is excluded from the quantitative metrics. Isolating it keeps the
+six-model matrix under the strict `[BAD]` guard with no exemptions. Both passes
+share the default state file and output root; the stage keys are
+`layer/model/stage`, so the two passes never collide. `internvl3_5_8b` and
+`llava_med_v1_5_7b` are the two slowest measured models (6.03 s/call and
+1.66 s/call); a full 7-model NIH-only run is 223.5 h (cost-table scenario D).
 
 Within every layer the driver runs the **slowest model first**, so the models
 most likely to be interrupted finish early and any later interruption happens on
@@ -756,6 +781,8 @@ and `padchest_shift.csv.bak` (106,676 bytes).
 | `25_format_external_manifests.py` rewritten negation-aware | `scripts/25_format_external_manifests.py` | old version wrote 0/1 labels, dropped `patient_id`/`split`, and read `"no pleural effusion"` as a positive |
 | `40_build_eval_manifest.py` + `nih_eval_1732.csv` | `scripts/40_build_eval_manifest.py` | killed the `--limit`-on-training-data trap and repaired a constant `no_finding` column (0 → 347 positives) |
 | `--split` filter + shuffle-before-limit in `06`, `08`, `21` | those scripts | `--limit` takes the first N rows, which is not a sample |
+| Contract-exempt stage handling: `$KnownContractFailures`, `contract_exempt` state field, `-ContractExempt` guard switch, coverage census skip | `scripts/run_all_layers.ps1`, `scripts/45_debug_sweep.py` §13 | `llava_med_v1_5_7b` answers in prose and never satisfies the JSON contract, so a strict `[BAD]` guard deleted its file and redid ~13 h on every re-run — destroying the very prose that evidences the prose-without-the-contract failure mode. The exemption keeps the file, marks the stage `[done*]`, and excludes it from every quantitative metric; every other model stays strict |
+| Delivered seven-model run recorded as two passes: six contract-compliant models in one matrix (229.3 h) + `llava_med_v1_5_7b` separate (16.4 h) | `docs/48` §1, §4.6 | the study covers all seven models; the six-model matrix stays under the strict guard and LLaVA-Med's prose is isolated as qualitative evidence, for 351,214 calls / 245.7 h in total |
 
 **Not yet done, explicitly:**
 

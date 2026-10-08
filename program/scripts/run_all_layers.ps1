@@ -21,7 +21,11 @@
     left INCOMPLETE so a re-run retries it instead of skipping it.
 
 .PARAMETER Models
-    Which models to run. Default is the five that fit the budget.
+    Which models to run. Default is the five that fit the budget. The delivered
+    seven-model study runs as two passes: the six contract-compliant models as one
+    matrix (add internvl3_5_8b) and llava_med_v1_5_7b separately -- its prose
+    stages are contract-exempt, kept as evidence and excluded from metrics.
+    See docs/48 section 4.6 for the exact commands.
 
 .PARAMETER Layers
     Subset of nih,padchest,openi. Default: all three.
@@ -259,6 +263,18 @@ $DefaultModels = @(
     'qwen3_vl_8b_instruct', 'chexagent_8b'
 )
 $AblationModels = @('medgemma_4b_it')
+# Models whose structured reply is a KNOWN contract failure rather than an
+# unexpected one. llava_med_v1_5_7b answers in prose and never in the JSON
+# contract -- 0 of 1900 shift cells parse even after the rope_theta fix
+# (docs/50 S2.7, docs/51) -- and that prose IS the evidence for the
+# prose-without-the-contract failure mode the paper reports. The [BAD] guard
+# therefore keeps its file and marks the stage done, but tags the stage
+# contract-exempt so no downstream metric silently averages prose into a number.
+# Every other model stays under the strict guard; this is a named exemption for a
+# documented, intrinsic behaviour, not a loosening of the guard.
+$KnownContractFailures = @{
+    'llava_med_v1_5_7b' = 'prose, no JSON contract (docs/50 S2.7, docs/51)'
+}
 $StageStartupSeconds = 35
 
 if (-not $Models) { $Models = $DefaultModels }
@@ -467,7 +483,7 @@ function Read-State {
     if (Test-Path $StateFile) {
         try { return (Get-Content $StateFile -Raw | ConvertFrom-Json) } catch { }
     }
-    return [pscustomobject]@{ completed = @(); started = (Get-Date).ToString('s') }
+    return [pscustomobject]@{ completed = @(); contract_exempt = @(); started = (Get-Date).ToString('s') }
 }
 
 function Save-State($state) {
@@ -481,6 +497,18 @@ function Test-StageDone($state, [string] $key) { return ($state.completed -conta
 function Mark-Done($state, [string] $key) {
     if ($state.completed -notcontains $key) {
         $state.completed = @($state.completed) + $key
+        Save-State $state
+    }
+}
+
+function Mark-ContractExempt($state, [string] $key) {
+    # Recorded separately from `completed` so a downstream metric can exclude a
+    # stage whose rows are prose by design, instead of averaging them in.
+    if (-not $state.PSObject.Properties['contract_exempt']) {
+        $state | Add-Member -NotePropertyName contract_exempt -NotePropertyValue @() -Force
+    }
+    if ($state.contract_exempt -notcontains $key) {
+        $state.contract_exempt = @($state.contract_exempt) + $key
         Save-State $state
     }
 }
@@ -517,7 +545,7 @@ function Get-PredictionFile([string] $model, [string] $layer, [string] $stage) {
 
 function Test-StageOutput {
     param([string] $model, [string] $layer, [string] $stage, [int] $sample = 200,
-          [int] $Expected = 0)
+          [int] $Expected = 0, [switch] $ContractExempt)
     # A stage "succeeds" only if its rows are USABLE, not merely free of exceptions.
     #
     # The first version of this guard tested a single pattern,
@@ -542,7 +570,8 @@ function Test-StageOutput {
     # separately from quality.
     $p = Get-PredictionFile $model $layer $stage
     if (-not $p) { return [pscustomobject]@{ ok = $false; note = 'no output file'; n = 0; bad = 0; file = ''
-                                             err = 0; unparsed = 0; empty = 0; rows = 0; cover = $null } }
+                                             err = 0; unparsed = 0; empty = 0; rows = 0; cover = $null
+                                             exempt = $ContractExempt } }
     $n = 0; $usable = 0; $nErr = 0; $nUnparsed = 0; $nEmpty = 0
     $errs = @{}
     foreach ($line in (Get-Content $p -TotalCount $sample)) {
@@ -558,11 +587,18 @@ function Test-StageOutput {
         if ($isUnparsed) { $nUnparsed++ }
         $isEmpty = $line -match '"raw_output"\s*:\s*""'
         if ($isEmpty) { $nEmpty++ }
-        if (-not ($isErr -or $isUnparsed -or $isEmpty)) { $usable++ }
+        # A contract-exempt model is EXPECTED to emit prose, or nothing at all --
+        # both are the phenomenon under study, not a broken stage. Only an
+        # exception disqualifies its rows; the unparsed/empty counts are still
+        # reported, they just do not gate the stage. Non-exempt models keep the
+        # strict rule.
+        $rowBad = $isErr -or (-not $ContractExempt -and ($isUnparsed -or $isEmpty))
+        if (-not $rowBad) { $usable++ }
     }
     if ($n -eq 0) {
         return [pscustomobject]@{ ok = $false; note = 'output file empty'; n = 0; bad = 0
-                                 file = ''; err = 0; unparsed = 0; empty = 0; rows = 0; cover = $null }
+                                 file = ''; err = 0; unparsed = 0; empty = 0; rows = 0; cover = $null
+                                 exempt = $ContractExempt }
     }
     # total row count vs the stage's planned cell count
     $rows = 0
@@ -575,7 +611,10 @@ function Test-StageOutput {
     $bad = $n - $usable
     $parts = @()
     if ($nErr) { $parts += "$nErr exception(s)" }
-    if ($nUnparsed) { $parts += "$nUnparsed unparsed" }
+    if ($nUnparsed) {
+        $parts += $(if ($ContractExempt) { "$nUnparsed unparsed (contract-exempt: expected prose)" }
+                     else { "$nUnparsed unparsed" })
+    }
     if ($nEmpty) { $parts += "$nEmpty empty reply" }
     if ($Expected -gt 0 -and $rows -lt [int]($Expected * 0.95)) {
         $parts += "only $rows of $Expected rows written ($cover% coverage)"
@@ -593,7 +632,7 @@ function Test-StageOutput {
     if ($Expected -gt 0 -and $rows -lt [int]($Expected * 0.95)) { $ok = $false }
     return [pscustomobject]@{ ok = $ok; note = $note; n = $n; bad = $bad
                               file = $p; err = $nErr; unparsed = $nUnparsed
-                              empty = $nEmpty; rows = $rows; cover = $cover }
+                              empty = $nEmpty; rows = $rows; cover = $cover; exempt = $ContractExempt }
 }
 
 if (-not $StateFile) { $StateFile = Join-Path $script:Root 'outputs\state\run_all_layers_state.json' }
@@ -817,7 +856,8 @@ foreach ($layer in $Layers) {
         if ($code -eq 0) {
             # pass the planned cell count so the guard can also detect a stage that
             # wrote only a fraction of its work and still exited 0
-            $chk = Test-StageOutput $p.Model $p.Layer $p.Stage -Expected $p.Calls
+            $exempt = $KnownContractFailures.ContainsKey($p.Model)
+            $chk = Test-StageOutput $p.Model $p.Layer $p.Stage -Expected $p.Calls -ContractExempt:$exempt
             if (-not $chk.ok) {
                 $failed += $key
                 Write-Host ("  [BAD ] {0} in {1} -- exit 0 but {2} of {3} sampled rows errored" -f `
@@ -833,7 +873,15 @@ foreach ($layer in $Layers) {
             else {
                 Mark-Done $state $key
                 $succeeded++
-                Write-Host ("  [done] {0} in {1} (est {2})" -f $key, (Format-Duration $dt), (Format-Duration $p.Seconds))
+                if ($exempt) {
+                    Mark-ContractExempt $state $key
+                    Write-Host ("  [done*] {0} in {1} (est {2}) -- contract-exempt: {3}" -f `
+                        $key, (Format-Duration $dt), (Format-Duration $p.Seconds),
+                        $KnownContractFailures[$p.Model]) -ForegroundColor Yellow
+                }
+                else {
+                    Write-Host ("  [done] {0} in {1} (est {2})" -f $key, (Format-Duration $dt), (Format-Duration $p.Seconds))
+                }
             }
         }
         else {
@@ -856,6 +904,11 @@ if ($failed.Count -eq 0) {
     Write-Host ("  failed     : {0}" -f ($failed -join ', ')) -ForegroundColor Red
     Write-Host "  -> re-run the same command to retry only those"
 }
+$exemptKeys = @($state.contract_exempt | Where-Object { $_ })
+if ($exemptKeys.Count -gt 0) {
+    Write-Host "  contract-exempt (prose by design; keep the file, exclude from metrics):" -ForegroundColor Yellow
+    foreach ($k in $exemptKeys) { Write-Host ("    - {0}" -f $k) -ForegroundColor Yellow }
+}
 Write-Host ""
 
 # --------------------------------------------------------------------------
@@ -875,6 +928,10 @@ if ($Layers -contains 'nih') {
     Write-Host " COVERAGE (CPU only, no GPU needed)"
     Write-Host ("=" * 82)
     foreach ($model in $Models) {
+        if ($KnownContractFailures.ContainsKey($model)) {
+            Write-Host ("  [--] {0}: contract-exempt (prose by design); no label census" -f $model) -ForegroundColor Yellow
+            continue
+        }
         $pred = Join-Path $script:OutputRoot ("nih_eval\{0}\shift\shift_predictions.jsonl" -f $model)
         if (-not (Test-Path $pred)) {
             Write-Host ("  [--] {0}: no shift output to census" -f $model)

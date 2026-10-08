@@ -572,6 +572,84 @@ def check_stage_aware_guard() -> None:
                              f"expected a file under {want_dir}/")
 
 
+def check_contract_exempt_guard() -> None:
+    """LLaVA-Med's prose must be KEPT and marked contract-exempt, not deleted.
+
+    llava_med_v1_5_7b answers in prose and never satisfies the JSON contract, so a
+    strict [BAD] guard would delete its file, leave the stage out of the state
+    file, and redo ~13h of work on every re-run -- while destroying the very prose
+    that evidences the prose-without-the-contract failure mode. The exemption must
+    (a) name exactly the documented model, (b) actually relax Test-StageOutput, and
+    (c) not leak to any other model. (b) is checked by loading the real function.
+    """
+    head("13. contract-exempt guard (behavioural + source)")
+    ps = ROOT / "scripts" / "run_all_layers.ps1"
+    if not ps.exists():
+        add("ERROR", "run_all_layers.ps1 missing")
+        return
+    text = ps.read_text(encoding="utf-8", errors="replace")
+
+    # (a) exactly one named exemption, and it is the documented model
+    block = re.search(r"(?ms)\$KnownContractFailures = @\{(.*?)\n\}", text)
+    if not block:
+        add("ERROR", "no $KnownContractFailures table in the driver")
+        return
+    keys = re.findall(r"'([a-z0-9_]+)'\s*=", block.group(1))
+    if keys != ["llava_med_v1_5_7b"]:
+        add("ERROR", f"$KnownContractFailures names {keys}, expected exactly "
+                     "['llava_med_v1_5_7b']")
+
+    # (c) the guard call site and the coverage census both honour it
+    if "-ContractExempt:$exempt" not in text:
+        add("ERROR", "the guard call site does not pass -ContractExempt")
+    if "contract-exempt (prose by design); no label census" not in text:
+        add("ERROR", "the coverage census does not skip contract-exempt models")
+
+    # (b) behavioural: the same all-unparsed file must fail strict and pass exempt
+    import tempfile
+    with tempfile.TemporaryDirectory(prefix="exempt_") as td:
+        root = Path(td)
+        base = root / "nih_eval" / "m1" / "shift"
+        base.mkdir(parents=True, exist_ok=True)
+        prose = ('{"image_id":"a","raw_output":"There is cardiomegaly.",'
+                 '"parsed":{"parse_success":false}}')
+        empty = '{"image_id":"a","raw_output":"","parsed":{"parse_success":false}}'
+        (base / "shift_predictions.jsonl").write_text(
+            (prose + "\n") * 2 + (empty + "\n") * 2, encoding="utf-8")
+        f_pred = re.search(r"(?ms)^function Get-PredictionFile.*?\n\}", text)
+        f_guard = re.search(r"(?ms)^function Test-StageOutput.*?\n\}", text)
+        if not (f_pred and f_guard):
+            add("ERROR", "cannot find Get-PredictionFile/Test-StageOutput in the driver")
+            return
+        harness = (
+            f"$script:OutputRoot = '{root}'\n"
+            "$LayerDef = @{ nih = @{ Dir = 'nih_eval' } }\n"
+            + f_pred.group(0) + "\n" + f_guard.group(0) + "\n"
+            + "$r = [ordered]@{}\n"
+            + "$r['strict'] = (Test-StageOutput 'm1' 'nih' 'shift' -Expected 4).ok\n"
+            + "$r['exempt'] = (Test-StageOutput 'm1' 'nih' 'shift' -Expected 4 -ContractExempt).ok\n"
+            + "$r | ConvertTo-Json -Compress\n"
+        )
+        out = subprocess.run(["powershell", "-NoProfile", "-Command", harness],
+                             capture_output=True, text=True, encoding="utf-8",
+                             errors="replace", timeout=120)
+        if out.returncode != 0:
+            add("ERROR", f"contract-exempt harness failed: {(out.stderr or '')[:200]}")
+            return
+        try:
+            got = json.loads((out.stdout or "{}").strip().splitlines()[-1])
+        except (json.JSONDecodeError, IndexError):
+            add("ERROR", f"contract-exempt harness produced no JSON: {out.stdout!r}")
+            return
+        strict_ok, exempt_ok = got.get("strict"), got.get("exempt")
+        print(f"  {'ok  ' if strict_ok is False else 'FAIL'} strict  -> ok={strict_ok} (must reject all-prose)")
+        print(f"  {'ok  ' if exempt_ok is True else 'FAIL'} exempt  -> ok={exempt_ok} (must accept all-prose)")
+        if strict_ok is not False:
+            add("ERROR", f"strict guard accepted an all-unparsed file (ok={strict_ok})")
+        if exempt_ok is not True:
+            add("ERROR", f"contract-exempt guard rejected prose (ok={exempt_ok})")
+
+
 def check_calibration_universe() -> None:
     """The calibration sample universe must be explicit, and must be the declared one.
 
@@ -715,6 +793,7 @@ def main() -> int:
     check_isolation_guard()
     check_ece_convention()
     check_stage_aware_guard()
+    check_contract_exempt_guard()
     check_calibration_universe()
     check_row_keys()
 

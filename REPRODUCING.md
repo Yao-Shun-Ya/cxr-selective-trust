@@ -117,8 +117,20 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 -
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
   -Models medgemma_4b_it -Layers openi,padchest -Limit 4 -NoAblation
 
-# 3. full run: 5 models x 3 layers = 261,754 calls, ~143.9 h on one RTX 4080 SUPER
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1
+# 3. full run (delivered study: 7 models x 3 layers = 351,214 calls, ~245.7 h
+#    on one RTX 4080 SUPER), run as two passes:
+
+#    pass 1 -- the six contract-compliant models as one matrix (229.3 h, 306,484 calls)
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
+  -Models medgemma_4b_it,medgemma_15_4b_it,qwen25_vl_7b_instruct,`
+qwen3_vl_8b_instruct,chexagent_8b,internvl3_5_8b
+
+#    pass 2 -- LLaVA-Med alone (16.4 h, 44,730 calls). It answers in prose and
+#    never satisfies the JSON contract, so its stages are kept as contract-exempt
+#    evidence for the prose-without-the-contract failure mode and excluded from
+#    every quantitative metric.
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
+  -Models llava_med_v1_5_7b
 ```
 
 Re-running the same command resumes: completed stages are skipped, unfinished ones continue
@@ -136,7 +148,8 @@ completion on GPU**. A 7-model × 100-image NIH *pilot* has been run end to end;
 are pilot numbers kept in working notes, not headline numbers. The numbers currently in
 `papers/main_v2/main.pdf` come from the
 earlier pilot and stage-2 runs, and the manuscript labels them as such. Do not read the
-261,754-call matrix as completed work. See
+351,214-call matrix (the delivered 7-model run, six contract-compliant models as one matrix
+plus LLaVA-Med as a separate contract-exempt pass) as completed work. See
 `docs/42_academic_integrity_and_writing_standards.md` for the rules that govern this.
 
 ## 7. Hardware caveat

@@ -63,11 +63,14 @@ Qwen2.5-VL-7B-Instruct) and carries the discrimination, calibration, and
 selective-prediction results. (ii) A 100-study pre-run is run for all seven
 models and carries the image-reliance spectrum and failure-mode taxonomy; its
 numbers are reported as a pre-run, not as production figures. (iii) A full
-three-layer run (NIH / PadChest / Open-i) is planned for a five-model subset,
-from which LLaVA-Med is excluded because it answers in prose rather than in the
-structured contract, and InternVL is opt-in because its single-image throughput
-makes it the slowest model in the matrix; both exclusions, and their consequences
-for the scope of our claims, are stated under Limitations.
+three-layer run (NIH / PadChest / Open-i) covers all seven models. Six run as one
+matrix; LLaVA-Med runs as a separate pass, because its replies are prose rather
+than the structured contract, so its stages are recorded as contract-exempt ---
+retained as evidence for the prose-without-the-contract failure mode, and excluded
+from every quantitative metric --- rather than discarded as a failed stage.
+InternVL is the slowest model per image and is ordered first within each layer.
+The consequences of this arrangement for the scope of our claims are stated under
+Limitations.
 
 Models are loaded locally; 4-bit quantisation is used for the primary
 configuration and \texttt{bfloat16} for the precision comparison, with

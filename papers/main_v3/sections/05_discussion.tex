@@ -35,12 +35,14 @@ Our study is a pilot and has several limitations.
 number in this paper. The pre-run's image-reliance spectrum, recall dose-response,
 and failure-mode taxonomy are point estimates on 100 images per model and must be
 re-censused at the full scale before they are treated as production results. The
-full three-layer run is designed around a five-model subset; LLaVA-Med is excluded
-because it answers in prose rather than in the structured contract, and InternVL is
-opt-in because its single-image throughput makes it the slowest model in the
-matrix. Our image-reliance and failure-mode claims therefore span all seven models
-only at pre-run scale, and the full-scale claims are restricted to the five-model
-subset plus the two primary models' larger pilot.
+full three-layer run covers all seven models; six run as one matrix and LLaVA-Med
+runs as a separate pass, its stages recorded as contract-exempt because it answers
+in prose rather than in the structured contract, and its outputs excluded from every
+quantitative metric. Our image-reliance and failure-mode claims therefore span all
+seven models at pre-run scale; at full scale the quantitative claims rest on the six
+contract-compliant models plus the two primary models' larger pilot, while
+LLaVA-Med's full-scale role is qualitative --- it evidences the
+prose-without-the-contract failure mode rather than contributing a metric.
 
 \textbf{Model scale is untested.} All seven models have between 4B and 8B
 parameters. We therefore cannot say whether the dissociation between structural
