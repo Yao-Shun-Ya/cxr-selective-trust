@@ -1,0 +1,82 @@
+project: cxr-selective-trust
+dataset_lock_version: v2_nih_rrg
+label_space_version: labels_v2
+
+paths:
+  nih_root: "素材/ChestX-ray14"
+  nih_metadata: "素材/ChestX-ray14/data/Data_Entry_2017_v2020.csv"
+  nih_train_val_list: "素材/ChestX-ray14/data/train_val_list.txt"
+  nih_test_list: "素材/ChestX-ray14/data/test_list.txt"
+  nih_images_archives: "素材/ChestX-ray14/data/images"
+  nih_extracted_images: "data/nih/images"
+  chexpert_rrg_root: "素材/CheXpert-plus-RRG"
+  chexpert_rrg_findings_parquet: "素材/CheXpert-plus-RRG/findings section/valid-00000-of-00001.parquet"
+  chexpert_rrg_impression_parquet: "素材/CheXpert-plus-RRG/impression section/valid-00000-of-00001.parquet"
+  manifests_dir: "data/manifests"
+  outputs_dir: "outputs"
+
+labels:
+  primary:
+    - atelectasis
+    - cardiomegaly
+    - consolidation
+    - edema
+    - pleural_effusion
+    - pneumonia
+    - pneumothorax
+    - no_finding
+  secondary:
+    - lung_opacity
+    - mass_nodule
+    - emphysema
+    - fibrosis
+    - pleural_thickening
+    - hernia
+
+datasets:
+  nih:
+    role: source_internal
+    access: public
+    official_url: https://docs.cloud.google.com/healthcare-api/docs/resources/public-datasets/nih-chest
+    scale:
+      images: 112120
+      patients: 30805
+      labels: 14
+    label_source: nih_nlp_labels
+    view_metadata: true
+    report_available: false
+    notes: "Primary classification dataset. Official train_val/test lists are available."
+  chexpert_plus_rrg:
+    role: external_report_reliance
+    access: public_huggingface_subset
+    source_url: https://huggingface.co/datasets/X-iZhang/CheXpert-plus-RRG
+    scale:
+      findings_section: 62
+      impression_section: 202
+    image_embedded_in_parquet: true
+    report_available: true
+    notes: "Validation-only report generation subset from CheXpert Plus. Used for report-grounded hallucination and image-reliance; classification labels must be derived from reference reports."
+
+splits:
+  nih:
+    protocol: patient_level
+    use_official_test_list_as_external_holdout: true
+    internal_val_ratio: 0.15
+    seed: 0
+  rrg:
+    protocol: use_all_valid_samples_as_external_report_set
+    findings_n: 62
+    impression_n: 202
+
+pilot:
+  nih_pilot_images: 1000
+  nih_extract_limit: 1000
+  rrg_use_all: true
+  seed: 0
+
+preprocessing:
+  version: preprocess_v2
+  output_format: png
+  color_mode: RGB
+  resize_policy: preserve_native_unless_model_requires
+  target_size: 512

@@ -1,0 +1,111 @@
+\begin{thebibliography}{13}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Bai et~al.(2025)Bai, Chen, Liu, Wang, Ge, Song,
+  et~al.]{bai2025qwen25vl}
+Shuai Bai, Keqin Chen, Xuejing Liu, Jialin Wang, Wenbin Ge, Sibo Song, et~al.
+\newblock Qwen2.5-vl technical report, 2025.
+\newblock URL \url{https://arxiv.org/abs/2502.13923}.
+
+\bibitem[Buckley et~al.(2026)Buckley, Diao, Srivastava, Brodeur, Rajpurkar,
+  Rodman, and Manrai]{buckley2026exploit}
+Thomas~A. Buckley, James~A. Diao, Cam~N. Srivastava, Peter~G. Brodeur, Pranav
+  Rajpurkar, Adam Rodman, and Arjun~K. Manrai.
+\newblock Multimodal foundation models exploit text to make medical image
+  predictions.
+\newblock \emph{Nature Communications}, 2026.
+\newblock \doi{10.1038/s41467-026-74207-5}.
+\newblock URL \url{https://www.nature.com/articles/s41467-026-74207-5}.
+
+\bibitem[Chen et~al.(2024)Chen, Varma, Delbrouck, Paschali, Blankemeier,
+  Van~Veen, Valanarasu, Youssef, Cohen, Reis, et~al.]{chen2024chexagent}
+Zhihong Chen, Maya Varma, Jean-Benoit Delbrouck, Magdalini Paschali, Louis
+  Blankemeier, Dave Van~Veen, Jeya Maria~Jose Valanarasu, Alaa Youssef,
+  Joseph~Paul Cohen, Eduardo~Pontes Reis, et~al.
+\newblock Chexagent: Towards a foundation model for chest x-ray interpretation,
+  2024.
+\newblock URL \url{https://arxiv.org/abs/2401.12208}.
+
+\bibitem[Cheng et~al.(2025)Cheng, Ong, Wagner, Merle, Ju, Zhang,
+  et~al.]{cheng2025robustness}
+Zijie Cheng, Ariel~Yuhan Ong, Siegfried~K. Wagner, David~A. Merle, Lie Ju,
+  Hanyuan Zhang, et~al.
+\newblock Understanding the robustness of vision-language models to medical
+  image artefacts.
+\newblock \emph{npj Digital Medicine}, 2025.
+\newblock \doi{10.1038/s41746-025-02108-w}.
+\newblock URL \url{https://www.nature.com/articles/s41746-025-02108-w}.
+
+\bibitem[Dhinagar et~al.(2026)Dhinagar, Jagad, Senthilkumar, Thomopoulos, Khan,
+  and Liew]{dhinagar2026calm}
+Nikhil~J. Dhinagar, Chirag Jagad, Pavithra Senthilkumar, Sophia~I. Thomopoulos,
+  Mahir~H. Khan, and Sook-Lei Liew.
+\newblock Calm-vlm: Calibration and selective prediction in vision-language
+  models for reliable brain mri classification.
+\newblock In \emph{IEEE International Symposium on Biomedical Imaging (ISBI)},
+  2026.
+\newblock \doi{10.1109/ISBI61048.2026.11515735}.
+\newblock URL \url{https://ieeexplore.ieee.org/document/11515735}.
+
+\bibitem[Felizzi et~al.(2025)Felizzi, Riccomi, Ferramola, Causio,
+  et~al.]{felizzi2025grounded}
+Federico Felizzi, Olivia Riccomi, Michele Ferramola, Francesco~Andrea Causio,
+  et~al.
+\newblock Are large vision language models truly grounded in medical images?
+  evidence from italian clinical visual question answering, 2025.
+\newblock URL \url{https://arxiv.org/abs/2511.19220}.
+\newblock Author list to verify.
+
+\bibitem[Fisher(2025)]{fisher2025negative}
+George Fisher.
+\newblock Vision-language foundation models do not transfer to medical imaging
+  classification: A negative result on chest x-ray diagnosis, 2025.
+\newblock URL
+  \url{https://www.medrxiv.org/content/10.64898/2025.12.06.25341759v1}.
+
+\bibitem[Gu et~al.(2025)Gu, Fu, Liu, et~al.]{gu2025illusion}
+Yu~Gu, Jingjing Fu, Xiaodong Liu, et~al.
+\newblock The illusion of readiness: Stress testing large frontier models on
+  multimodal medical benchmarks, 2025.
+\newblock URL \url{https://arxiv.org/abs/2509.18234}.
+\newblock Author list to verify.
+
+\bibitem[Li et~al.(2025)Li, Jiang, Xu, Xia, Jia, Chen, and Shi]{li2025atcxr}
+Xueyang Li, Mingze Jiang, Gelei Xu, Jun Xia, Mengzhao Jia, Danny Chen, and Yiyu
+  Shi.
+\newblock At-cxr: Uncertainty-aware agentic triage for chest x-rays, 2025.
+\newblock URL \url{https://arxiv.org/abs/2508.19322}.
+
+\bibitem[Nguyen et~al.(2026)Nguyen, Nguyen, Do, and Doan]{nguyen2026answer}
+Duy~A. Nguyen, Tuan~T. Nguyen, Minh Do, and Khoa Doan.
+\newblock Answer, clarify, or abstain: Fine-grained selective prediction for
+  medical vlms, 2026.
+\newblock URL \url{https://icml.cc/virtual/2026/80409}.
+
+\bibitem[Rafferty et~al.(2026)Rafferty, Ramaesh,
+  et~al.]{rafferty2026limitations}
+Anna Rafferty, Rishi Ramaesh, et~al.
+\newblock Limitations of public chest radiography datasets for artificial
+  intelligence: Label quality, domain shift, bias and evaluation challenges.
+\newblock \emph{Philosophical Transactions of the Royal Society A}, 2026.
+\newblock URL
+  \url{https://royalsocietypublishing.org/rsta/article/384/2324/20250129/482552}.
+\newblock Author list to verify.
+
+\bibitem[Sellergren et~al.(2025)]{sellergren2025medgemma}
+Andrew Sellergren et~al.
+\newblock Medgemma technical report, 2025.
+\newblock URL \url{https://arxiv.org/abs/2507.05201}.
+\newblock Author list to verify.
+
+\bibitem[Zafar et~al.(2026)Zafar, Murali, and Vashist]{zafar2026beyond}
+Anas Zafar, Leema~Krishna Murali, and Ashish Vashist.
+\newblock Beyond accuracy: Evaluating visual grounding in multimodal medical
+  reasoning, 2026.
+\newblock URL \url{https://arxiv.org/abs/2603.03437}.
+
+\end{thebibliography}

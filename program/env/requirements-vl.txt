@@ -1,0 +1,24 @@
+# Environment for Qwen2.5-VL-7B-Instruct and MedGemma-4B-IT.
+# Install PyTorch with CUDA 12.1 first:
+#   pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu121
+# Then:
+#   pip install -r env/requirements-vl.txt
+
+transformers==4.51.3
+accelerate>=1.0.0
+bitsandbytes>=0.50.0
+safetensors
+sentencepiece
+protobuf
+qwen-vl-utils==0.0.8
+pillow
+pandas
+pyarrow
+scikit-learn
+matplotlib
+seaborn
+tqdm
+pyyaml
+einops
+timm
+huggingface-hub

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "medvlm-selective-trust"
+version = "0.1.0"
+description = "Selective Trust for Medical Vision-Language Models under Distribution Shift"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy",
+  "pandas",
+  "scipy",
+  "scikit-learn",
+  "matplotlib",
+  "seaborn",
+  "pyyaml",
+  "tqdm",
+  "Pillow",
+  "pydantic",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "black", "jupyter", "ipykernel"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.black]
+line-length = 100

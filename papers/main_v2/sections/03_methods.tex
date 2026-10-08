@@ -1,0 +1,201 @@
+\section{Methods}
+
+The overall method is illustrated in Figure~\ref{fig:method}.
+
+\subsection{Task and label space}
+
+We study chest X-ray (CXR) vision-language models on structured multi-label finding prediction. The primary label space contains eight findings:
+
+\begin{verbatim}
+atelectasis
+cardiomegaly
+consolidation
+edema
+pleural_effusion
+pneumonia
+pneumothorax
+no_finding
+\end{verbatim}
+
+Each model outputs a structured JSON object containing:
+
+\begin{itemize}
+\item \texttt{findings[label] $\in$ \{positive, negative, uncertain, not\_mentioned\}};
+\item \texttt{probability\_positive[label] $\in$ [0,1]};
+\item an optional short rationale.
+\end{itemize}
+
+All models share one prompt and one parser. Missing labels are mapped to \texttt{not\_mentioned}; invalid statuses are mapped to \texttt{uncertain}; invalid probabilities are set to null. Parse success and parse failure are recorded separately.
+
+\subsection{Models}
+
+We evaluate seven openly available vision-language models spanning six model
+families and three domain roles. The design crosses \emph{domain}
+(medical vs.\ general) with \emph{specialisation} (chest-X-ray-specific vs.\
+general-purpose), and includes two within-family generational pairs so that a
+change of model generation can be separated from a change of family.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{llll}
+\hline
+Model & Family & Domain & Role \\
+\hline
+MedGemma-4B-IT & Gemma-3 & medical & image-dependent anchor \\
+MedGemma-1.5-4B-IT & Gemma-3 & medical & same-family version bump \\
+LLaVA-Med-1.5-7B & LLaVA & medical & older medical baseline \\
+CheXagent-8B & CheXagent & CXR-specific & domain-specialist \\
+Qwen2.5-VL-7B-Instruct & Qwen2.5-VL & general & image-invariant negative control \\
+Qwen3-VL-8B-Instruct & Qwen3-VL & general & same-family version bump \\
+InternVL3.5-8B & InternVL & general & cross-family generality \\
+\hline
+\end{tabular}
+\caption{Model matrix. Two within-family pairs (MedGemma 1$\rightarrow$1.5 and
+Qwen2.5-VL$\rightarrow$Qwen3-VL) allow generational change to be separated from
+family change. All models are open-weight and evaluated zero-shot.}
+\label{tab:models}
+\end{table}
+
+Models are loaded locally; 4-bit quantisation is used for the primary
+configuration and \texttt{bfloat16} for the precision comparison, with
+single-GPU placement. CheXagent-8B is included only at small sample sizes
+because its memory footprint permits a batch size of 4 and it collapses at 6
+(see the supplementary engineering analysis). Two further candidates were
+examined and excluded for reasons unrelated to model quality: CheXagent-2-3B,
+whose remote code depends on a removed \texttt{transformers} API, and a 30B
+mixture-of-experts model whose pre-quantised checkpoint stores experts in a
+per-expert packed layout that the \texttt{transformers} implementation we use
+does not accept. Both exclusions, and their consequences for the scope of our
+claims, are stated under Limitations.
+
+\subsection{Data}
+
+\subsubsection{NIH ChestX-ray14 pilot}
+
+We use a stratified pilot of 1,000 studies from NIH ChestX-ray14. The manifest contains patient-level splits:
+
+\begin{verbatim}
+internal_train
+source_val
+internal_test
+\end{verbatim}
+
+\texttt{source\_val} is used only for calibration fitting and threshold selection. \texttt{internal\_test} is used only for evaluation. Image-level ground-truth labels are derived from the official NIH labels via a fixed mapping into the primary label space.
+
+\subsubsection{CheXpert-plus-RRG external report set}
+
+CheXpert-plus-RRG contains:
+
+\begin{verbatim}
+findings_section:  62 samples
+impression_section: 202 samples
+\end{verbatim}
+
+Each sample provides a frontal CXR image and reference report text. It is used as an external report-grounded evaluation set for hallucination, omission, and image reliance, not as a large-scale classification benchmark.
+
+\subsection{Structured output and parsing}
+
+The structured prompt asks the model to return one JSON object with findings and probabilities. The parser:
+
+\begin{enumerate}
+\item extracts the first JSON object;
+\item tolerates Markdown code fences;
+\item normalises misspelled label keys with fuzzy matching;
+\item maps missing labels to \texttt{not\_mentioned};
+\item records parse failure explicitly.
+\end{enumerate}
+
+\subsection{Distribution shift benchmark}
+
+We evaluate six image-quality shifts at three severity levels:
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{llll}
+\hline
+Shift & Mild & Moderate & Severe \\
+Blur & $\sigma$=0.5 & $\sigma$=1.0 & $\sigma$=2.0 \\
+Noise & $\sigma$=0.02 & $\sigma$=0.05 & $\sigma$=0.10 \\
+JPEG & q=70 & q=40 & q=20 \\
+Brightness & $\times$0.8 & $\times$1.2 & $\times$1.5 \\
+Contrast & $\times$0.7 & $\times$1.3 & $\times$1.6 \\
+Resolution & $\times$0.5 & $\times$0.25 & $\times$0.125 \\
+\hline
+\end{tabular}
+\end{table}
+
+
+Each image is evaluated under clean, mild, moderate, and severe conditions. For every image--condition--severity combination we store the raw output, parsed output, parse success, probability estimates, elapsed time, and ground truth.
+
+\subsection{Image-reliance evaluation}
+
+For image reliance we compare the original image against:
+
+\begin{itemize}
+\item blank gray image;
+\item strong blur;
+\item shuffled image from the same manifest.
+\end{itemize}
+
+For each condition and label we measure:
+
+\begin{itemize}
+\item status flip count relative to original;
+\item image sensitivity (fraction of images with at least one finding flip);
+\item mean absolute change in \texttt{probability\_positive}.
+\end{itemize}
+
+\subsection{Calibration}
+
+For each finding we fit temperature scaling on \texttt{source\_val} and apply it to \texttt{internal\_test} without refitting. We report:
+
+\begin{itemize}
+\item AUROC;
+\item expected calibration error (ECE);
+\item Brier score.
+\end{itemize}
+
+Temperature scaling changes calibration but not ranking, so AUROC is invariant by construction.
+
+\subsubsection{Two metric families and their sample universes}
+
+We compute two metric families, and they legitimately use different rows.
+
+The probability family -- AUROC, AUPRC, ECE and Brier score -- is computed over every finding for which the model emitted a probability, including rows whose status was \texttt{uncertain}. ECE is defined over the model's probability outputs (Guo et al., 2017; the same convention as \texttt{sklearn.\allowbreak calibration.\allowbreak calibration\_curve}), and in this study every \texttt{uncertain} row does carry a probability, so excluding those rows would condition the calibration estimate on the model's own hedging.
+
+The classification and selective family -- F1, AURC, and coverage at risk -- needs a definite call to be right or wrong about, so it is computed over rows with a definite status, under the confidence rule given under selective prediction below: \texttt{confidence = 0.5} is assigned to any row that carries no confidence value.
+
+The counts make the difference explicit. On \texttt{internal\_test}, MedGemma emits a probability for all 225 finding decisions per label, while 180--225 of those decisions per label carry a definite call; across the eight labels this is 1,800 probability decisions and 1,614 definite decisions, an \texttt{uncertain} rate of 186/1800 = 10.3\%. The choice of universe is not a free parameter that can be spent on the model: recomputing the calibration metrics on definite calls only moves MedGemma \texttt{internal\_test} macro ECE from 0.220 to 0.232, so the definite-only convention is the harsher of the two. Nor is the choice tuned per model: Qwen2.5-VL never emits \texttt{uncertain} (0 of 1,800 decisions on \texttt{internal\_test}), so its numbers are identical under either universe.
+
+\subsection{Selective prediction}
+
+For each finding prediction with a definite status we derive a confidence score:
+
+\begin{verbatim}
+confidence = P(positive)        if predicted positive
+confidence = 1 - P(positive)    if predicted negative
+confidence = 0.5                if no confidence value is available
+risk = 1 - confidence
+\end{verbatim}
+
+This rule defines the selective family only. It applies to rows with a definite status; rows whose status is \texttt{uncertain} are not part of the risk--coverage computation, so the 0.5 default is a fallback for a row that carries no confidence value, not a treatment of \texttt{uncertain} as a mid-confidence call. The probability family is defined separately above, and it does include \texttt{uncertain} rows.
+
+We compute risk--coverage curves over definite calls by accepting the lowest-risk cases first, and report AURC, coverage at 5\% and 10\% risk, and selective accuracy at 80\% coverage.
+
+\subsection{CheXpert-RRG report-level evaluation}
+
+RRG reference text is converted to finding-level evidence using a rule-based keyword + negation-window method (\texttt{rule\_based\_v0}). For each primary finding we define:
+
+\begin{itemize}
+\item disease hallucination: model positive while reference evidence is not present;
+\item negation failure: model positive while reference explicitly negates the finding;
+\item omission: model negative while reference evidence is present.
+\end{itemize}
+
+This evidence extractor is a pilot implementation; final analysis should use a validated report labeller or human adjudication.
+
+\subsection{Statistics}
+
+We use image-level cluster bootstrap to estimate 95\% confidence intervals. For paired clean-vs-shift comparisons we resample images with replacement and compute paired bootstrap differences in macro AUROC, ECE, and Brier score. The Stage 2 analysis uses 1,000 bootstrap resamples and Benjamini--Hochberg FDR correction for paired tests.

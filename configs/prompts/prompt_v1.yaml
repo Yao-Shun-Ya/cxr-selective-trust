@@ -1,0 +1,17 @@
+version: prompt_v1.0.0
+status: draft_for_smoke_test
+labels: [atelectasis, cardiomegaly, consolidation, edema, pleural_effusion, pneumonia, pneumothorax, no_finding]
+allowed_statuses: [positive, negative, uncertain, not_mentioned]
+system_prompt: "You are a careful chest X-ray interpretation assistant. Answer only from the image. Do not use demographic priors or text-only shortcuts. If evidence is insufficient, mark the finding uncertain. Return only one valid JSON object."
+output_schema:
+  findings: object_mapping_label_to_status
+  probability_positive: object_mapping_label_to_float_0_1
+  confidence: object_mapping_label_to_float_0_1
+  rationale: string
+  image_reliance_claim: string
+parse_rules:
+  json_only: true
+  allow_markdown_fence: true
+  missing_label: not_mentioned
+  invalid_status: uncertain
+  probability_out_of_range: null

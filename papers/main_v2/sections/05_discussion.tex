@@ -1,0 +1,68 @@
+\section{Discussion}
+
+\subsection{Principal findings}
+
+Our results expose a gap between structural validity and clinical reliability in open-source CXR VLMs. Both MedGemma-4B-IT and Qwen2.5-VL-7B-Instruct produced valid structured JSON with zero parse failures on 1,000 NIH studies, yet their trustworthiness profiles differed fundamentally. MedGemma was strongly image-dependent (image sensitivity: 1.00 blank, 0.95 blur, 0.88 shuffle) but only moderately discriminative (macro AUROC 0.62--0.65) and poorly calibrated on held-out data (macro ECE 0.22). Qwen2.5-VL was effectively image-invariant (image sensitivity: 0.003 across blank, blur, and shuffle), predicted \texttt{no\_finding} for 988/1,000 studies, and remained at chance discrimination (macro AUROC $\approx$ 0.50), while still producing valid outputs and apparently favourable selective risk--coverage metrics.
+
+The most important implication is that conventional reliability metrics can be gamed by degenerate prediction behaviour. A model that systematically predicts the majority finding can achieve low empirical error, attractive calibration on some labels, and apparently strong selective performance, without using the image. Therefore, calibration and selective prediction must be evaluated jointly with image reliance. This finding is consistent with recent evidence that multimodal medical models may exploit text or prior shortcuts (Buckley et al., 2026; Zafar et al., 2026; Felizzi et al., 2025), and extends that evidence to the selective-trust setting.
+
+\subsection{Shift effects are heterogeneous and non-monotonic}
+
+Contrary to the assumption that distribution shift monotonically degrades CXR VLM reliability, we observed heterogeneous and non-monotonic effects. Several blur, noise, JPEG, and resolution conditions did not reduce macro AUROC; some significantly improved ECE. Only brightness (mild and severe) and severe noise showed significant AUROC decreases in paired macro bootstrap tests. At the same time, image sensitivity generally increased with severity, indicating that the model was responding to the perturbed inputs even when its ranking metrics did not degrade.
+
+This dissociation has two implications. First, robustness benchmarks should not assume a single causal direction. Shift can act as a regulariser, alter prediction prevalence, or change the effective image representation in ways that are metric- and finding-specific. Second, image sensitivity alone is not a sufficient reliability measure: a model may change its predictions under shift without becoming less discriminative, or it may remain confidently wrong. Reliable selective trust should therefore combine shift response, calibration, uncertainty, and image reliance rather than treating any one signal as a proxy for trust.
+
+\subsection{Calibration and selective prediction under shift}
+
+Per-finding temperature scaling did not change discrimination, as expected, and produced mixed calibration results. It substantially improved calibration for \texttt{no\_finding} (ECE 0.357 $\rightarrow$ 0.093 for MedGemma) but had little benefit or slightly worsened ECE for several other findings. This suggests that global or per-label temperature scaling is insufficient for multi-label CXR reliability, especially when label prevalence and prediction behaviour differ sharply across findings.
+
+On held-out NIH data, MedGemma achieved macro AURC 0.228 and coverage at 5\% risk of 0.357, while Qwen achieved lower AURC and higher selective accuracy. The Qwen result is a cautionary example: its selective performance was driven by image-invariant majority prediction rather than visual understanding. A selective trust system that only monitors confidence or risk would accept these predictions as reliable. Image-reliance conditioning is therefore necessary for safe deferral.
+
+On MedGemma's \texttt{internal\_test} split, the rows where the model hedged are better calibrated than the rows where it committed: per label, the \texttt{uncertain} rows carry a mean absolute calibration error of 0.086 for cardiomegaly against 0.414 for the committed rows, 0.024 against 0.134 for consolidation, and 0.040 against 0.252 for edema. This is not a degenerate artefact, because the hedged rows do not sit at a constant 0.5: they cluster at low probabilities (0.1 for 90 rows, 0.2 for 72, and 0.3 for 15, with a maximum of 0.4), so a low-confidence hedge does track a genuinely low positive rate. The direction matters for our thesis: overconfidence sits in MedGemma's committed calls rather than in its hedges, which is the same dissociation between structural output and evidential grounding that we report elsewhere. This is a single split of a single model, and we do not claim a mechanism for it.
+
+\subsection{External report evidence}
+
+On CheXpert-plus-RRG, MedGemma showed 13.5\% overall report-level hallucination, 12.2\% omission, and 0.6\% negation failure. Finding-level hallucination was particularly high for atelectasis (44.3\%) and cardiomegaly (44.9\%), likely reflecting a combination of model over-prediction and limitations of the rule-based evidence extractor. The 45.3\% original-vs-blank status-flip rate confirms that MedGemma remains image-dependent on this external set, which contrasts with Qwen’s behaviour on NIH.
+
+These results should be interpreted as pilot evidence. The current report-evidence extractor is a keyword and negation-window rule (\texttt{rule\_based\_v0}) and is not a substitute for a validated report labeller or human adjudication. Nevertheless, the presence of both hallucination and omission underscores that external report-grounded evaluation captures a different error profile than NIH label-based classification.
+
+\subsection{Implications for clinical deployment}
+
+A clinically useful CXR VLM should not be evaluated by accuracy alone. The results support a three-way decision policy: accept, clarify/escalate, or abstain. Accept decisions should require not only high calibrated confidence but also evidence of image reliance and acceptable shift-conditioned reliability. Clarification or escalation can be used when uncertainty is high but additional evidence may resolve the case. Abstention should be triggered by low image reliance, out-of-distribution shifts, or unstable predictions across counterfactual perturbations.
+
+This deployment workflow is shown in Figure~\ref{fig:workflow}. The framing shifts the research question from “how accurate is the VLM?” to “when should this VLM be trusted, and is that trust grounded in visual evidence?” Our shift-aware selective trust framework operationalises this question by combining prediction confidence, uncertainty, calibration, shift score, and image reliance.
+
+\subsection{Limitations}
+
+Our study is a pilot and has several limitations.
+
+\textbf{Model scale is untested.} All seven models in our matrix have between 4B
+and 8B parameters. We therefore cannot say whether the dissociation between
+structural validity, calibration and image reliance persists, weakens, or reverses
+at larger scale, and we make no claim about it. What our results do support is
+that the dissociation is not an artefact of a single architecture or a single
+domain: it appears across six model families, across medical and general-purpose
+models, and across two within-family generational updates
+(MedGemma~1$\rightarrow$1.5 and Qwen2.5-VL$\rightarrow$Qwen3-VL) that did not
+remove it. Two larger-model candidates were evaluated and could not be measured
+reliably: a 30B mixture-of-experts checkpoint whose pre-quantised weights store
+experts per-expert rather than fused, which the \texttt{transformers}
+implementation we use does not accept; and an AWQ-quantised 32B dense model whose
+repository carries several unresolved \texttt{transformers}-path compatibility
+reports, including uninitialised weights. We report this rather than substituting
+a partially loaded model, since throughput or accuracy measured on a model whose
+weights did not load would be meaningless.
+
+\textbf{Scale of evaluation.} The NIH evaluation uses 1,000 studies and the shift
+benchmark uses 100 studies; larger multicentre evaluation is needed. The external
+CheXpert-plus-RRG set contains only 264 report-linked samples and is not a
+large-scale external classification benchmark. Report-level evidence extraction is
+rule-based and requires validation. No radiologist reader study or prospective
+clinical evaluation was performed. Models were evaluated zero-shot, without
+fine-tuning or prompt ensembling. Finally, our original selective metrics pool
+label-instances; the hierarchical version reported here addresses that, but
+remains to be validated at larger sample sizes and on external cohorts.
+
+\subsection{Future work}
+
+Future work should: (1) validate report evidence with CheXpert labeler and human adjudication; (2) extend image-reliance and shift evaluation to 300--500 studies per condition; (3) test the dissociation at larger model scale, which our matrix could not cover, using runtimes that support per-expert quantised layouts; (4) develop shift-aware calibration that conditions on the detected shift type; (5) evaluate the accept/clarify/abstain policy in a reader study; and (6) extend the framework to other modalities and multi-image clinical settings.

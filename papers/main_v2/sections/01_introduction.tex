@@ -1,0 +1,34 @@
+\section{Introduction}
+
+Chest radiography is one of the most frequently performed diagnostic imaging examinations worldwide. The scale and repetitiveness of CXR interpretation make it an attractive target for automated assistance, and recent medical vision-language models (VLMs) have demonstrated promising capabilities in report generation, visual question answering, and structured finding prediction (Chen et al., 2024; Sellergren et al., 2025; Bai et al., 2025). However, clinical deployment requires more than average diagnostic accuracy. A model must know when it can be trusted, especially when the input distribution differs from the development setting.
+
+Two failure modes make this problem particularly difficult for CXR VLMs. First, distribution shift is pervasive: images may be acquired with different equipment, exposure, compression, resolution, or patient positioning. Prior work has shown that medical VLMs are sensitive to image artefacts and that performance can degrade under corrupted or degraded inputs (Cheng et al., 2025; Gu et al., 2025). Second, apparent reliability can be misleading. A model may produce structurally valid predictions, assign high confidence, and appear selective, while relying primarily on textual or label priors rather than visual evidence (Buckley et al., 2026; Felizzi et al., 2025; Zafar et al., 2026). Recent work has shown that multimodal medical models can maintain high accuracy even when the image is replaced by a blank placeholder, and that accuracy alone can overstate visual grounding (Felizzi et al., 2025; Buckley et al., 2026; Zafar et al., 2026). These observations suggest that calibration, selective prediction, and image reliance should not be studied in isolation.
+
+Existing work has advanced each dimension separately. Calibration and selective prediction have been applied to medical VLMs and multi-centre imaging (Dhinagar et al., 2026; Nguyen et al., 2026; Li et al., 2025). Uncertainty-aware CXR triage has achieved strong risk--coverage trade-offs on NIH ChestX-ray14 \citep{li2025atcxr}. Robustness studies have quantified degradation under image artefacts \citep{cheng2025robustness}, and negative results have shown that vision-language pretraining does not automatically transfer to dense multi-label CXR classification \citep{fisher2025negative}. Grounding and hallucination studies have shown that medical VLMs may rely on text shortcuts (Buckley et al., 2026; Zafar et al., 2026; Heiman et al., 2025). Yet it remains unclear how these dimensions interact under distribution shift: whether a model that appears selective and well-calibrated is actually using the image, and whether shift-induced degradation is monotonic across conditions and severity levels.
+
+This paper asks four questions. The overall framework is summarized in Figure~\ref{fig:framework}.
+
+\begin{enumerate}
+\item \textbf{RQ1:} How do open-source CXR VLMs behave under cross-condition image-quality shift?
+\item \textbf{RQ2:} Does model confidence remain calibrated under shift?
+\item \textbf{RQ3:} Can uncertainty and calibration support selective prediction?
+\item \textbf{RQ4:} Are reliability estimates grounded in visual evidence?
+\end{enumerate}
+
+We study these questions using openly available models and data. We evaluate MedGemma-4B-IT and Qwen2.5-VL-7B-Instruct on a 1,000-study NIH ChestX-ray14 pilot, a six-axis image-quality shift benchmark (blur, noise, JPEG compression, brightness, contrast, and resolution) at three severity levels, counterfactual image-reliance tests (blank, strong blur, and shuffled images), and a 264-sample CheXpert-plus-RRG external report set. All models use a shared structured JSON prompt and parser, enabling direct comparison.
+
+Our empirical results are surprising. Both models produce valid structured outputs with zero parse failures. MedGemma is strongly image-dependent, with image sensitivity of 1.00 under blank images, 0.95 under strong blur, and 0.88 under shuffled images. Yet its discrimination is only moderate (macro AUROC 0.62--0.65) and its calibration degrades on held-out data (macro ECE 0.22). Qwen2.5-VL, in contrast, is effectively image-invariant: image sensitivity is 0.003 across all counterfactual conditions, it predicts \texttt{no\_finding} for 988/1,000 studies, and its macro AUROC is approximately 0.50. Nevertheless, its JSON outputs are valid and its selective risk--coverage metrics can appear favourable. This creates a key trustworthiness paradox: an image-invariant model can look reliable under conventional selective metrics.
+
+The shift benchmark further shows that degradation is not monotonic. Several blur, noise, JPEG, and resolution conditions do not reduce macro AUROC; some significantly improve ECE. Only a subset of conditions, such as mild and severe brightness and severe noise, significantly degrade discrimination. On CheXpert-plus-RRG, MedGemma shows 13.5\% report-level hallucination, 12.2\% omission, and a 45.3\% original-vs-blank status-flip rate. Together, these findings motivate a shift-aware selective trust framework that jointly evaluates calibration, uncertainty, shift response, and visual-evidence reliance.
+
+Our contributions are:
+
+\begin{itemize}
+\item \textbf{A CXR VLM shift benchmark} covering six image-quality axes and three severity levels, with structured outputs, calibration, and selective-prediction metrics.
+\item \textbf{A counterfactual image-reliance evaluation} showing that a structurally valid VLM can be image-invariant while appearing selective.
+\item \textbf{A joint calibration and selective-prediction analysis} demonstrating that selective metrics must be conditioned on image reliance.
+\item \textbf{An external report-grounded evaluation} on CheXpert-plus-RRG for hallucination and omission.
+\item \textbf{A shift-aware selective trust framework} that integrates calibration, uncertainty, shift score, and image reliance for accept / clarify / abstain decisions.
+\end{itemize}
+
+The remainder of the paper is organised as follows. Section 2 reviews related work. Section 3 describes the methods. Section 4 presents the results. Section 5 discusses implications and limitations, and Section 6 concludes.

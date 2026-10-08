@@ -1,0 +1,3 @@
+# Optional: 4-bit quantization for 7B/8B models on 8GB GPUs.
+# Windows support is uneven; install only if your platform has a working wheel.
+bitsandbytes>=0.45.0

@@ -1,0 +1,140 @@
+# Dataset configuration: LOCKED v1.0 (Phase 0 / 2026)
+# Decision record: docs/14_resource_locks.md
+# Do not store credentials, raw paths, PHI, or report text in this file.
+
+project: medical-vlm-selective-trust
+benchmark_version: v1.0.0
+lock_status: locked_v1
+label_space_version: labels_v1
+
+label_space:
+  primary:
+    - atelectasis
+    - cardiomegaly
+    - consolidation
+    - edema
+    - pleural_effusion
+    - pneumonia
+    - pneumothorax
+    - no_finding
+  secondary:
+    - lung_opacity
+    - fracture
+    - lung_lesion
+    - pleural_other
+    - enlarged_cardiomediastinum
+    - support_devices
+
+datasets:
+  chexpert:
+    role: source_internal
+    lock_status: primary
+    access: public_application
+    official_url: https://aimi.stanford.edu/datasets/chexpert-chest-x-rays
+    root: data/chexpert
+    image_glob: "**/*.jpg"
+    label_source: chexpert_official_labels
+    label_format: uncertain_positive_negative_blank
+    scale:
+      images: 224316
+      patients: 65240
+      labels: 14
+    view_metadata: true
+    report_available: false
+    api_upload_allowed: to_verify
+    priority: 1
+    notes: "Primary source. Fit calibration and threshold only on source_val."
+
+  padchest:
+    role: external_primary
+    lock_status: primary
+    access: public_application
+    official_url: https://bimcv.cipf.es/bimcv-projects/padchest/
+    root: data/padchest
+    image_glob: "**/*.png"
+    label_source: padchest_labels
+    label_format: multi_label_report_derived
+    scale:
+      images: 160000
+      patients: 67000
+      labels: 174
+    view_metadata: true
+    report_available: false
+    api_upload_allowed: to_verify
+    priority: 2
+    notes: "Primary external. Map 174 labels to primary 8 labels with manual review."
+
+  nih:
+    role: external_primary
+    lock_status: primary
+    access: public
+    official_url: https://docs.cloud.google.com/healthcare-api/docs/resources/public-datasets/nih-chest
+    alternate_url: https://www.kaggle.com/datasets/nih-chest-x-rays/data
+    root: data/nih
+    image_glob: "**/*.png"
+    label_source: nih_nlp_labels
+    label_format: multi_label_binary
+    scale:
+      images: 112120
+      patients: 30805
+      labels: 14
+    view_metadata: false
+    report_available: false
+    api_upload_allowed: to_verify
+    priority: 3
+    notes: "Primary external. Labels are NLP-derived and noisy; report label-noise sensitivity."
+
+  mimic:
+    role: deferred_external_and_report_evidence
+    lock_status: deferred_stage_b
+    access: credentialed
+    official_url: https://physionet.org/content/mimic-cxr/2.0.0/
+    jpg_url: https://physionet.org/content/mimic-cxr-jpg/2.1.0/
+    root: data/mimic
+    image_glob: "**/*.jpg"
+    label_source: mimic_cxr_jpg_chexpert_labels
+    label_format: chexpert_style
+    scale:
+      images: 377110
+      studies: 227835
+      patients: 65379
+    view_metadata: true
+    report_available: true
+    api_upload_allowed: false
+    priority: 4
+    notes: "Credentialed data. Never upload to external APIs. Use only for Stage B report evidence and extended external validation."
+
+label_mapping:
+  primary_mapping:
+    atelectasis: "chexpert:atelectasis; nih:atelectasis; padchest:atelectasis"
+    cardiomegaly: "chexpert:cardiomegaly; nih:cardiomegaly; padchest:cardiomegaly"
+    consolidation: "chexpert:consolidation; nih:consolidation; padchest:consolidation"
+    edema: "chexpert:edema; nih:edema; padchest:edema"
+    pleural_effusion: "chexpert:pleural_effusion; nih:effusion; padchest:pleural_effusion"
+    pneumonia: "chexpert:pneumonia; nih:pneumonia; padchest:pneumonia"
+    pneumothorax: "chexpert:pneumothorax; nih:pneumothorax; padchest:pneumothorax"
+    no_finding: "chexpert:no_finding; nih:all_zero; padchest:no_positive_label"
+  policies:
+    uncertain: report_both
+    not_mentioned: separate_from_negative
+    manual_review_required: true
+
+splits:
+  strategy: patient_or_study_grouped
+  source_val_ratio: 0.15
+  internal_test_ratio: 0.15
+  external_test_ratio: 1.0
+  pilot_size_per_dataset: 1000
+  full_size_per_dataset: 3000
+  min_positive_per_finding: 100
+  seed: 0
+  leak_check_required: true
+
+preprocessing:
+  version: preprocess_v1.0.0
+  output_format: png
+  color_mode: RGB
+  resize_policy: fit_pad
+  target_size: 512
+  preserve_aspect_ratio: true
+  windowing: preserve_native_unless_shift

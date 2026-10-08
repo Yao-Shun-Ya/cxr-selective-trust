@@ -1,0 +1,142 @@
+# ============================================================
+# CXR Selective Trust — repository ignore rules
+#
+# Design principle: source code, protocols, configs and paper
+# sources are versioned. Weights, images, datasets, generated
+# outputs, virtual environments and internal working notes are
+# NOT. See configs/models.lock.yaml for how to obtain weights.
+# ============================================================
+
+# ---------- 1. Model weights (never commit; see models.lock.yaml) ----------
+/program/models/
+/models/
+*.safetensors
+*.safetensors.index.json
+*.bin
+*.gguf
+*.ggml
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.h5
+*.msgpack
+*.npy
+*.npz
+*.joblib
+
+# ---------- 2. Datasets and image material (licence-restricted / PHI-adjacent) ----------
+/data/
+/data/**
+!/data/README.md
+/program/data/
+/program/素材/
+/素材/
+*.dcm
+*.dicom
+*.nii
+*.nii.gz
+*.jpg
+*.jpeg
+*.png
+*.tar
+*.tar.gz
+*.tgz
+*.h5.gz
+# but keep the paper's own figures
+!papers/**/figures/*.png
+!figures/**/*.png
+
+# ---------- 3. Generated outputs, caches, logs ----------
+/outputs/
+outputs/
+/program/outputs/
+/program/outputs/**
+/artifacts/
+/artifacts/**
+/checkpoints/
+/logs/
+/logs/**
+/program/*.log
+/program/error*.log
+/program/memory_*.log
+*.log
+/program/stub_counter.json
+/program/scripts/_stub/
+**/.cache/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+.mypy_cache/
+.ruff_cache/
+
+# ---------- 4. Virtual environments ----------
+.venv*/
+venv/
+env/
+!/program/env/
+!/program/env/**
+/backups/
+
+# ---------- 5. Third-party reference PDFs (copyrighted by their authors) ----------
+/references/pdf/
+/references/notes/
+
+# ---------- 6. Superseded generated tables/figures (prototype stage, not results) ----------
+/tables/stage2/
+/figures/stage2/
+
+# ---------- 7. Internal working notes — not part of the public artifact ----------
+/HANDOVER.md
+/CONTINUE_HERE.md
+/program/第一次跑.md
+/program/scratch_*.py
+/docs/**
+# keep only protocol / method / governance documents
+# (docs/README.md indexes all 51 notes including the unversioned ones,
+#  so it is deliberately not published)
+!/docs/02_data_protocol.md
+!/docs/03_benchmark_and_shift_protocol.md
+!/docs/04_uncertainty_calibration_selective.md
+!/docs/05_image_reliance_and_hallucination.md
+!/docs/08_reproducibility_and_governance.md
+!/docs/17_prompt_and_schema.md
+!/docs/28_shift_benchmark_protocol.md
+!/docs/29_chexpert_rrg_and_statistics.md
+!/docs/42_academic_integrity_and_writing_standards.md
+!/docs/43_hardware_profiling_and_wddm_oversubscription.md
+!/docs/44_batch_sweep_matrix.md
+!/docs/45_weight_download_through_cn_mirrors.md
+!/docs/46_engineering_insights_supplementary.md
+!/docs/48_three_layer_protocol.md
+!/docs/49_data_manifest_contract.md
+
+# ---------- 8. Secrets and machine-specific files ----------
+.env
+.env.*
+*.pem
+*.key
+*.p12
+credentials*
+desktop.ini
+Thumbs.db
+.DS_Store
+
+# ---------- 9. Tabular data: excluded by default, whitelisted where authored here ----------
+*.csv
+*.tsv
+*.jsonl
+!configs/*.csv
+!references/literature_matrix.csv
+!references/literature_matrix_v1_1.csv
+!docs/**/*.csv
+!program/configs/*.csv
+
+# ---------- 10. LaTeX build residue ----------
+*.aux
+*.out
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz

@@ -1,0 +1,24 @@
+project: cxr-selective-trust
+experiment_version: v1
+
+pilot:
+  nih_manifest: "data/manifests/nih_pilot_1000.csv"
+  rrg_manifest: "data/manifests/chexpert_rrg_all.csv"
+  output_dir: "outputs/pilot"
+  models: [chexagent_8b, medgemma_4b_it, qwen25_vl_7b_instruct]
+  limit_per_model: 50
+  metrics: [parse_failure, auroc, auprc, f1, ece, brier]
+  shifts:
+    clean: true
+    blur: [mild, moderate]
+    noise: [mild, moderate]
+    jpeg: [70, 40]
+    resolution: [0.5, 0.25]
+
+full:
+  nih_manifest: "data/manifests/nih_full.csv"
+  rrg_manifest: "data/manifests/chexpert_rrg_all.csv"
+  output_dir: "outputs/full"
+  models: [chexagent_8b, medgemma_4b_it, qwen25_vl_7b_instruct]
+  shifts: [clean, blur, noise, jpeg, brightness, contrast, resolution]
+  methods: [baseline, uncertainty, calibration, selective, image_reliance]

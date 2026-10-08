@@ -1,0 +1,46 @@
+project: cxr-selective-trust
+model_lock_version: v2_open_source_only
+
+primary_models:
+  chexagent_8b:
+    role: medical_cxr_specialist
+    path: "models/CheXagent-8b"
+    hf_id: StanfordAIMI/CheXagent-8b
+    family: chexagent
+    open_source: true
+    load_in_4bit: false
+    device_map: auto
+    max_memory: {0: "30GiB", cpu: "60GiB"}
+    notes: "Custom remote code; may require a separate transformers environment."
+  medgemma_4b_it:
+    role: medical_generalist
+    path: "models/MedGemma-4B-IT"
+    hf_id: google/medgemma-4b-it
+    family: gemma3
+    open_source: true
+    load_in_4bit: false
+    device_map: auto
+    max_memory: {0: "30GiB", cpu: "60GiB"}
+    notes: "Gemma3 multimodal; requires transformers >= 4.50 and accelerate."
+  qwen25_vl_7b_instruct:
+    role: open_weight_general
+    path: "models/Qwen2.5-VL-7B-Instruct"
+    hf_id: Qwen/Qwen2.5-VL-7B-Instruct
+    family: qwen2_5_vl
+    open_source: true
+    load_in_4bit: false
+    device_map: auto
+    max_memory: {0: "30GiB", cpu: "60GiB"}
+    notes: "Requires transformers >= 4.49, qwen-vl-utils, accelerate."
+
+generation:
+  temperature: 0.0
+  do_sample: false
+  max_new_tokens: 512
+  prompt_version: prompt_v1
+  self_consistency_k: 5
+
+hardware:
+  target_gpu: "RTX 4080 Super 32GB"
+  fallback: "4-bit quantization or CPU offload via device_map auto"
+  warning: "Do not load all models simultaneously; run one model at a time."

@@ -1,0 +1,10 @@
+# Minimal environment for data preparation and evaluation only (no model inference).
+pandas
+pyarrow
+pillow
+scikit-learn
+matplotlib
+seaborn
+tqdm
+pyyaml
+numpy

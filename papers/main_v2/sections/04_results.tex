@@ -1,0 +1,207 @@
+\section{Results}
+
+\subsection{Structured outputs and parse stability}
+
+Both MedGemma-4B-IT and Qwen2.5-VL-7B produced structurally valid JSON for all 1,000 NIH pilot studies after the prompt and parser were finalised:
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lll}
+\hline
+Model & Samples & Parse failures \\
+MedGemma-4B-IT & 1000 & 0 \\
+Qwen2.5-VL-7B & 1000 & 0 \\
+\hline
+\end{tabular}
+\caption{Structured output parse stability on the NIH pilot.}
+\label{tab:parse}
+\end{table}
+
+
+However, parse stability did not imply reliable image understanding.
+
+\subsection{Overall NIH performance and calibration}
+
+Macro metrics across the eight findings are shown in Table~\ref{tab:main}.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lllllll}
+\hline
+Model & Split & Macro AUROC & Macro ECE & Macro Brier & Macro AURC & Mean coverage @5\% risk \\
+MedGemma & internal\_train & 0.651 & 0.129 & 0.119 & 0.120 & 0.733 \\
+MedGemma & source\_val & 0.627 & 0.147 & 0.119 & 0.137 & 0.713 \\
+MedGemma & internal\_test & 0.622 & 0.220 & 0.188 & 0.228 & 0.357 \\
+Qwen2.5-VL & internal\_train & 0.500 & 0.088 & 0.087 & 0.071 & 0.662 \\
+Qwen2.5-VL & source\_val & 0.502 & 0.070 & 0.070 & 0.061 & 0.662 \\
+Qwen2.5-VL & internal\_test & 0.509 & 0.153 & 0.154 & 0.117 & 0.398 \\
+\hline
+\end{tabular}
+\caption{Macro performance and calibration on NIH data.}
+\label{tab:main}
+\end{table}
+
+
+MedGemma showed moderate but non-trivial discrimination (macro AUROC 0.62--0.65) and clear calibration degradation on \texttt{internal\_test} (macro ECE 0.220). Qwen remained close to chance discrimination (macro AUROC $\approx$ 0.50), despite acceptable-looking calibration and selective metrics.
+
+\subsection{Qwen is structurally valid but image-invariant}
+
+On 300 NIH images, MedGemma changed many predictions under counterfactual image conditions (Table~\ref{tab:image-reliance}, Figure~\ref{fig:image-reliance}).
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lll}
+\hline
+Condition & MedGemma image sensitivity & Qwen image sensitivity \\
+blank gray & 1.000 & 0.0033 \\
+strong blur & 0.947 & 0.0033 \\
+shuffled image & 0.877 & 0.0033 \\
+\hline
+\end{tabular}
+\caption{Image reliance on 300 NIH studies.}
+\label{tab:image-reliance}
+\end{table}
+
+
+MedGemma’s mean absolute probability change was 0.138--0.210. Qwen’s was 0.0006, effectively zero.
+
+Qwen also predicted \texttt{no\_finding = positive} for 988/1000 studies and had macro AUROC $\approx$ 0.50 across all eight findings. Its apparently low selective risk and high selective accuracy therefore reflected a degenerate prediction strategy rather than reliable image interpretation.
+
+\textbf{Finding:} Structured output validity, low selective risk, and high selective accuracy can coexist with image invariance.
+
+\subsection{Shift effects are heterogeneous and non-monotonic}
+
+MedGemma macro AUROC and ECE under shift are shown in Table~\ref{tab:shift}.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{llll}
+\hline
+Condition & Severity & Macro AUROC & Macro ECE \\
+clean & none & 0.620 & 0.165 \\
+blur & mild & 0.612 & 0.167 \\
+blur & moderate & 0.603 & 0.164 \\
+blur & severe & 0.615 & 0.142 \\
+noise & mild & 0.675 & 0.155 \\
+noise & moderate & 0.704 & 0.155 \\
+noise & severe & 0.520 & 0.145 \\
+JPEG & mild & 0.591 & 0.169 \\
+JPEG & moderate & 0.710 & 0.153 \\
+JPEG & severe & 0.621 & 0.148 \\
+brightness & mild & 0.614 & 0.175 \\
+brightness & moderate & 0.600 & 0.164 \\
+brightness & severe & 0.597 & 0.166 \\
+contrast & mild & 0.670 & 0.165 \\
+contrast & moderate & 0.620 & 0.166 \\
+contrast & severe & 0.617 & 0.166 \\
+resolution & mild & 0.633 & 0.152 \\
+resolution & moderate & 0.705 & 0.138 \\
+resolution & severe & 0.581 & 0.109 \\
+\hline
+\end{tabular}
+\caption{MedGemma macro AUROC and ECE under image-quality shift.}
+\label{tab:shift}
+\end{table}
+
+
+Image sensitivity generally increased with severity (e.g., noise 0.53 $\rightarrow$ 0.70 $\rightarrow$ 0.79; resolution 0.37 $\rightarrow$ 0.60 $\rightarrow$ 0.71), but AUROC did not follow a monotonic degradation pattern. Several shifts even improved calibration.
+
+Paired macro bootstrap tests on MedGemma showed:
+
+\begin{itemize}
+\item no shift produced a significant AUROC decrease;
+\item JPEG moderate: $\Delta$AUROC = +0.069, p = 0.05;
+\item resolution moderate: $\Delta$AUROC = +0.068, p = 0.10;
+\item significant ECE improvements for blur severe, JPEG moderate/severe, noise mild/severe, and resolution mild/moderate/severe;
+\item only brightness mild showed a significant ECE increase ($\Delta$ECE = +0.010, p = 0.04).
+\end{itemize}
+
+\textbf{Finding:} Distribution shift does not produce a simple monotonic degradation of CXR VLM reliability. Shift response is condition-specific and must be evaluated jointly with image reliance and calibration.
+
+\subsection{Calibration}
+
+Per-finding temperature scaling fitted on \texttt{source\_val} did not change discrimination. It produced mixed calibration effects:
+
+\begin{itemize}
+\item \texttt{no\_finding} ECE improved substantially: MedGemma 0.357 $\rightarrow$ 0.093;
+\item most other findings showed little improvement or slight worsening;
+\item Qwen’s \texttt{no\_finding} ECE improved from 0.583 to 0.258, but AUROC stayed at chance.
+\end{itemize}
+
+These results suggest that global or per-label temperature scaling is insufficient for multi-label CXR reliability.
+
+\subsection{Selective prediction}
+
+On pooled \texttt{internal\_test} label-instances, MedGemma achieved:
+
+\begin{verbatim}
+global temperature: 5.67
+AURC: 0.201
+coverage@5% risk: 0.002
+coverage@10% risk: 0.006
+selective accuracy@80% coverage: 0.680
+\end{verbatim}
+
+Qwen achieved:
+
+\begin{verbatim}
+global temperature: 5.34
+AURC: 0.095
+coverage@5% risk: 0.000
+coverage@10% risk: 0.897
+selective accuracy@80% coverage: 0.901
+\end{verbatim}
+
+Qwen’s selective metrics appear strong but are invalid as clinical evidence because its predictions are image-invariant and dominated by \texttt{no\_finding}. This demonstrates that selective risk must be conditioned on image reliance.
+
+\subsection{CheXpert-plus-RRG external report evaluation}
+
+On 264 RRG images, MedGemma produced:
+
+\begin{verbatim}
+overall hallucination rate: 0.135
+overall negation-failure rate: 0.006
+overall omission rate: 0.122
+overall uncertain rate: 0.090
+\end{verbatim}
+
+Finding-level results are shown in Table~\ref{tab:rrg} (Figure~\ref{fig:rrg-errors}).
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lll}
+\hline
+Finding & Hallucination & Omission \\
+atelectasis & 0.443 & 0.057 \\
+cardiomegaly & 0.449 & 0.003 \\
+consolidation & 0.019 & 0.127 \\
+edema & 0.051 & 0.166 \\
+no\_finding & 0.083 & 0.252 \\
+pleural\_effusion & 0.019 & 0.213 \\
+pneumonia & 0.019 & 0.054 \\
+pneumothorax & 0.000 & 0.105 \\
+\hline
+\end{tabular}
+\caption{Finding-level report errors on CheXpert-plus-RRG.}
+\label{tab:rrg}
+\end{table}
+
+
+The high atelectasis/cardiomegaly hallucination rates may partly reflect model over-calling and limitations of the rule-based evidence extractor. On the first 50 RRG images, original-vs-blank status flip rate was 0.4525, indicating that MedGemma still depends on the image in this external set.
+
+\subsection{Summary of empirical findings}
+
+\begin{enumerate}
+\item MedGemma is image-dependent, but its calibration and selective reliability are weak.
+\item Qwen is structurally valid but image-invariant and near chance on findings.
+\item Image-quality shift impacts prediction stability but does not monotonically degrade macro AUROC or ECE.
+\item Selective metrics can look favourable for an image-invariant model.
+\item RRG external report evaluation exposes both hallucination and omission behaviour.
+\end{enumerate}
+
+Together these results motivate a shift-aware selective trust framework that evaluates calibration, uncertainty, and visual evidence reliance jointly rather than relying on accuracy or selective risk alone.

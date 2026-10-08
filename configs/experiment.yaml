@@ -1,0 +1,44 @@
+project: medical-vlm-selective-trust
+config_version: exp_v0.1.0
+
+defaults:
+  seed: 0
+  temperature: 0.0
+  bootstrap_n: 1000
+  ci: 0.95
+  calibration_split: source_val
+  threshold_split: source_val
+
+phases:
+  pilot:
+    enabled: true
+    sample_size_per_dataset: 1000
+    shifts: [clean, blur, noise, jpeg, brightness, contrast, resolution]
+    models: [medical_vlm, general_vlm, open_weight_vlm]
+    methods: [baseline]
+  focused:
+    enabled: false
+    sample_size_per_dataset: 3000
+    shifts: [clean, cross_domain, quality, complexity]
+    models: [primary_models]
+    methods: [baseline, uncertainty, calibration, selective]
+  full:
+    enabled: false
+    sample_size_per_dataset: 5000
+    shifts: [clean, cross_domain, quality, view, complexity, reliance]
+    models: [primary_models]
+    methods: [baseline, uncertainty, calibration, selective, image_reliance, full]
+
+metrics:
+  discrimination: [auroc, auprc, f1, sensitivity, specificity]
+  calibration: [ece, adaptive_ece, brier, nll, high_confidence_error]
+  selective: [aurc, coverage_at_5pct_risk, coverage_at_10pct_risk, selective_accuracy, error_detection_auroc]
+  reliability: [hallucination_rate, consistency, image_reliance, parse_failure_rate]
+  generalization: [internal_external_delta, shift_severity_curve]
+
+reporting:
+  bootstrap: true
+  paired_tests: true
+  multiple_comparison: fdr_bh
+  save_predictions: true
+  save_raw_outputs: true

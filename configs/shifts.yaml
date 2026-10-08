@@ -1,0 +1,66 @@
+project: medical-vlm-selective-trust
+shift_version: shifts_v0.1.0
+
+cross_domain:
+  source_candidates: [chexpert, mimic]
+  external_candidates: [padchest, nih, mimic]
+  mode: zero_shot_transfer
+  target_fine_tuning: false
+
+quality:
+  blur:
+    enabled: true
+    severity:
+      mild: 0.5
+      moderate: 1.0
+      severe: 2.0
+  noise:
+    enabled: true
+    severity:
+      mild: 0.02
+      moderate: 0.05
+      severe: 0.10
+  jpeg:
+    enabled: true
+    quality:
+      mild: 70
+      moderate: 40
+      severe: 20
+  brightness:
+    enabled: true
+    factor:
+      mild: 0.8
+      moderate: 1.2
+      severe: 1.5
+  contrast:
+    enabled: true
+    factor:
+      mild: 0.7
+      moderate: 1.3
+      severe: 1.6
+  resolution:
+    enabled: true
+    downscale:
+      mild: 0.5
+      moderate: 0.25
+      severe: 0.125
+
+view:
+  enabled: true
+  groups: [PA, AP, portable, lateral]
+  require_metadata: true
+
+complexity:
+  enabled: true
+  groups:
+    - single_finding
+    - multiple_findings
+    - no_finding
+    - uncertain_labels
+    - low_prevalence
+
+paired_generation:
+  keep_clean_reference: true
+  same_prompt: true
+  same_model_version: true
+  seed: 0
