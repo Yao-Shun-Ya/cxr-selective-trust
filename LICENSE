@@ -1,0 +1,33 @@
+Scope of this licence
+---------------------
+This licence covers the source code, configuration files, unit-test fixtures and
+protocol/method documentation in this repository, i.e. everything EXCEPT:
+
+  * the manuscript under `papers/**` (preprint, under double-blind review; see NOTICE);
+  * model weights, which are not distributed here at all and remain under their own
+    upstream terms (see NOTICE);
+  * medical imaging datasets and any derived predictions, splits or artifacts, which
+    are not distributed here and remain under their own access agreements;
+  * third-party PDFs under `references/**`, which are not distributed here.
+
+MIT License
+
+Copyright (c) 2026 Yao-Shun-Ya
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

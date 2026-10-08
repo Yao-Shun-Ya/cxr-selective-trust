@@ -12,6 +12,10 @@
 
 本仓库按顶级期刊的 code availability 要求组织：**方法可审查，受限资产不重分发**。
 
+> **审稿人请从 [`REPRODUCING.md`](REPRODUCING.md) 开始**：环境、权重获取、CPU-only 自检、
+> 三层次评测入口与各项数字的真实状态都在那一份里。授权范围见 `LICENSE`（含明确的范围声明）
+> 与 `NOTICE`（第三方权重与数据的许可免责声明）。
+
 | 资产 | 是否版本化 | 获取方式 |
 |---|---|---|
 | 代码（`program/scripts`、`program/src`、`scripts`、`tests`） | ✅ 是 | `git clone` |
@@ -151,7 +155,8 @@
 | Phase 8 统计与图表 | 第 12–13 周 | bootstrap、显著性、主图 | 7 figures + tables | — |
 | Phase 9 写作投稿 | 第 14–16 周 | Methods/Results/Discussion/package | 投稿版本 | — |
 
-更完整的周计划、Gate 判据与止损规则见 `docs/07_timeline_and_gates.md`。
+更细的周计划、Gate 判据与止损规则是内部工作记录，不在本仓库；本仓库只发布方法与
+协议类文档，完整清单见 §8。
 
 ---
 
@@ -159,7 +164,7 @@
 
 | 周 | 阶段 | 必须完成 | 周末产物 |
 |---:|---|---|---|
-| 1 | Literature | 30–50 篇矩阵；核验 2025–2026 最新工作 | `docs/01_literature_matrix.md` |
+| 1 | Literature | 30–50 篇矩阵；核验 2025–2026 最新工作 | 文献矩阵与 gap 陈述 |
 | 2 | Data + Pilot | 至少 2 个公开数据集 loader；每集 500–1000 例 pilot | 可复现 pilot split |
 | 3 | Baseline | 3 个 VLM 统一接口；固定 JSON 输出 | Baseline metrics table |
 | 4 | Internal evaluation | AUROC/AUPRC/F1/ECE/Brier | Internal results + 校准图 |
@@ -217,50 +222,28 @@ Paper/
 
 ## 8. 文档索引
 
+本仓库只发布**方法与协议类**文档（下表 15 篇）。项目宪章、决策日志、风险登记、
+执行状态、pilot 结果分析、投稿策略等属于内部工作记录：它们含未定稿的中间数值、
+对第三方数据集访问状态的断言，以及会被时间淘汰的计划条目，发布后极易与正文结论
+分叉，因此**不在本仓库中**（`.gitignore` §6 默认排除 `/docs/**`，逐条白名单放行下表）。
+
 | 文档 | 内容 |
 |---|---|
-| `docs/00_project_charter.md` | 项目宪章：问题、假设、贡献、范围、成功标准 |
-| `docs/01_literature_matrix.md` | 文献检索、筛选、矩阵模板、gap 写法 |
 | `docs/02_data_protocol.md` | 数据集、访问顺序、标签协调、切分、预处理 |
 | `docs/03_benchmark_and_shift_protocol.md` | 四轴 shift taxonomy、severity、benchmark 设计 |
 | `docs/04_uncertainty_calibration_selective.md` | 三类 uncertainty、校准、selective prediction |
 | `docs/05_image_reliance_and_hallucination.md` | image removal/corruption/masking、幻觉 taxonomy |
-| `docs/06_experiment_matrix.md` | 模型 × 数据 × shift × 方法矩阵、消融、统计 |
-| `docs/07_timeline_and_gates.md` | 16 周计划、Gate 判据、止损门、fallback |
-| `docs/08_reproducibility_and_governance.md` | 数据治理、实验追踪、API/compute 预算、agent 分工 |
-| `docs/09_paper_outline.md` | 论文结构、7 张主图、主表、投稿策略 |
-| `docs/10_decision_log.md` | 关键决策记录（ADR） |
-| `docs/11_risk_register.md` | 风险登记表与缓解措施 |
-| `docs/12_next_actions.md` | 未来 7 天/14 天具体行动清单 |
-| `docs/13_work_breakdown_structure.md` | WBS、交付验收、RACI 与 Definition of Done |
-| `docs/14_resource_locks.md` | 数据集与模型锁定决策 |
-| `docs/15_literature_synthesis_2025_2026.md` | 2025–2026 重点文献综合与创新定位 |
-| `docs/16_data_access_status.md` | 数据集访问状态确认 |
+| `docs/08_reproducibility_and_governance.md` | 数据治理、实验追踪、compute 预算、agent 分工 |
 | `docs/17_prompt_and_schema.md` | 统一 prompt 与 JSON schema v1 |
-| `docs/18_execution_status.md` | 当前执行状态、阻塞点与下一步 |
-| `docs/19_action_links.md` | 现在应该做什么：数据/模型/论文/API 直接链接 |
-| `docs/20_dataset_size_options.md` | 只用 ChestX-ray 的可行性、风险与降规模方案 |
-| `docs/21_deepseek_web_and_api.md` | DeepSeek 网页端/API 作为图像识别 fallback 的协议与风险 |
-| `docs/22_priority_paper_full_text_review.md` | 10 篇优先论文全文级审阅与 novelty/实验设计影响 |
-| `docs/23_resource_lock_v2_nih_rrg_opensource.md` | 资源锁定 v2：NIH + CheXpert-RRG + 全开源模型 |
-| `docs/24_pilot_first_results.md` | 首次真实 Qwen2.5-VL / MedGemma pilot 结果 |
-| `docs/25_pilot_100_diagnosis.md` | 100 张 pilot 预测分布、Qwen 退化与 image-reliance 诊断 |
-| `docs/26_overnight_1000_analysis.md` | 1000 张 MedGemma/Qwen 真实结果分析与下一步 |
-| `docs/27_image_reliance_and_calibration.md` | 核心 pilot 结果：image reliance、calibration、selective |
 | `docs/28_shift_benchmark_protocol.md` | 正式 shift benchmark 协议与变量清单 |
 | `docs/29_chexpert_rrg_and_statistics.md` | RRG external、shift benchmark 与 bootstrap 统计协议 |
-| `docs/30_stage2_results_and_status.md` | Stage 2 总结果：shift、RRG、image reliance、统计与阶段判断 |
-| `docs/31_figures_tables_status.md` | Stage 2 图表生成状态与缺口 |
-| `docs/32_paper_draft_status.md` | Methods + Results 初稿与论文资产状态 |
-| `docs/33_latex_build_status.md` | LaTeX 编译状态与 main.pdf 构建记录 |
-| `docs/34_chinese_version_status.md` | 纯中文版论文状态与编译记录 |
-| `docs/35_main_v2_status.md` | 根据评审修订后的 Main v2 状态 |
-| `docs/36_q1_hardening_plan.md` | 4080 Super 32GB 升级后 Q1 扩大实验与优化方案 |
-| `docs/41_6k_curated_benchmark_plan.md` | 6K 精筛数据策略（原始计划；§5 标记了被取代的部分） |
+| `docs/42_academic_integrity_and_writing_standards.md` | 学术诚信与写作规范：禁预支数据、反数据挖掘、负性结果必须报告、公式须与 `src/` 一一对应 |
+| `docs/43_hardware_profiling_and_wddm_oversubscription.md` | WDDM 显存超订实测与论文 Supplementary 表述 |
+| `docs/44_batch_sweep_matrix.md` | RTX 4080 SUPER 32 GB 上 batch size 拐点实测矩阵 |
+| `docs/45_weight_download_through_cn_mirrors.md` | 大陆网络下权重获取路径（`HF_ENDPOINT` 镜像）与 gated 仓库注意事项 |
+| `docs/46_engineering_insights_supplementary.md` | 可进 Supplementary 的工程洞见框架（未定数值显式标 TBD） |
 | `docs/48_three_layer_protocol.md` | **三层次 6K 评测权威协议**：三层设计、成本、崩溃安全、运行与分析命令、全部陷阱 |
 | `docs/49_data_manifest_contract.md` | **manifest 契约**：必需列、positive/negative 字符串要求与原因、三个评测集清单、no_finding 修复 |
-
-> 下表只列了部分文档。**完整索引（每篇一行说明 + 现行/历史快照状态标记）见 docs/README.md** —— 索引以那一份为准，避免两处各写一遍再次分叉。
 
 ### 8.1 如何跑三层次 6K 评测（一键）
 
@@ -341,4 +324,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1
 7. 先 pilot 后 full；先 Gate 后扩规模；失败要止损，不追加沉没成本。
 8. 幻觉不靠 LLM 自由裁量，必须有 report-derived evidence / ground truth 支撑。
 9. 图表必须能从 artifact + config 一键重跑，不允许“手改数据点”。
-10. 每个 Gate 结束时更新 `docs/10_decision_log.md`，写清楚继续/转向/放弃的理由。
+10. 每个 Gate 结束时更新决策日志（ADR），写清楚继续/转向/放弃的理由。

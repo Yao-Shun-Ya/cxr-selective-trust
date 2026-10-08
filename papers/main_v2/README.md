@@ -1,43 +1,30 @@
-# Main v2 Paper Draft
+# Main v2 — the published manuscript
 
 Working title:
 
 > Selective Trust for Medical Vision-Language Models under Distribution Shift
 
-Current draft sections:
+Status: all sections drafted; `main.pdf` is **19 pages**, rebuilt 2026-10-05 on the corrected
+metrics (ECE-bin + calibration-universe corrections; see `docs/48_three_layer_protocol.md` §7).
+The manuscript is anonymous (`\author{Anonymous Authors}`) for double-blind review.
+
+## Layout
 
 ```text
-sections/00_abstract.md
-sections/01_introduction.md
-sections/02_related_work.md
-sections/03_methods.md
-sections/04_results.md
-sections/05_discussion.md
-sections/06_conclusion.md
-```
-
-Key assets:
-
-- `figures/fig01_framework.*`
-- `figures/fig09_selective_trust_method.*`
-- `figures/fig10_clinical_workflow.*`
-- `figures/fig02_image_reliance_main.*`
-- `tables/stage2/table01_image_reliance.*`
-- `tables/stage2/table08_main_performance_calibration.*`
-
-Status: all seven sections drafted; `main.pdf` rebuilt 2026-10-05 on the corrected metrics.
-
-> 图同时存在于 `papers/main_v2/figures/`（正文嵌入的这一份）与仓库根的 `figures/stage2/`；`13_make_figures.py` 的 `save()` 会同时刷新两处。
-> `sections/*.md` 是与 `.tex` 并存的**已冻结镜像**（含修正前数值）—— 请只编辑 `.tex`。
-
-
-## LaTeX draft
-
-```text
-main.tex
-refs.bib
+main.tex              # authoritative entry point
+refs.bib / main.bbl
 Makefile
-sections/*.tex
+sections/
+  00_abstract.tex
+  01_introduction.tex
+  02_related_work.tex
+  03_methods.tex
+  04_results.tex
+  05_discussion.tex
+  06_conclusion.tex
+  07_figures.tex
+figures/              # fig01–fig10, the copies actually embedded by 07_figures.tex
+main.pdf
 ```
 
 Compile:
@@ -47,12 +34,26 @@ cd papers/main_v2
 make
 ```
 
-A TeX distribution (TeX Live/MiKTeX) is required.
+A TeX distribution (TeX Live / MiKTeX) is required. `make` regenerates `main.pdf` from
+`main.tex` + `sections/*.tex` + `refs.bib`; nothing here depends on files outside this directory.
 
+## Edit `.tex` only
 
-## v2 revisions
+`main.tex` and `sections/*.tex` are the only authoritative text. Frozen Markdown mirrors and the
+superseded v1 draft exist on the author's disk but are deliberately excluded from this repository
+(see `papers/README.md` and `.gitignore` §11) — they carry pre-correction numbers and would put
+contradictory values in one repo.
+
+## Figures
+
+`figures/` here holds the copies the manuscript embeds. The generating scripts live in
+`program/scripts/` (e.g. `13_make_figures.py`) and read experiment artifacts under
+`program/outputs/`; the generated stage-2 tables and figures are not version-controlled, since
+they are reproducible from code + config and are large.
+
+## v2 revisions relative to v1
 
 - Fixed table numbering/captions and cross-references.
 - Expanded bootstrap to 1,000 resamples with BH FDR correction.
-- Recompiled `main.pdf` —— **19 pages** after the 2026-10-05 regeneration (ECE-bin + calibration-universe corrections; see `docs/48` §7).
-- Removed the Chinese version at user request.
+- ECE binning and calibration-universe corrections, then `main.pdf` recompiled (19 pages).
+- Removed the Chinese version at author request.

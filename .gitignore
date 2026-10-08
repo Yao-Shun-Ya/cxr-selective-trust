@@ -46,6 +46,10 @@
 # but keep the paper's own figures
 !papers/**/figures/*.png
 !figures/**/*.png
+# and keep the synthetic unit-test fixtures (fabricated ids/hashes, ~110 KB total;
+# they document the manifest and prediction schemas, see docs/49)
+!tests/fixtures/**
+!tests/fixtures/**/*.png
 
 # ---------- 3. Generated outputs, caches, logs ----------
 /outputs/
@@ -132,6 +136,7 @@ Thumbs.db
 !references/literature_matrix_v1_1.csv
 !docs/**/*.csv
 !program/configs/*.csv
+!tests/fixtures/**/*.csv
 
 # ---------- 10. LaTeX build residue ----------
 *.aux
@@ -140,3 +145,14 @@ Thumbs.db
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+
+# ---------- 11. Superseded manuscript copies (kept on disk, deliberately not published) ----------
+# Main v2 is the only manuscript published here. `papers/main/` is the 2026-09-15
+# v1 draft; `papers/main_v2/sections/*.md` are frozen Markdown mirrors that hold
+# pre-correction numbers; `overleaf_package.zip` is a 2026-09-16 snapshot that
+# predates the 2026-10-05 numeric rebuild. Publishing any of these next to
+# Main v2 would place contradictory numbers in one repository, which the
+# integrity rules in docs/42_academic_integrity_and_writing_standards.md forbid.
+/papers/main/
+/papers/main_v2/overleaf_package.zip
+/papers/main_v2/sections/*.md

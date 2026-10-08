@@ -1,0 +1,5 @@
+image_relpath,image_id,dataset,patient_id,study_id,split,view,view_detail,label_atelectasis,label_cardiomegaly,label_consolidation,label_edema,label_pleural_effusion,label_pneumonia,label_pneumothorax,label_no_finding,image_hash
+patient00001\study1\view1_1.png,view1_1.png,chexpert,patient00001,unknown,internal_train,Frontal,PA,positive,not_mentioned,not_mentioned,not_mentioned,not_mentioned,not_mentioned,not_mentioned,not_mentioned,293405159894
+patient00002\study1\view1_2.png,view1_2.png,chexpert,patient00002,unknown,internal_train,Frontal,AP,not_mentioned,negative,not_mentioned,not_mentioned,not_mentioned,not_mentioned,not_mentioned,not_mentioned,416ea6def4fd
+patient00003\study1\view1_3.png,view1_3.png,chexpert,patient00003,unknown,external_test,Lateral,PA,not_mentioned,not_mentioned,not_mentioned,uncertain,not_mentioned,not_mentioned,not_mentioned,not_mentioned,45f8129093a7
+patient00004\study1\view1_4.png,view1_4.png,chexpert,patient00004,unknown,source_val,Frontal,PA,not_mentioned,not_mentioned,not_mentioned,not_mentioned,not_mentioned,positive,not_mentioned,not_mentioned,d3a9b14bb150

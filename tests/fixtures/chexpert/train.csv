@@ -1,0 +1,5 @@
+Path,Sex,Age,Frontal/Lateral,AP/PA,Atelectasis,Cardiomegaly,Consolidation,Edema,Pleural Effusion,Pneumonia,Pneumothorax,No Finding
+patient00001/study1/view1_1.png,Female,50,Frontal,PA,1.0,,,,,,,
+patient00002/study1/view1_2.png,Female,50,Frontal,AP,,0.0,,,,,,
+patient00003/study1/view1_3.png,Female,50,Lateral,PA,,,,-1.0,,,,
+patient00004/study1/view1_4.png,Female,50,Frontal,PA,,,,,,1.0,,

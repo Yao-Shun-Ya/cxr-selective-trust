@@ -6,6 +6,10 @@ build-backend = "setuptools.build_meta"
 name = "medvlm-selective-trust"
 version = "0.1.0"
 description = "Selective Trust for Medical Vision-Language Models under Distribution Shift"
+# MIT covers this repository's code, configs, test fixtures and method docs only.
+# Model weights, medical datasets and the manuscript under papers/ are excluded and
+# stay under their own upstream terms -- see LICENSE (scope block) and NOTICE.
+license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
   "numpy",

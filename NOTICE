@@ -1,0 +1,60 @@
+NOTICE
+======
+
+Third-party assets, permissions, and what this repository does NOT license.
+
+1. Model weights are not in this repository
+-------------------------------------------
+`configs/models.lock.yaml` pins nine checkpoints by Hugging Face repository id and commit
+revision; `scripts/fetch_models.py` downloads them into `program/models/`. Nothing here
+grants you any right to those weights. Each is fetched under its own upstream terms:
+
+  CheXagent-8b            StanfordAIMI/CheXagent-8b
+                          upstream exposes no licence tag — verify on the repo page
+                          before any redistribution or derivative work
+  MedGemma 4B-it          google/medgemma-4b-it
+  MedGemma 1.5 4B-it      google/medgemma-1.5-4b-it
+                          Gemma Terms of Use + Healthcare and Life Sciences Use Case
+                          Extension (HAI-DEF). Gated: you must accept the terms on
+                          Hugging Face yourself. Mirroring or re-hosting the weights
+                          is prohibited by those terms, which is one reason they are
+                          absent from this repository.
+  Qwen2.5-VL-7B-Instruct  Qwen/Qwen2.5-VL-7B-Instruct   Apache-2.0
+  Qwen3-VL-8B-Instruct    Qwen/Qwen3-VL-8B-Instruct     see upstream licence tag
+  InternVL3_5-8B          OpenGVLab/InternVL3_5-8B      see upstream licence tag
+  LLaVA-Med v1.5-7B       microsoft/llava-med-v1.5-mistral-7b
+                          research use only, NOT redistributable; the downstream
+                          Mistral AI weights licence also applies.
+
+2. Derived checkpoints
+----------------------
+`program/models/CheXagent-8b-fp16` is produced locally by
+`program/scripts/62_convert_chexagent_fp16.py` and inherits CheXagent's terms.
+`program/models/Qwen3-VL-30B-A3B-Instruct-AWQ4bit` is quantised; note that its
+`config.json` actually declares `compressed-tensors / pack-quantized / group_size 32`,
+so the "AWQ" in the directory name is misleading — the lock file records the real format.
+
+3. Datasets
+-----------
+NIH ChestX-ray14, CheXpert, PadChest and Open-i are all obtained under their own
+data-use agreements and are NOT in this repository. `tests/fixtures/**` contains only
+synthetic fixtures (fabricated patient ids, fabricated image hashes, 88-byte placeholder
+PNGs); they carry no patient data and are not a benchmark.
+
+4. Manuscript
+-------------
+Files under `papers/**` are a preprint under double-blind review. The MIT licence in
+`LICENSE` deliberately does not cover them; please do not redistribute the manuscript.
+
+5. Vendored third-party PDFs
+----------------------------
+`references/pdf/**` is excluded from this repository. `references/library.bib` and
+`references/literature_matrix*.csv` describe those papers but do not contain them.
+
+6. Hardware and network caveats
+-------------------------------
+Reported throughput and batch-size ceilings were measured on a single RTX 4080 SUPER
+(32 GB) under WDDM; see `docs/43_hardware_profiling_and_wddm_oversubscription.md` and
+`docs/44_batch_sweep_matrix.md`. Reviewers outside mainland China can ignore
+`docs/45_weight_download_through_cn_mirrors.md`, which documents `HF_ENDPOINT` mirror
+usage for the network environment where these experiments were run.

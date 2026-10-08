@@ -7,6 +7,7 @@ This script is the acquisition path that a reviewer is expected to follow.
 
 Usage
 -----
+    python scripts/fetch_models.py --check-lock
     python scripts/fetch_models.py --list
     python scripts/fetch_models.py --all
     python scripts/fetch_models.py --model medgemma_1_5_4b_it --model qwen3_vl_8b_instruct
@@ -106,6 +107,57 @@ def verify(lock: dict) -> int:
     return missing
 
 
+def check_lock(lock: dict) -> int:
+    """Validate the lock file structurally, without touching any weights.
+
+    This is the mode continuous integration runs: it needs no GPU, no network
+    and no downloads, and it fails if a revision stops looking like a commit
+    hash or an entry loses the fields a reviewer needs.
+    """
+    problems: list[str] = []
+    seen_dirs: dict[str, str] = {}
+
+    for group, required in (("models", ("hf_id", "revision", "local_dir",
+                                        "on_disk_gb", "license")),
+                            ("derived", ("local_dir", "source"))):
+        for key, spec in lock[group].items():
+            for field in required:
+                if not spec.get(field):
+                    problems.append(f"{group}/{key}: missing '{field}'")
+            rev = spec.get("revision", "")
+            if group == "models" and rev:
+                if len(rev) != 40 or any(c not in "0123456789abcdefABCDEF" for c in rev):
+                    problems.append(f"{group}/{key}: revision is not a 40-char "
+                                    f"commit hash: {rev!r}")
+            hf_id = spec.get("hf_id", "")
+            if group == "models" and hf_id and "/" not in hf_id:
+                problems.append(f"{group}/{key}: hf_id must be 'org/name': {hf_id!r}")
+            target = spec.get("local_dir", "")
+            if target:
+                if target.startswith("/") or target.startswith(".."):
+                    problems.append(f"{group}/{key}: local_dir must be repo-relative: "
+                                    f"{target!r}")
+                if target in seen_dirs:
+                    problems.append(f"{group}/{key}: local_dir collides with "
+                                    f"{seen_dirs[target]}")
+                seen_dirs[target] = key
+
+    total = sum(float(lock[g][k].get("on_disk_gb", 0) or 0)
+                for g in ("models", "derived") for k in lock[g])
+    print(f"lock file: {LOCK_FILE.relative_to(REPO_ROOT)}")
+    print(f"  downloaded checkpoints : {len(lock['models'])}")
+    print(f"  derived checkpoints    : {len(lock['derived'])}")
+    print(f"  declared on-disk size  : {total:.1f} GB")
+    if problems:
+        print("\nINVALID lock file:")
+        for p in problems:
+            print(f"  - {p}")
+        return len(problems)
+    print("  status                 : every entry is complete and pinned by "
+          "commit hash")
+    return 0
+
+
 def fetch_one(key: str, spec: dict, endpoint: str | None, force: bool) -> bool:
     try:
         from huggingface_hub import snapshot_download
@@ -155,6 +207,9 @@ def main() -> int:
                     help="fetch one model key (repeatable)")
     ap.add_argument("--list", action="store_true", help="verify presence and exit")
     ap.add_argument("--verify-only", action="store_true", help="alias of --list")
+    ap.add_argument("--check-lock", action="store_true",
+                    help="validate the lock file itself and exit; needs no weights, "
+                         "no network and no GPU (this is what CI runs)")
     ap.add_argument("--endpoint", default=None,
                     help="HF endpoint override, e.g. https://hf-mirror.com")
     ap.add_argument("--force", action="store_true",
@@ -162,6 +217,9 @@ def main() -> int:
     args = ap.parse_args()
 
     lock = load_lock(LOCK_FILE)
+
+    if args.check_lock:
+        return 1 if check_lock(lock) else 0
 
     if args.list or args.verify_only or (not args.all and not args.model):
         missing = verify(lock)
