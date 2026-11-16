@@ -11,6 +11,14 @@
 > Everything numeric below is either read out of the code or printed by a command
 > that was actually run; each figure names its source. Nothing here is estimated
 > by hand.
+>
+> **Delivered-run reconciliation (2026-11-02).** The frozen matrix contains
+> **275,218 calls in 39 prediction files** (0.49 GiB, zero error rows), with 38
+> stage entries: 30 completed, of which 8 are contract-exempt for
+> structured-contract metrics (six Open-i stages + two LLaVA stages). The
+> 309,856-call / 216.6-h figures later in this document are the earlier dry-run
+> plan before the denominator and retry accounting were finalised; use
+> `outputs/analysis_sensitivity/coverage_census.csv` for the delivered counts.
 
 ---
 
@@ -23,31 +31,32 @@ one-button driver is `program/scripts/run_all_layers.ps1`.
 |---|---|---|---|
 | Question | in-domain: how much synthetic degradation before the selective signal breaks | cross-hospital: does the framework transfer to a different country and scanner population | free text: does it survive report generation, where the failure mode is hallucination rather than miscalibration |
 | Manifest | `data/manifests/nih_eval_1732.csv` | `data/manifests/padchest_shift.csv` | `data/manifests/openi_rrg.csv` |
-| Images | 1,732 | 1,500 | 947 |
+| Images | 1,506 | 1,500 | 947 |
 | Splits run | `internal_test,source_val` | `internal_test` | `external_report` |
 | Images root | `data/nih/images` | `data/padchest` | `data/open-i` |
 | Cells / image | shift **19**, reliance **4**, precision **4**, ablation **10** | **2** | **2** |
 | Runner(s) | `scripts/08_shift_benchmark.py`, `scripts/06_image_reliance.py`, `scripts/21_prompt_ablation.py` | `scripts/43_run_padchest_shift.py` | `scripts/44_run_openi_report.py` |
 | Output dir | `outputs/matrix/nih_eval/<model>/` | `outputs/matrix/padchest/<model>/` | `outputs/matrix/openi/<model>/` |
-| Calls (7 models) | 316,956 | 21,000 | 13,258 |
-| Est. wall clock (7 models) | ≈ 223.5 h | ≈ 13.6 h | ≈ 8.6 h |
+| Calls (7 models) | 275,598 | 21,000 | 13,258 |
+| Est. wall clock (7 models) | ≈ 194.4 h | ≈ 13.6 h | ≈ 8.6 h |
 
 Layer totals above are the sum of the per-stage `est` column printed by
 `run_all_layers.ps1 -DryRun`; the grand total it prints for the delivered
-seven-model run is **351,214 model calls, 245.7 h (10.2 days)** — re-derived
-2026-10-08 from measured per-`(model, layer, stage)` rates after the chexagent
-greedy-decoding and medgemma_15 2048-token fixes moved it down from 173.6 h;
-see §7 «2026-10-06» and docs/50 §2.11. The delivered run is executed as two
-passes — the six contract-compliant models as one matrix (229.3 h) and
-LLaVA-Med separately (16.4 h); §4.6 gives the exact commands.
+seven-model run is **309,856 model calls, 216.6 h (9.0 days)** — re-derived
+2026-10-09 after the NIH evaluation denominator was corrected to the
+split-filtered **1,506** images (the 226 `internal_train` donors are excluded),
+together with the earlier chexagent greedy-decoding and medgemma_15 2048-token
+fixes; see §7 «2026-10-06» and docs/50 §2.11. The delivered run is executed as
+two passes — the six contract-compliant models as one matrix (202.1 h) and
+LLaVA-Med separately (14.5 h); §4.6 gives the exact commands.
 
-### 1.1 NIH — in-domain synthetic shift (1,732 images)
+### 1.1 NIH — in-domain synthetic shift (1,506 images)
 
 * `shift` — **19 cells/image**: clean + 6 degradations (blur, noise, JPEG,
   brightness, contrast, resolution) × 3 severities. Runner `08_shift_benchmark.py`.
-  Each model: `1,732 × 19 = 32,908` calls.
+  Each model: `1,506 × 19 = 28,614` calls.
 * `reliance` — **4 cells/image**: `original` / `blank` / `blur` / `shuffle`.
-  Runner `06_image_reliance.py`. Each model: `1,732 × 4 = 6,928` calls.
+  Runner `06_image_reliance.py`. Each model: `1,506 × 4 = 6,024` calls.
 * `precision` — the bf16 counterpart of `reliance` (**4 cells/image**), run only
   for the models whose primary configuration is 4-bit
   (`medgemma_4b_it`, `medgemma_15_4b_it`, `qwen25_vl_7b_instruct`, see
@@ -56,12 +65,13 @@ LLaVA-Med separately (16.4 h); §4.6 gives the exact commands.
   already bf16 — that would compare bf16 with itself.
 * `ablation` — prompt ablation (**5 variants × 2 conditions = 10 cells/image**),
   `MedGemma-4B` only (`$AblationModels`). Runner `21_prompt_ablation.py`:
-  `1,732 × 10 = 17,320` calls.
+  `1,506 × 10 = 15,060` calls.
 
-The NIH evaluation manifest is **evaluation-only**: 1,054 `internal_test` +
-452 `source_val` + 226 `internal_train` donor rows. See
-`docs/49_data_manifest_contract.md` §5 for why the 226 rows exist and why the
-analysis never reads them.
+The NIH evaluation manifest holds **1,732 rows**: 1,054 `internal_test` +
+452 `source_val` + 226 `internal_train` **donor rows**. The runners pass
+`--split internal_test,source_val`, so the **scored evaluation set is 1,506**;
+the 226 donors are never read. See `docs/49_data_manifest_contract.md` §5 for
+why the 226 rows exist and why the analysis never reads them.
 
 ### 1.2 PadChest — cross-hospital native shift (1,500 images)
 
@@ -129,13 +139,13 @@ So the budget was re-allocated rather than reduced:
 
 | Design | Cost | Verdict |
 |---|---|---|
-| 19-cell synthetic grid on all three layers, 5–7 models | **≈ 355.3 h (14.8 days)** for 7 models, ≈ 175.0 h for 5 | answers the synthetic question three times, and on Open-i against `unknown` labels |
-| Per-layer design as implemented, 5 models (the driver's budget default) | **143.9 h (6.0 days)**, 261,754 calls | NIH answers synthetic shift, PadChest answers transfer, Open-i answers hallucination |
-| Per-layer design as implemented, 7 models (the delivered study) | **245.7 h (10.2 days)**, 351,214 calls | the same per-layer design at full model coverage: the six contract-compliant models as one matrix, LLaVA-Med as a separate contract-exempt pass |
+| 19-cell synthetic grid on all three layers, 5–7 models | **≈ 336.1 h (14.0 days)** for 7 models, ≈ 165.5 h for 5 | answers the synthetic question three times, and on Open-i against `unknown` labels |
+| Per-layer design as implemented, 5 models (the driver's budget default) | **126.6 h (5.3 days)**, 230,792 calls | NIH answers synthetic shift, PadChest answers transfer, Open-i answers hallucination |
+| Per-layer design as implemented, 7 models (the delivered study) | **216.6 h (9.0 days)**, 309,856 calls | the same per-layer design at full model coverage: the six contract-compliant models as one matrix, LLaVA-Med as a separate contract-exempt pass |
 
 Both figures are reported together on purpose. The per-layer design is **not a
-shortcut**: the NIH layer still runs the full 19-cell grid on the full 1,732-image
-evaluation set for all seven models (7 × 32,908 calls), which is where the
+shortcut**: the NIH layer still runs the full 19-cell grid on the full 1,506-image
+evaluation set for all seven models (7 × 28,614 calls), which is where the
 synthetic-robustness evidence lives. What was dropped is 17 additional cells on
 each of the 1,500 PadChest images and each of the 947 Open-i images — i.e.
 `17 × 1,500 = 25,500` and `17 × 947 = 16,099` cells per model, or **178,500 and
@@ -145,8 +155,8 @@ ground truth.
 
 For scale, two further configurations, both now reproducible:
 
-* **All 7 models × all 3 layers with the 19-cell synthetic grid: 355.3 h (14.8 days).**
-* **NIH layer only, all 7 models: 223.5 h.**
+* **All 7 models × all 3 layers with the 19-cell synthetic grid: 336.1 h (14.0 days).**
+* **NIH layer only, all 7 models: 194.4 h.**
 
 Reproducibility, and one bug this section used to hide
 ------------------------------------------------------
@@ -154,8 +164,8 @@ Every hours figure here is now produced by **two independent computations that
 agree exactly**:
 
 * `powershell -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 -DryRun`
-  — the delivered driver, which computes 143.9 h / 261,754 calls for the
-  five-model budget run and 245.7 h / 351,214 calls for the delivered seven-model
+  — the delivered driver, which computes 126.6 h / 230,792 calls for the
+  five-model budget run and 216.6 h / 309,856 calls for the delivered seven-model
   run (six contract-compliant models as one matrix, LLaVA-Med separate).
 * `.venv-vl\Scripts\python.exe scripts\47_cost_table.py` — a standalone cost table
   using the same cost model, which reproduces both figures line by line and adds
@@ -201,8 +211,8 @@ and are opt-in via `-Models` (§4.6). Both are part of the delivered study:
 
 ## 3. Crash safety
 
-The delivered full run is **245.7 h ≈ 10.2 days of continuous GPU time**
-(143.9 h ≈ 6.0 days for the five-model budget default). A power cut, a driver
+The delivered full run is **216.6 h ≈ 9.0 days of continuous GPU time**
+(126.6 h ≈ 5.3 days for the five-model budget default). A power cut, a driver
 reset or a Ctrl-C during that window is a realistic event, not an edge case, so
 resumability is a design requirement.
 
@@ -409,9 +419,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 -
 
 Prints per-stage call counts and hour estimates, the data manifest of each layer
 and the TOTAL, then exits 0. The default (five-model) output ends
-**`TOTAL: 261,754 model calls, 143.9h (6.0 days of GPU time)`**; the delivered
+**`TOTAL: 230,792 model calls, 126.6h (5.3 days of GPU time)`**; the delivered
 seven-model run (six contract-compliant models plus LLaVA-Med) ends
-**`TOTAL: 351,214 model calls, 245.7h (10.2 days of GPU time)`**. A `rate src`
+**`TOTAL: 309,856 model calls, 216.6h (9.0 days of GPU time)`**. A `rate src`
 column marks each stage's rate as `measured` / `proxy-nih` / `default`.
 
 ### 4.5 Smoke run (minutes, on the GPU)
@@ -513,7 +523,7 @@ The driver's default matrix is **5 models**: `medgemma_4b_it`,
 `medgemma_15_4b_it`, `qwen25_vl_7b_instruct`, `qwen3_vl_8b_instruct`,
 `chexagent_8b`. The delivered study runs **all seven** in two passes.
 
-Pass 1 — the six contract-compliant models as one matrix (229.3 h), adding
+Pass 1 — the six contract-compliant models as one matrix (202.1 h), adding
 `internvl3_5_8b` to the default five:
 
 ```powershell
@@ -522,7 +532,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
 qwen3_vl_8b_instruct,chexagent_8b,internvl3_5_8b
 ```
 
-Pass 2 — `llava_med_v1_5_7b` (16.4 h) as a separate contract-exempt pass:
+Pass 2 — `llava_med_v1_5_7b` (14.5 h) as a separate contract-exempt pass:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
@@ -533,11 +543,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
 satisfies the JSON contract; its stages are recorded as **contract-exempt** — the
 prose is kept as evidence for the prose-without-the-contract failure mode, and
 every stage is excluded from the quantitative metrics. Isolating it keeps the
-six-model matrix under the strict `[BAD]` guard with no exemptions. Both passes
+six-model matrix under the strict `[BAD]` guard, whose only relaxation is the
+open-i report layer: that layer asks every model to *write* a report, so a row
+with `parse_success=false` is the intended deliverable rather than a broken cell,
+while an empty report is still a useless row and still fails the stage. Both passes
 share the default state file and output root; the stage keys are
 `layer/model/stage`, so the two passes never collide. `internvl3_5_8b` and
 `llava_med_v1_5_7b` are the two slowest measured models (6.03 s/call and
-1.66 s/call); a full 7-model NIH-only run is 223.5 h (cost-table scenario D).
+1.66 s/call); a full 7-model NIH-only run is 194.4 h (cost-table scenario D).
 
 Within every layer the driver runs the **slowest model first**, so the models
 most likely to be interrupted finish early and any later interruption happens on
@@ -769,7 +782,7 @@ and `padchest_shift.csv.bak` (106,676 bytes).
 | What | Where | Why |
 |---|---|---|
 | `run_all_layers.ps1` — one-button three-layer driver, resumable, per-stage call/time plan, `[BAD]` guard that deletes a poisoned predictions file | `scripts/run_all_layers.ps1` (new) | the three layers previously had to be driven by hand in the right order with the right flags |
-| Per-layer design: NIH 19/4/4/10 cells, PadChest 2, Open-i 2 | `run_all_layers.ps1`; `docs/41` §"superseded" | compute moved off experiments that do not answer a question; ≈524 h → 187.9 h for 5 models (re-measured 2026-10-06: 173.6 h; 2026-10-08: 143.9 h) |
+| Per-layer design: NIH 19/4/4/10 cells, PadChest 2, Open-i 2 | `run_all_layers.ps1`; `docs/41` §"superseded" | compute moved off experiments that do not answer a question; ≈524 h → 187.9 h for 5 models (re-measured 2026-10-06: 173.6 h; 2026-10-08: 143.9 h; 2026-10-09: 126.6 h after the NIH 1,506-denominator fix) |
 | `43_run_padchest_shift.py` — native-shift + blank-control runner, reliance-schema compatible | `scripts/43_run_padchest_shift.py` (new) | PadChest had no runner; the 19-cell grid was the wrong instrument for it |
 | `44_run_openi_report.py` — prose-generation runner with blank control | `scripts/44_run_openi_report.py` (new) | Open-i has reference reports and no per-finding labels; AUROC does not apply |
 | `42_geographic_shift_analysis.py` — threshold transfer, degradation delta with bootstrap CI, out-of-domain reliance, report layer | `scripts/42_geographic_shift_analysis.py` (new) | the transfer question needs two datasets at once and existed nowhere in the repo |
@@ -781,8 +794,8 @@ and `padchest_shift.csv.bak` (106,676 bytes).
 | `25_format_external_manifests.py` rewritten negation-aware | `scripts/25_format_external_manifests.py` | old version wrote 0/1 labels, dropped `patient_id`/`split`, and read `"no pleural effusion"` as a positive |
 | `40_build_eval_manifest.py` + `nih_eval_1732.csv` | `scripts/40_build_eval_manifest.py` | killed the `--limit`-on-training-data trap and repaired a constant `no_finding` column (0 → 347 positives) |
 | `--split` filter + shuffle-before-limit in `06`, `08`, `21` | those scripts | `--limit` takes the first N rows, which is not a sample |
-| Contract-exempt stage handling: `$KnownContractFailures`, `contract_exempt` state field, `-ContractExempt` guard switch, coverage census skip | `scripts/run_all_layers.ps1`, `scripts/45_debug_sweep.py` §13 | `llava_med_v1_5_7b` answers in prose and never satisfies the JSON contract, so a strict `[BAD]` guard deleted its file and redid ~13 h on every re-run — destroying the very prose that evidences the prose-without-the-contract failure mode. The exemption keeps the file, marks the stage `[done*]`, and excludes it from every quantitative metric; every other model stays strict |
-| Delivered seven-model run recorded as two passes: six contract-compliant models in one matrix (229.3 h) + `llava_med_v1_5_7b` separate (16.4 h) | `docs/48` §1, §4.6 | the study covers all seven models; the six-model matrix stays under the strict guard and LLaVA-Med's prose is isolated as qualitative evidence, for 351,214 calls / 245.7 h in total |
+| Contract-exempt stage handling: `$KnownContractFailures` (model) + `$ProseByDesignLayers` (layer), `contract_exempt` state field, `-ContractExempt` / `-ProseStage` guard switches, coverage census skip | `scripts/run_all_layers.ps1`, `scripts/45_debug_sweep.py` §13 | `llava_med_v1_5_7b` answers in prose and never satisfies the JSON contract, so a strict `[BAD]` guard deleted its file and redid ~13 h on every re-run — destroying the very prose that evidences the prose-without-the-contract failure mode. The exemption keeps the file, marks the stage `[done*]`, and excludes it from every quantitative metric. A second, layer-level mechanism covers the open-i report layer, which is free text for *every* model: it relaxes the parse check only (an unparsed row is expected) and still fails on an empty reply |
+| Delivered seven-model run recorded as two passes: six contract-compliant models in one matrix (202.1 h) + `llava_med_v1_5_7b` separate (14.5 h) | `docs/48` §1, §4.6 | the study covers all seven models; the six-model matrix stays under the strict guard (bar the prose-by-design open-i report layer) and LLaVA-Med's prose is isolated as qualitative evidence, for 309,856 calls / 216.6 h in total |
 
 **Not yet done, explicitly:**
 
@@ -830,7 +843,7 @@ Full evidence, including the negative results worth keeping, is in
 | llava_med's `config.json` given the reference `text_config` (`rope_theta` 1e6) | `scripts/29_fix_llava_med_config.py` | the rewritten config had lost `rope_theta`, so transformers used 10000 while the weights were tuned at 1e6: the model loaded, ran, and answered `</s>` (1,890 of 1,900 replies empty). After the fix it answers — but still not in the contract (0/16), so the parser is *not* loosened and the model stays opt-in |
 | Per-model token budget (`Get-MaxNewTokens`; medgemma_15 = 2048, was 1024) | `scripts/run_all_layers.ps1` | MedGemma-1.5 opens a reasoning channel on hard images — blank 100/100, resolution/severe 117/300 — and at bf16 on **every** image; 256 tokens truncate inside it. Measured: 256→0/8, 512→0/8, 768→6/8, 1024→8/8. The 8-image probe was too small for the precision stage: at 1024 the bf16 control still lost 3/64 replies to truncation, so the budget is **2048** (docs/50 §2.11). The other models keep 256 |
 | Batches grouped by condition instead of by image | `06_image_reliance.py`, `08_shift_benchmark.py`, `43_run_padchest_shift.py`, `44_run_openi_report.py` | a batch costs what its **longest** member costs, so an image-major order made every batch contain a reasoning cell: 3.30 s/cell against 0.825 for the 256-token run. Homogeneous batches make only the hard conditions pay |
-| Rate table split per `(model, layer, stage)` with a visible `rate src` | `scripts/run_all_layers.ps1`, `scripts/47_cost_table.py` | one constant per model was applied to 4-bit shift, bf16 precision *and* the serial ablation: the same run was 27.6x under on one stage and 0.33x over on another. PadChest/Open-i still have no measurement of their own and are labelled `proxy-nih` rather than presented as measured. Plan total: 187.9 h → 173.6 h → **143.9 h** |
+| Rate table split per `(model, layer, stage)` with a visible `rate src` | `scripts/run_all_layers.ps1`, `scripts/47_cost_table.py` | one constant per model was applied to 4-bit shift, bf16 precision *and* the serial ablation: the same run was 27.6x under on one stage and 0.33x over on another. PadChest/Open-i still have no measurement of their own and are labelled `proxy-nih` rather than presented as measured. Plan total: 187.9 h → 173.6 h → 143.9 h → **126.6 h** (5 models; the last step is the NIH 1,506-denominator fix) |
 | Coverage census travels with the metrics | `scripts/09_shift_analysis.py` → `shift_coverage_by_condition.csv`, `coverage_report.json`, COVERAGE WARNING, `--min-coverage` / `--fail-on-low-coverage`; the driver runs it after every run and folds the verdict into its RUN SUMMARY | the analysis silently dropped unparsed rows and non-binary labels, then reported `n_label_instances` over the survivors. On the pre-run, `medgemma_15_4b_it` `resolution/severe` keeps only **32%** of its label instances (68 of 100 replies did not parse) — a drop correlated with the condition, i.e. a biased subsample, not a smaller one. The gate was then exercised end to end: fail → `exit 3`, pass → `exit 0`, and a real 4-image run whose census ran on the file the stage had just written |
 | Read/write key audit as a standing guard (sweep section 12) | `scripts/64_audit_row_keys.py`, called by `45_debug_sweep.py` | `59_probe_pretest_findings.py` read `probability_pos` where the schema writes `probability_positive`; `.get` returns `None` without raising, so that column was empty for every row and the comparison it fed used the status column instead, and nothing compared reads to writes. 190 written keys vs 391 read keys now: **0 near misses**. The checker runs its own positive control first — a blind checker reporting "clean" is worse than no checker — and keys a file writes itself are excluded so it does not cry wolf |
 | Confidence provenance in the artifacts | `04_evaluate.py` (`n_conf_from_model` / `n_conf_imputed` / `conf_source`), `14_make_tables.py` (table08 gains `conf_source`) | no model in the matrix emits its own `confidence` (null in 26,462 of 26,462 rows), so the risk score behind `macro_aurc` is derived from the probability, with 0.5 imputed only where a definite status carries no probability (2.38% on the new-format files, **0.00%** on 04's pilot/overnight inputs). The convention is defensible; leaving it unstated was not. Six metrics artifacts were regenerated: four bit-identical, two found **stale** (produced before the 2026-10-05 calibration-universe change — they lacked `n_prob`/`n_definite`) and now current. Neither stale file feeds the paper's tables |

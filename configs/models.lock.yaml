@@ -99,6 +99,17 @@ models:
     loading: family qwen3_vl, newest transformers in .venv-modern
     used_by: [three_layer_matrix]
 
+  qwen3_vl_8b_thinking:
+    hf_id: Qwen/Qwen3-VL-8B-Thinking
+    revision: 92f3c4b4feadd3a016ef468d103bb5f58b2a2c6b
+    local_dir: program/models/Qwen3-VL-8B-Thinking
+    on_disk_gb: 21.9
+    gated: false
+    license: see_upstream                # same family terms as Qwen3-VL-8B-Instruct
+    license_action: confirm the licence tag on the upstream repo before publication
+    loading: family qwen3_vl, .venv-modern; native <think> channel in the chat template
+    used_by: [round2_second_reasoning_model]
+
   internvl3_5_8b:
     hf_id: OpenGVLab/InternVL3_5-8B
     revision: 9bb6a56ad9cc69db95e2d4eeb15a52bbcac4ef79
@@ -157,7 +168,7 @@ derived:
 # Summary
 # ------------------------------------------------------------
 totals:
-  downloaded_models: 7
+  downloaded_models: 8
   derived_models: 2
-  on_disk_gb: 142.5
+  on_disk_gb: 164.4
   committed_to_git: 0

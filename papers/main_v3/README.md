@@ -20,7 +20,7 @@ The manuscript is anonymous (`\author{Anonymous Authors}`) for double-blind revi
   estimate on 100 images per model** and is labelled so in prose/table captions.
 - The shift-aware selective trust framework is described as a **conceptual blueprint**,
   not a validated method: its predictive components await ablation in the full run.
-- No number in `main_v3` comes from the full three-layer run (NIH 1,732 / PadChest 1,500
+- No number in `main_v3` comes from the full three-layer run (NIH 1,506 / PadChest 1,500
   / Open-i 947), which has not yet been run on GPU.
 - Figures are the v2 main-model figures (two-primary-model 300-study / RRG pilot); the
   7-model tables are presented inline. Regeneration against full-run artifacts is a

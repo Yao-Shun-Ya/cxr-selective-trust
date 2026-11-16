@@ -170,5 +170,14 @@ Thumbs.db
 /papers/main_v6/
 /papers/main_v6_zh/
 /papers/现在评价.md
+# Third-party code is cloned, not vendored: a nested .git would be added as a
+# gitlink and break a fresh clone. The pinned commit lives in docs/49.
+/program/third_party/
 /papers/arxiv_v7.zip
 /papers/arxiv_bench_v2.zip
+# arXiv upload staging directories duplicate the tracked sources above.
+/papers/arxiv_v7/
+/papers/arxiv_bench_v2/
+# Superseded benchmark manuscript generations.
+/papers/bench_v1/
+/papers/bench_v1_1/

@@ -132,6 +132,9 @@ finds in any manifest an orchestrator references.
 | `internal_train` | 226 | **donors for the `no_finding` repair only** (see §5) |
 | **total** | **1,732** | unique patients: 951 |
 
+**Scored set: 1,054 + 452 = 1,506.** The 226 `internal_train` rows are donors and
+are excluded by `--split internal_test,source_val`; only the 1,506 are evaluated.
+
 Positives per label (from `nih_eval_1732_report.json`):
 
 | Label | Positives | Label | Positives |
@@ -237,7 +240,7 @@ and dropping the least load-bearing rows to keep the total at 1,732. Recorded in
 }
 ```
 
-So `no_finding` goes **0 → 347 positives (20% of the 1,732-image set)**, paid for
+So `no_finding` goes **0 → 347 positives (20% of the 1,732-row manifest)**, paid for
 mostly out of `atelectasis` (−328) and `pleural_effusion` (−323), the two most
 abundant labels, which is what "least load-bearing" means in practice.
 `cardiomegaly`, `edema`, `pneumonia` and `pneumothorax` lost nothing — the rare,
@@ -258,7 +261,7 @@ it as such.
 
 | File | Rows | Bytes | Kind | Purpose / status |
 |---|---|---|---|---|
-| `nih_eval_1732.csv` | 1,732 | 336,065 | classification | **the NIH evaluation set — the only NIH manifest used for reported metrics**: 1,054 `internal_test` + 452 `source_val` + 226 donors |
+| `nih_eval_1732.csv` | 1,732 | 336,065 | classification | **the NIH evaluation set — the only NIH manifest used for reported metrics**: 1,054 `internal_test` + 452 `source_val` + 226 donors (→ **1,506 scored**) |
 | `nih_eval_1732_report.json` | — | 1,281 | provenance | split composition, positives per label, `no_finding_repair` record, `images_missing_on_disk` |
 | `padchest_shift.csv` | 1,500 | 272,787 | classification | **the PadChest evaluation set** (765 patients, `internal_test`); no pneumonia label exists |
 | `openi_rrg.csv` | 947 | 417,524 | report | **the Open-i evaluation set** (`external_report`); `reference_text` present, all 8 labels `unknown` |

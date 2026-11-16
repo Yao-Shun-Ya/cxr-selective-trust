@@ -34,6 +34,24 @@ grants you any right to those weights. Each is fetched under its own upstream te
 `config.json` actually declares `compressed-tensors / pack-quantized / group_size 32`,
 so the "AWQ" in the directory name is misleading — the lock file records the real format.
 
+2a. Why the lock file pins nine checkpoints while the paper scores six plus one
+-------------------------------------------------------------------------------
+The paper's matrix is six schema-compliant models (MedGemma-4B, MedGemma-1.5,
+Qwen2.5-VL-7B, Qwen3-VL-8B-Instruct, InternVL3.5-8B, CheXagent-8B) plus LLaVA-Med,
+which is reported as a measured exclusion on the prose layers. The lock file also
+contains two checkpoints that are **not** used in any reported number:
+
+  Qwen3-VL-30B-A3B-Instruct (bf16)   never loaded: 57.9 GB does not fit a 32 GB card
+  Qwen3-VL-30B-A3B-AWQ4bit           loaded once, then excluded: the compressed-tensors
+                                     loader needs symlink support that the Windows
+                                     environment does not grant (WinError 1314), and the
+                                     model could not be run under the same protocol
+
+Neither enters a table, a figure, or a claim; the exclusion is stated here so that the
+gap between "nine pinned" and "six scored" is documented rather than inferred. The
+confirmation experiments add Qwen3-VL-8B-Thinking, pinned in `configs/models.lock.yaml`
+with its own revision and licence caveat.
+
 3. Datasets
 -----------
 NIH ChestX-ray14, CheXpert, PadChest and Open-i are all obtained under their own
