@@ -1,336 +1,220 @@
-# Selective Trust for Medical Vision-Language Models under Distribution Shift
+# 医学视觉语言模型的测量有效性审计
 
-> **本仓库版本化的是代码、协议、配置与论文源文件。** 本地工作笔记（`HANDOVER.md`、`CONTINUE_HERE.md`、`docs/` 中的状态快照）不属于对外交付物，未纳入版本控制。
+**Responsiveness Before Reliance: Four Reversals in Measuring Medical Vision–Language Models**
 
-**分布偏移条件下医学视觉语言模型的选择性可信预测研究**
+本仓库是一个可审计的医学 VLM 评测工程：两篇论文、一套冻结预测产物、一个跨模态扩展臂、
+一个闭源大模型探针，以及把它们固定在可复现状态下的故障注入测试。
 
-> 本目录是该论文的**唯一工程主目录（single source of truth）**：既承载研究设计、文献、协议、实验记录和论文材料，也承载后续全部代码、配置、结果与图表。
+> 版本化的是源码、协议、配置与论文源文件。权重、数据、预测产物、虚拟环境与内部工作笔记
+> 不入库（见 `.gitignore` 的分节说明与下文第 4 节）。
 
 ---
 
-## Code availability（仓库范围与可复现获取路径）
+## 1. 当前状态
 
-本仓库按顶级期刊的 code availability 要求组织：**方法可审查，受限资产不重分发**。
+| 项目 | 状态 |
+|---|---|
+| 主论文 | **v7 已投 arXiv**（`papers/main_v7/`，39 页，44 条参考文献）；中文镜像 `papers/main_v7_zh/`（44 页） |
+| 工程副论文 | **bench_v2 已投 arXiv**（`papers/bench_v2/`，16 页，31 条参考文献） |
+| CXR 主矩阵 | **已完成**：6 模型 × 3 层，275,218 次调用，39 个冻结预测文件（0.49 GiB），0 丢失行 |
+| 跨模态本地臂 | **未运行**：三模态清单与 22-cell 网格已冻结（314,688 次调用），作为 v9 增量 |
+| 跨模态 API 臂 | **运行中**：`deepseek-v4.1-flash`，9,400 次调用（另有 2,700 次 lite 档） |
+| 人评 | 未开始；v8 之后的外部增量 |
 
-> **审稿人请从 [`REPRODUCING.md`](REPRODUCING.md) 开始**：环境、权重获取、CPU-only 自检、
-> 三层次评测入口与各项数字的真实状态都在那一份里。授权范围见 `LICENSE`（含明确的范围声明）
-> 与 `NOTICE`（第三方权重与数据的许可免责声明）。
+---
 
-| 资产 | 是否版本化 | 获取方式 |
+## 2. 两篇论文
+
+### 2.1 主论文：四个反转
+
+三个被常规报告的数字——退化鲁棒性、图像依赖度、跨院迁移——通常被当作模型的属性。
+论文证明它们是**模型–测量系统**的属性，并由四个未声明的前提决定：
+
+| 前提 | 检查 | 违反后的反转 |
 |---|---|---|
-| 代码（`program/scripts`、`program/src`、`scripts`、`tests`） | ✅ 是 | `git clone` |
-| 协议与数据契约（`docs/` 中 15 篇方法文档） | ✅ 是 | 见 `docs/` |
-| 配置与提示词（`configs/`、`program/configs/`） | ✅ 是 | `git clone` |
-| 论文源文件（`papers/`） | ✅ 是 | `git clone` |
-| 模型权重（约 142 GB） | ❌ 否 | `configs/models.lock.yaml` 固定 HF repo id + revision；`python scripts/fetch_models.py --all` |
-| 数据集（NIH / PadChest / Open-i / CheXpert-RRG） | ❌ 否 | 各数据集官方发布渠道与数据使用协议；本地清单契约见 `docs/49` |
-| 虚拟环境 | ❌ 否 | `program/env/create_envs.ps1` + `requirements-*.txt` |
-| 第三方论文 PDF（`references/pdf/`） | ❌ 否 | 版权归原文作者，请从出版方获取 |
+| P1 响应性 | 真实图像上是否产生可变输出 | 六个模型里五个在 PadChest 上"图像盲"，1,500 张图只给出 1–20 个不同答案 |
+| P2 零模型 | 反事实对比是否与同度量空间的 real–real 零模型比较 | Qwen3-VL 在 Open-i 上看似强依赖（Jaccard 0.09），实则空白回复是固定拒答串 |
+| P3 操作点 | 召回之外是否报告阳性判读率 | 对比度退化看似提升召回 +4.69 pp，实则假阳性 1,646 → 1,905 |
+| P4 契约覆盖 | 输出 schema 与解码模式是否声明 | 4-bit 看似把依赖压制 2.21×，实则模型切换了解码通道（0.13% → 99.07%） |
 
-权重不入库的三条理由：Git 单文件 100 MB 上限与 Git LFS 免费额度（10 GiB 存储 / 10 GiB 月带宽）无法承载；MedGemma 受 Gemma Terms of Use 与 HAI-DEF 约束禁止镜像权重、LLaVA-Med 为 research-use-only 不可再分发；期刊要求的是**可复现的获取路径**，不是权重副本。
+### 2.2 副论文：分母审计
 
-**权威代码树**：`program/src/cxr_trust/` 与 `program/scripts/` 是当前执行路径，论文中的每一个公式都与这两处一一对应。顶层 `src/medvlm_trust/`、`scripts/`、`experiments/`、`tests/` 是立项期的早期骨架，保留用于追溯设计演进，**不作为结果的可复现依据**；`scripts/fetch_models.py` 是这一层里唯一仍在服役的脚本。
+benchmark 论文通常只报分数，不报分母。副论文把分母本身作为研究对象：
 
----
-
-## 0. 当前状态
-
-| 项目 | 状态 |
-|---|---|
-| 阶段 | **论文 v6.0（中英双语）与工程副产出 v1.1 已完成，可进入投稿准备** |
-| 第四轮确证实验 | **已完成**：DenseNet-121 监督基线、MedGemma-1.5 五套 schema 扫描、改写对照、Qwen3-VL-8B-Thinking 七格网格；追加 31,626 次调用。主论文见 `papers/main_v6/` 与 `papers/main_v6_zh/`，结果表在 `program/outputs/analysis_round2/` |
-| 第二模型覆盖率 | 5,120 token 预算下 **9,381/10,542 = 89.0%** 严格有效；并入 8,192 的 40 格抽样后 **9,401 = 89.2%**；剩余 1,141 条不终止，按预算曲线（2,560 / 3,584 / 5,120 / 8,192）如实报告 |
-| 数据 | **三层评估集共 3,953 例**：NIH 1,506（计分行；manifest 1,732 含 226 供体行）、PadChest 1,500、Open-i 947 |
-| 三层次评测 | **已完成**：`program\scripts\run_all_layers.ps1`；38 个 stage 条目（30 完成，8 个结构化契约豁免），**275,218 次调用**，39 个冻结预测文件（0.49 GiB），**0 错误行**。协议见 `docs/48`，论文见 `papers/main_v6/` 与 `papers/main_v6_zh/` |
-| 模型 | **已锁定**：CheXagent-8b + MedGemma-4B-IT + Qwen2.5-VL-7B-Instruct；三层默认矩阵另含 `google/medgemma-1.5-4b-it` 与 Qwen3-VL-8B。注意不存在 "MedGemma-15B"：`1.5` 是 MedGemma 的修订版本号，两个 MedGemma 检查点均为 4B |
-| 学术准则 | **严格遵循 `docs/42` 学术诚信红线**：拥抱 Negative Findings (零数据预支，无阈值捏造)，基准退回 `main_v2.pdf`。 |
-| 核心现象 | shift 响应非单调；Qwen2.5-VL 存在极端的“无图盲猜（Visual Reliance ≈ 0）”语言先验幻觉；预跑深挖另见：图像依赖呈三梯队谱系、退化打击的是**阳性召回**而非宏观准确率（`docs/52`）。 |
-| 工程架构 | `program/` 已重构三大主脚本支持自适应 Batch 并行与 OOM 防御回退。 |
-| 决策原则 | **真实硬件上机前，不虚构任何统计数据，让物理实证说话。** |
-
-### 上一版状态（Phase 4，2026-09 中旬；已被上方 Phase 5 状态取代，原样保留）
-
-| 项目 | 状态 |
-|---|---|
-| 阶段 | **Phase 4 进行中：Main v2 已按评审完成排版与统计修订** |
-| 数据 | **已锁定 v2**：NIH (source/internal) + CheXpert-plus-RRG (external report/reliance) |
-| 模型 | **已锁定 v2**：CheXagent-8b + MedGemma-4B-IT + Qwen2.5-VL-7B-Instruct（全开源） |
-| 文献 | **50 篇 matrix v1 + v1.1 更新已建立**；2025–2026 重点核验已形成初步 synthesis |
-| 核心现象 | shift 响应非单调；image reliance 与 calibration 比 accuracy 更能暴露不可靠性 |
-| 最近一个 Gate | **Gate 1/2 已通过 pilot 版本**：Qwen image-invariant；MedGemma image-dependent；shift 响应非单调；RRG 提供 external report/hallucination 信号 |
-| 工程 | `program/` 已完成：Stage 2 实验、图表生成脚本、论文初稿骨架 |
-| 决策原则 | 先 pilot，后 full benchmark；未过 Gate 不扩大实验规模 |
+- 五种写入器在同一 2,000-cell 负载上的代价对照（裸追加 / 逐行 fsync / 整体原子重写 / SQLite-WAL / 本工程）。
+- 十类故障注入：崩溃、尾部撕裂、双写并发、ENOSPC、fsync 失败、rename 失败、侧车损坏、侧车超前、只读文件、配置漂移。
+- 分母普查：从产物本身重算每个文件的分母，259 个预测文件里 255 个分母均匀、1 个含重复键。
 
 ---
 
-## 1. 一句话论文主张
-
-> Existing medical VLMs can show promising diagnostic performance, but distribution shifts can induce severe and poorly calibrated failures. This project investigates whether model uncertainty can identify high-risk predictions and whether reliability estimates remain grounded in actual visual evidence, and develops a **shift-aware selective trust framework** that automatically accepts reliable predictions and defers uncertain cases.
-
-中文：
-
-> 医学 VLM 在分布偏移下会出现“性能下降但自信不降”的危险失败。本项目研究不确定性是否能识别高风险回答，以及这种可靠性判断是否真正依赖视觉证据，并据此构建 **shift-aware selective trust framework**，实现自动接受可靠预测、拒答高风险病例并转人工复核。
-
----
-
-## 2. 研究问题（RQ）与核心假设
-
-### RQ1 — VLM 在跨数据集 / 图像质量变化下究竟怎么崩？
-
-- 哪一类 shift 最危险？
-- 哪种疾病/标签最容易出错？
-- 是否出现 **confidence 上升或保持，accuracy 下降**？
-
-**H1**：跨数据集和图像质量 shift 会造成显著性能下降，且 calibration 的恶化可能比 accuracy 下降更严重。
-
-### RQ2 — 模型的“自信”到底可信吗？
-
-- confidence 是否能预测 correctness？
-- shift 下 calibration 是否系统性失效？
-
-**H2**：在 source domain 校准良好的 confidence，迁移到 external / degraded domain 后会显著 miscalibrated，形成 high-confidence error。
-
-### RQ3 — 能不能自动识别“不应该信”的病例？
-
-- 能否用 uncertainty / consistency / calibration 构造 risk score？
-- Risk–Coverage 曲线能否支持“拒答换安全”？
-
-**H3**：多源不确定性聚合可以显著优于 single confidence，并在固定风险下保持可用 coverage。
-
-### RQ4 — 这个“风险判断”到底是不是看了图？
-
-- image removal / corruption / region masking 后，预测和 confidence 是否发生合理变化？
-- 模型高置信回答是否建立在视觉证据上？
-
-**H4**：部分高置信预测主要依赖语言先验而非视觉证据；将 image-reliance 纳入 trust score 可提升 selective prediction 的安全性。
-
----
-
-## 3. 创新定位
-
-不要将论文定位成“又一个 calibration 方法”。本项目的研究对象是：
-
-1. **Distribution shift**：跨数据集、图像质量、采集视角、病例复杂度。
-2. **Selective trust**：不是只校准 confidence，而是决定何时接受、何时拒答。
-3. **Image reliance**：风险判断是否建立在真实视觉证据上。
-4. **External validation**：source → external 的完整评估链路。
-
-一句话区分：
-
-> CALM-VLM 类工作研究“如何校准 VLM”；本项目研究“模型在 domain shift 下还能不能判断自己什么时候应该被信任”。
-
-> 注：2025–2026 相关文献结论需在 Phase 0 逐篇核验，尤其是 CALM-VLM、医学 VLM trustworthiness scoping review、跨数据集 CXR VLM evaluation 等工作。当前只能作为待验证情报线索，不能直接写入论文。
-
----
-
-## 4. 最终交付物
-
-### 科学交付物
-
-- 1 篇 Q1 目标论文（先完成可投 Q2 的完整版本，再加强到 Q1 版本）。
-- 1 个可复现的 **CXR distribution-shift + selective trust benchmark**。
-- 1 个 **shift-aware selective trust framework**。
-- 1 套 image-reliance / hallucination 评估协议。
-
-### 工程交付物
-
-- 数据加载、标签协调、分组切分、预处理 pipeline。
-- 多模型统一推理接口（本地 VLM + API VLM）。
-- shift 生成器、uncertainty 计算、calibration、selective prediction、image reliance、evaluation 模块。
-- 实验配置、结果缓存、统计脚本、主图和主表。
-- 论文 LaTeX / Markdown 草稿与 supplementary。
-
----
-
-## 5. 阶段与 Gate 总览
-
-| 阶段 | 时间 | 核心目标 | 关键产物 | Gate |
-|---|---:|---|---|---|
-| Phase 0 文献侦察 | 第 1 周 | 确认 gap，建立 30–50 篇矩阵 | Literature Matrix + gap statement | Gate 0 / Gate 1 前置 |
-| Phase 1 最小 baseline | 第 2–3 周 | 跑通数据与 3 个 VLM | Pilot pipeline + structured outputs | Gate 1：shift 存在 |
-| Phase 2 Shift benchmark | 第 4–6 周 | 建立跨数据集与质量 shift | 四轴 shift benchmark | Gate 2：可靠性退化 |
-| Phase 3 核心现象 | 第 6 周 | 证明 confidence ≠ reliability | Figure 2/3/4 | Gate 2 |
-| Phase 4 Uncertainty | 第 7–8 周 | 验证 uncertainty 预测错误 | Uncertainty score + calibration | Gate 3：uncertainty→error |
-| Phase 5 Selective prediction | 第 8–9 周 | Risk–Coverage 曲线 | AURC / Coverage@Risk / selective accuracy | Gate 3 |
-| Phase 6 Image reliance | 第 10 周 | 验证是否真正看图 | Blank/corrupt/mask 实验 | Gate 4：image reliance |
-| Phase 7 Full method | 第 11 周 | 融合 shift-aware trust score | Full framework + ablation | — |
-| Phase 8 统计与图表 | 第 12–13 周 | bootstrap、显著性、主图 | 7 figures + tables | — |
-| Phase 9 写作投稿 | 第 14–16 周 | Methods/Results/Discussion/package | 投稿版本 | — |
-
-更细的周计划、Gate 判据与止损规则是内部工作记录，不在本仓库；本仓库只发布方法与
-协议类文档，完整清单见 §8。
-
----
-
-## 6. 16 周执行表（压缩版）
-
-| 周 | 阶段 | 必须完成 | 周末产物 |
-|---:|---|---|---|
-| 1 | Literature | 30–50 篇矩阵；核验 2025–2026 最新工作 | 文献矩阵与 gap 陈述 |
-| 2 | Data + Pilot | 至少 2 个公开数据集 loader；每集 500–1000 例 pilot | 可复现 pilot split |
-| 3 | Baseline | 3 个 VLM 统一接口；固定 JSON 输出 | Baseline metrics table |
-| 4 | Internal evaluation | AUROC/AUPRC/F1/ECE/Brier | Internal results + 校准图 |
-| 5 | Cross-domain | source → external 评测 | External degradation figure |
-| 6 | Shift benchmark | blur/noise/compression/brightness/contrast/resolution | Shift taxonomy + severity curves |
-| 7 | Uncertainty | self-consistency + perturbation + semantic disagreement | Uncertainty scores + error prediction |
-| 8 | Calibration | 温度缩放/isotonic/shift-aware 对比 | Reliability diagrams + ECE/Brier |
-| 9 | Selective prediction | risk–coverage + AURC + coverage@risk | 主图 Risk–Coverage |
-| 10 | Image reliance | blank/corrupt/region mask | Image-reliance figure |
-| 11 | Full method | trust score + ablation | Full method table |
-| 12 | Statistics | bootstrap CI、paired tests、多重比较 | 统计附录 |
-| 13 | Figures/tables | 7 张主图定稿 | camera-ready 图源 |
-| 14 | Paper | Methods + Results | 论文初稿 |
-| 15 | Discussion | 临床意义、限制、失败案例 | 完整 draft |
-| 16 | Submission | cover letter + supplementary + 复现包 | 投稿包 |
-
----
-
-## 7. 工程目录
+## 3. 工程地图
 
 ```text
 Paper/
-├── README.md                     # 项目总入口
-├── docs/                         # 研究设计、协议、Gate、论文大纲
-├── configs/                      # 数据集/模型/shift/实验配置
-├── data/                         # 原始数据（不提交、不泄露 PHI）
-│   ├── chexpert/
-│   ├── padchest/
-│   ├── nih/
-│   └── mimic/                    # credentialed access，后期加入
-├── src/medvlm_trust/             # 核心 Python 包
-│   ├── data/                     # loader、标签协调、split
-│   ├── models/                   # VLM wrapper / API adapter
-│   ├── inference/                # 批处理、结构化输出解析
-│   ├── shifts/                   # blur/noise/compression/contrast/cross-domain
-│   ├── uncertainty/              # self-consistency/perturbation/semantic
-│   ├── calibration/              # ECE/Brier/temperature/isotonic
-│   ├── selective_prediction/     # risk score / threshold / metrics
-│   ├── grounding/                # blank/corruption/region masking/image reliance
-│   └── evaluation/               # 指标、统计、bootstrap
-├── experiments/                  # 按阶段编号的实验脚本与记录
-├── scripts/                      # CLI 入口与一次性脚本
-├── notebooks/                    # 探索性分析，不承载最终结果
-├── figures/                      # 最终图
-├── tables/                       # 最终表
-├── papers/                       # 论文草稿
-├── references/                   # 文献矩阵导出/BibTeX
-├── artifacts/                    # 中间结果、缓存、预测文件
-└── logs/                         # 运行日志
+├── program/
+│   ├── src/cxr_trust/
+│   │   ├── inference/        # prompts, prompts_crossmodal, prompts_report,
+│   │   │                     # schema（解析器）, shifts（唯一算子实现）, durable（单写者）
+│   │   ├── models/           # registry + 各模型 wrapper
+│   │   └── evaluation/       # AUROC / ECE / 选择性预测
+│   ├── scripts/
+│   │   ├── 08_shift_benchmark.py        # CXR 19-cell 网格
+│   │   ├── 43 / 44                      # PadChest 原生偏移 / Open-i 报告生成
+│   │   ├── 104 / 93 / 117               # 表格一致性 / 工件审计 / 中英数字比对
+│   │   ├── 120–122                      # 跨模态：清单 / 推理 / P1–P4
+│   │   ├── 123_harness_experiments.py   # 五写入器 + 十故障矩阵
+│   │   ├── 124_artifact_census.py       # 分母审计
+│   │   ├── 125_validate_crossmodal.py   # 跨模态预检
+│   │   └── api_probe/                   # 闭源 API 臂（01–04 + common）
+│   └── tests/                # 解析器 / 指标 / durable / 算子像素摘要
+├── papers/
+│   ├── main_v7/  main_v7_zh/            # 主论文（英/中）
+│   └── bench_v2/                        # 副论文
+├── docs/                     # 方法与协议文档（15 篇入库）
+├── configs/                  # 模型锁文件与数据配置
+└── data/                     # 数据集（不入库）
 ```
 
-模块边界与命名规范见 `docs/08_reproducibility_and_governance.md`。
+**三个固定点**（改动会破坏可复现性，须同时更新测试）：
+
+1. `src/cxr_trust/inference/shifts.py` 是唯一算子实现；18 个退化 cell 的像素摘要被钉在
+   `tests/test_shifts.py` 里，CXR 臂与跨模态臂不允许各写一份。
+2. `prompts_crossmodal` 的契约段与 CXR 臂逐字相同，只换解剖名词与标签集。
+3. 每份产物都携带 `provenance`（模型、manifest 哈希、prompt 哈希、图像几何、token 预算）；
+   不一致时 runner 拒绝续跑，而不是把两次实验混进同一个文件。
 
 ---
 
-## 8. 文档索引
+## 4. 代码可用性
 
-本仓库只发布**方法与协议类**文档（下表 15 篇）。项目宪章、决策日志、风险登记、
-执行状态、pilot 结果分析、投稿策略等属于内部工作记录：它们含未定稿的中间数值、
-对第三方数据集访问状态的断言，以及会被时间淘汰的计划条目，发布后极易与正文结论
-分叉，因此**不在本仓库中**（`.gitignore` §6 默认排除 `/docs/**`，逐条白名单放行下表）。
+| 资产 | 是否入库 | 获取方式 |
+|---|---|---|
+| 代码、协议、配置、论文源文件 | ✅ | `git clone` |
+| 模型权重（约 142 GB） | ❌ | `configs/models.lock.yaml` 固定 repo id + revision |
+| 数据集（NIH / PadChest / Open-i / MRI / OCT / HAM10000） | ❌ | 各自官方渠道；清单契约见 `docs/49` |
+| 预测产物与冻结分析表 | ❌ | 由脚本重跑生成；`outputs/` 不入库 |
+| 第三方权重与数据的许可声明 | ✅ | `NOTICE` |
 
-| 文档 | 内容 |
-|---|---|
-| `docs/02_data_protocol.md` | 数据集、访问顺序、标签协调、切分、预处理 |
-| `docs/03_benchmark_and_shift_protocol.md` | 四轴 shift taxonomy、severity、benchmark 设计 |
-| `docs/04_uncertainty_calibration_selective.md` | 三类 uncertainty、校准、selective prediction |
-| `docs/05_image_reliance_and_hallucination.md` | image removal/corruption/masking、幻觉 taxonomy |
-| `docs/08_reproducibility_and_governance.md` | 数据治理、实验追踪、compute 预算、agent 分工 |
-| `docs/17_prompt_and_schema.md` | 统一 prompt 与 JSON schema v1 |
-| `docs/28_shift_benchmark_protocol.md` | 正式 shift benchmark 协议与变量清单 |
-| `docs/29_chexpert_rrg_and_statistics.md` | RRG external、shift benchmark 与 bootstrap 统计协议 |
-| `docs/42_academic_integrity_and_writing_standards.md` | 学术诚信与写作规范：禁预支数据、反数据挖掘、负性结果必须报告、公式须与 `src/` 一一对应 |
-| `docs/43_hardware_profiling_and_wddm_oversubscription.md` | WDDM 显存超订实测与论文 Supplementary 表述 |
-| `docs/44_batch_sweep_matrix.md` | RTX 4080 SUPER 32 GB 上 batch size 拐点实测矩阵 |
-| `docs/45_weight_download_through_cn_mirrors.md` | 大陆网络下权重获取路径（`HF_ENDPOINT` 镜像）与 gated 仓库注意事项 |
-| `docs/46_engineering_insights_supplementary.md` | 可进 Supplementary 的工程洞见框架（未定数值显式标 TBD） |
-| `docs/48_three_layer_protocol.md` | **三层次 6K 评测权威协议**：三层设计、成本、崩溃安全、运行与分析命令、全部陷阱 |
-| `docs/49_data_manifest_contract.md` | **manifest 契约**：必需列、positive/negative 字符串要求与原因、三个评测集清单、no_finding 修复 |
+API 密钥只从环境变量读取，任何文档、日志与产物中都不得出现。
 
-### 8.1 如何跑三层次 6K 评测（一键）
+---
 
-三层 = NIH（域内合成偏移）/ PadChest（跨医院原生偏移）/ Open-i（自由文本报告生成），
-每层跑各自问题的设计，由一条命令驱动，**随时可断点续跑**。
+## 5. 复现入口
+
+### 5.1 自检（CPU，无需权重）
 
 ```powershell
 cd D:\Paper\program
+.\.venv-vl\Scripts\python.exe -m pytest -q tests
+```
 
-# 0. 体检 + 全仓扫描 + 崩溃安全测试（都很快，都不加载模型）
-.\.venv-vl\Scripts\python.exe scripts\39_preflight.py
-.\.venv-vl\Scripts\python.exe scripts\45_debug_sweep.py
-.\.venv-vl\Scripts\python.exe scripts\41_test_durable.py          # 37 passed, 0 failed
-.\.venv-vl\Scripts\python.exe scripts\41_test_runner_resume.py    # 40 passed, 0 failed
-.venv-vl\Scripts\python.exe scripts\49_test_legacy_durable.py   # 38 passed, 0 failed
+覆盖解析器、指标、`DurableJsonl` 的续跑与撕裂尾部、以及**算子像素摘要**（10 项）。
 
-# 1. 只看计划（不跑任何东西）
+### 5.2 CXR 主矩阵
+
+```powershell
+cd D:\Paper\program
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 -DryRun
-
-# 2. 小烟测（几分钟）——必须与全跑隔离，否则驱动拒绝启动（exit 3）
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
-  -Models medgemma_4b_it -Layers openi,padchest -Limit 4 -NoAblation `
-  -OutputRoot outputs\pretest -StateFile outputs\state\pretest_state.json
-
-# 3. 正式全跑：七模型分两趟（6 个守约模型一个矩阵 + LLaVA-Med 单独一趟）
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
   -Models medgemma_4b_it,medgemma_15_4b_it,qwen25_vl_7b_instruct,`
 qwen3_vl_8b_instruct,chexagent_8b,internvl3_5_8b
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
-  -Models llava_med_v1_5_7b
 ```
 
-* 交付研究 7 模型 × 3 层 = **351,214 次模型调用 / 245.7 h（10.2 天）**；驱动默认 5 模型 =
-  **261,754 次调用 / 143.9 h（6.0 天）**（`-DryRun` 实测输出）。
-* 常用参数：`-Models` / `-Layers nih,padchest,openi` / `-Limit` / `-BatchSize` /
-  `-NoAblation` / `-Reset` / `-DryRun`。LLaVA-Med 与 InternVL 是最慢的两个模型，
-  不进默认矩阵；交付研究用 `-Models` 显式加入（InternVL 进六模型矩阵，LLaVA-Med 单独一趟，
-  其 prose 阶段记为 contract-exempt，留证但排除出所有定量指标）。
-* **中断后重跑同一条命令即可续跑**：已完成 stage 会被 skip，未完成的由 runner 从
-  durable 字节偏移继续（`DurableJsonl`：append → fsync → 原子字节偏移 sidecar）。
-* 状态文件：`program\outputs\state\run_all_layers_state.json`；
-  预测输出：`program\outputs\matrix\{nih_eval|padchest|openi}\<model>\`。
-* 跑完之后（纯 CPU）：`scripts\42_geographic_shift_analysis.py`（阈值迁移 + bootstrap + 报告层）、
-  `scripts\18_selective_metrics_v2.py`、`scripts\19_accept_clarify_abstain.py`。
+中断后重跑同一条命令即可续跑；已完成 stage 跳过，未完成的行从侧车记录的字节偏移继续。
 
-> 完整的每层命令、成本对比、续跑语义与全部陷阱：`docs/48_three_layer_protocol.md`；
-> 数据契约：`docs/49_data_manifest_contract.md`。
+### 5.3 论文数字复核（全 CPU）
+
+```powershell
+python scripts\104_table_consistency_check.py   # 80/80
+python scripts\93_artifact_audit.py             # 26/26
+python scripts\117_paper_audit.py               # 39 张表跨语言零差异
+```
+
+### 5.4 跨模态本地臂（v9，尚未运行）
+
+```powershell
+python scripts\120_prepare_crossmodal.py --modality all
+python scripts\125_validate_crossmodal.py        # 覆盖式预检：4 模型 × 3 模态
+powershell -File scripts\run_crossmodal_queue.ps1
+python scripts\122_analyze_crossmodal.py
+```
+
+### 5.5 闭源 API 臂
+
+```powershell
+cd D:\Paper\program\scripts\api_probe
+$env:OPENAI_API_KEY = "..."          # 不入库
+$env:OPENAI_BASE_URL = "https://amr-link.open-design.ai/v1"
+$env:OPENAI_MODEL = "deepseek-v4.1-flash"
+
+python 01_smoke_test.py               # 8 图像调用 + 1 纯文本基线
+python 02_build_probe_manifest.py --profile full_multimodal   # 9,400 行
+python 03_run_api_probe.py --dry-run
+python 03_run_api_probe.py --profile full_multimodal
+python 04_audit_api_results.py
+```
+
+设计与端点行为见 `program/scripts/api_probe/README.md`。
+
+### 5.6 工程副论文的实验
+
+```powershell
+python scripts\123_harness_experiments.py     # 五写入器 + 十故障矩阵
+python scripts\124_artifact_census.py --root outputs
+```
 
 ---
 
-## 9. 未来 7 天立刻要做的三件事 (RTX 4080 到货后)
+## 6. 数据与模型
 
-1. **执行 6K 高优精筛验证 (Curated Evaluation)**
-   - **一键入口：`program\scripts\run_all_layers.ps1`（见 §8.1）**，先 `-DryRun` 看计划。
-   - NIH (1,732 例): 使用 `data/manifests/nih_eval_1732.csv`（
-     `nih_shared_5000.csv` 的 `label_no_finding` 全为 negative、且含 3,268 行训练数据，
-     已被取代，**不要用于评测**），跑 `08_shift_benchmark.py` / `06_image_reliance.py` /
-     `21_prompt_ablation.py`。
-   - PadChest (1,500 例): `scripts/43_run_padchest_shift.py` —— 原生跨医院偏移 + 灰底对照（2 cell/图）。
-     注意：PadChest 词表里**没有 pneumonia 标签**，其 pneumonia AUROC 不存在，只能写 limitation。
-   - Open-i (947 例): `scripts/44_run_openi_report.py` —— 报告生成 + 灰底对照（2 cell/图），
-     再由 `scripts/42_geographic_shift_analysis.py` 计算 omission / hallucination。
-     Open-i 的 8 个标签列全部诚实地是 `unknown`，**不能做分类指标**。
+| 层 | 数据 | 规模 | 用途 |
+|---|---|---|---|
+| 域内 | NIH ChestX-ray14 | 1,506 计分例（manifest 1,732，含 226 供体行） | 19-cell 合成退化网格 |
+| 跨院 | PadChest | 1,500 | 原生分辨率 + 空白对照 |
+| 报告 | Open-i | 947 | 自由文本报告生成 + 空白对照 |
+| 跨模态 | 脑 MRI（Figshare）/ 视网膜 OCT（Kermany）/ HAM10000 | 600 / 600 / 588 | 2×2 语料×物理设计 |
 
-2. **修正 4-bit / FP16 精度对比**
-   - 通过 `22_benchmark_batch.py` 量化吞吐量，在本地 `.venv-modern` 跑通新基线。
-   - 利用分离环境解决 `Qwen3-VL` 需要 `transformers >= 4.57` 的依赖冲突。
+模型：CheXagent-8B、MedGemma-4B、MedGemma-1.5-4B、Qwen2.5-VL-7B、Qwen3-VL-8B（含 Thinking）、
+InternVL3.5-8B；LLaVA-Med 作为被测量的排除项单独记录。
 
-3. **撰写最终论文图表与投稿准备**
-   - 不再鼓吹 Coverage@5% 提高，将全文核心贡献收缩至 **"Safely rejecting hallucinations and unreliable priors under shift"**。
-   - 利用 `19_accept_clarify_abstain.py` 产出的复合风险统计数据重绘核心结论图。
-
-> **硬规则：在 4080 到位前，不启动大规模推理，所有数据抽样和协议均采用纯 CPU 准备。**
+调用口径：6 模型矩阵 270,324 次；加 LLaVA-Med 的 5,294 次为 275,618 次；
+41 阶段普查 284,695 次（含第二推理模型的 9,477 次与 LLaVA 的 4,894 次）。
 
 ---
 
-## 10. 十条工程与研究铁律
+## 7. 文档索引
 
-1. 数据永远不提交仓库；PHI、report 文本、下载链接和 access token 一律不进入 git。
-2. 所有实验必须由 config 驱动，禁止 notebook 中手工改路径后直接产出“正式结果”。
-3. 所有模型输出必须解析为统一 JSON；解析失败率单独报告。
-4. 所有 split 必须 patient-/study-level group split，禁止同一病例跨 split。
-5. 所有 calibration 结果必须同时报告 discrimination、calibration、selective risk。
-6. 所有结论必须给 bootstrap 置信区间；关键比较使用 paired test。
-7. 先 pilot 后 full；先 Gate 后扩规模；失败要止损，不追加沉没成本。
-8. 幻觉不靠 LLM 自由裁量，必须有 report-derived evidence / ground truth 支撑。
-9. 图表必须能从 artifact + config 一键重跑，不允许“手改数据点”。
-10. 每个 Gate 结束时更新决策日志（ADR），写清楚继续/转向/放弃的理由。
+入库文档只保留方法与协议类；项目宪章、决策日志、风险登记与状态快照不入库。
+
+| 文档 | 内容 |
+|---|---|
+| `docs/02_data_protocol.md` | 数据、访问顺序、标签协调、切分 |
+| `docs/03_benchmark_and_shift_protocol.md` | 退化分类与 severity |
+| `docs/04_uncertainty_calibration_selective.md` | 不确定性、校准、选择性预测 |
+| `docs/05_image_reliance_and_hallucination.md` | 图像依赖与幻觉分类 |
+| `docs/08_reproducibility_and_governance.md` | 数据治理与实验追踪 |
+| `docs/17_prompt_and_schema.md` | 统一 prompt 与 JSON schema |
+| `docs/28_shift_benchmark_protocol.md` | 正式 shift 协议 |
+| `docs/29_chexpert_rrg_and_statistics.md` | 报告层与统计协议 |
+| `docs/42_academic_integrity_and_writing_standards.md` | 学术诚信红线 |
+| `docs/43_hardware_profiling_and_wddm_oversubscription.md` | 显存超订实测 |
+| `docs/44_batch_sweep_matrix.md` | batch 拐点矩阵 |
+| `docs/45_weight_download_through_cn_mirrors.md` | 权重获取路径 |
+| `docs/46_engineering_insights_supplementary.md` | 工程洞见 |
+| `docs/48_three_layer_protocol.md` | 三层次评测协议 |
+| `docs/49_data_manifest_contract.md` | manifest 契约 |
+
+---
+
+## 8. 十条铁律
+
+1. 数据、PHI、报告文本、token 与密钥永不入库。
+2. 正式结果只能由脚本产生，不能来自 notebook 里的手工路径。
+3. 所有模型输出解析为统一 JSON；解析失败率与标签完整度单独报告。
+4. 所有切分在患者或病灶层面不交叉。
+5. 报告判别力时必须同时报告校准与操作点。
+6. 关键比较给聚类 bootstrap 区间；配对比较用配对子集。
+7. 先预检后全量；预检不通过不启动长跑。
+8. 任何一个数字都必须能回到冻结产物，且能由第三方重算。
+9. 图表由脚本从冻结 CSV 重生成，不允许手改数据点。
+10. 负性结果与失败模式必须报告，不得只保留显著项。
