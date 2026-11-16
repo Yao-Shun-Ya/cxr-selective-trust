@@ -289,6 +289,36 @@ def summarise(records: list[dict], by_key: dict, conditions: list[str],
     if not per_df.empty:
         per_df.to_csv(out_dir / "image_reliance_per_image.csv", index=False)
 
+    # Coverage must be over the cells this run actually ATTEMPTED, not over the
+    # manifest. On 2026-10-21 an interrupted run (17 of 3,000 cells, all parsed)
+    # printed "original 1.1%, blank 0.0% of replies parsed" because the
+    # denominator was the planned 1,500 -- a parse rate of 17/17 was reported as
+    # 17/1500 and would have been read as a model failure. Incompleteness is
+    # already expressed by `cells_on_disk` versus n_images x len(conditions), so
+    # the two must not be conflated. Conditions with zero attempted cells get
+    # None (not run yet) rather than 0.0 (all replies broken).
+    attempted = {c: sum(1 for rec in records
+                        if (str(rec.get("image_id")), c) in by_key)
+                 for c in conditions}
+    coverage = {c: (structured_ok.get(c, 0) / attempted[c]
+                    if attempted.get(c) else None)
+                for c in conditions}
+    # The contrast SOURCE must be decided by COVERAGE, not by "at least one reply
+    # parsed". The old rule (`if structured_ok.get("original")`) labelled
+    # padchest/qwen25 `probability_vector` at 323/1500 = 21.5% parse and then
+    # published `mean_abs_prob_diff = 0.0` -- a number computed on 257 of 1500
+    # pairs -- as the layer's image-reliance figure. Read as "this model never
+    # moves its probabilities", it actually meant "17% of the images were
+    # measured and the other 83% could not be". The text path (lexical overlap of
+    # the two replies) is computed for every pair and is the honest fallback;
+    # that is what `contrast_source` exists to express. 0.95 is the same
+    # threshold the coverage guard uses elsewhere in this project.
+    contrast_source = ("probability_vector"
+                       if (coverage.get("original") or 0.0) >= 0.95
+                       else "text_overlap")
+    low = [c for c in conditions
+           if coverage.get(c) is not None and coverage[c] < 0.95]
+
     summary: dict[str, Any] = {
         "model": model_name,
         "layer": "padchest_geographic_shift",
@@ -297,11 +327,29 @@ def summarise(records: list[dict], by_key: dict, conditions: list[str],
         "conditions_run": conditions,
         "generation_failures_by_condition": failures,
         "structured_parse_ok_by_condition": structured_ok,
+        "n_attempted_by_condition": attempted,
+        "structured_coverage_by_condition": {
+            k: (round(v, 4) if v is not None else None)
+            for k, v in coverage.items()},
         "cells_on_disk": len(by_key),
-        "contrast_source": ("probability_vector" if structured_ok.get("original")
-                            else "text_overlap"),
+        "contrast_source": contrast_source,
+        "contrast_source_note": (
+            "probability_vector is used only at >=95% structured coverage on the "
+            "original condition; below that the text-overlap path is reported "
+            "instead, because a probability mean over a minority of images reads "
+            "as a layer-level finding it is not."),
+        "coverage_below_threshold": low,
         "by_condition": {},
     }
+    if low:
+        print("\n" + "!" * 78)
+        print("STRUCTURED-COVERAGE WARNING: "
+              + ", ".join(f"{c} {coverage[c]:.1%} of attempted replies parsed"
+                          for c in low)
+              + ". Reporting text_overlap, and NOT a"
+              " probability-vector reliance number, for this layer."
+              f" (attempted so far: {attempted})")
+        print("!" * 78)
     if not per_df.empty:
         for condition, g in per_df.groupby("condition"):
             numeric = g["mean_abs_prob_diff"].dropna()
@@ -309,6 +357,11 @@ def summarise(records: list[dict], by_key: dict, conditions: list[str],
             summary["by_condition"][str(condition)] = {
                 "n": int(len(g)),
                 "n_structured": int(g["structured_available"].sum()),
+                # The denominator of every number above. `mean_abs_prob_diff`
+                # lives on n_prob_pairs, not on n: they differ whenever some
+                # replies did not parse.
+                "n_prob_pairs": int(g["mean_abs_prob_diff"].notna().sum()),
+                "n_flip_pairs": int(g["flip_count"].notna().sum()),
                 "mean_flip_count": (float(g["flip_count"].dropna().mean())
                                     if g["flip_count"].notna().any() else None),
                 "mean_abs_prob_diff": float(numeric.mean()) if len(numeric) else None,

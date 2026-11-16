@@ -1,0 +1,44 @@
+\section{Reporting Checklist and Limitations}
+\label{sec:checklist}
+
+\subsection{A benchmark-engineering checklist}
+
+Table~\ref{tab:checklist} is the checklist we would ask a medical VLM benchmark to report alongside its scores. It is deliberately short: each item is a fact that changes what a reader can reconstruct.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Benchmark-engineering reporting checklist. The right column is this harness's status.}
+\label{tab:checklist}
+\begin{tabular}{p{0.36\textwidth}p{0.56\textwidth}}
+\toprule
+Item & This harness \\
+\midrule
+Call budget by layer and model & Exact JSONL row counts (Table~\ref{tab:models_calls}); no hours-based estimates. \\
+Stage inventory, exemptions, and config guard & 38 entries: 30 completed, 8 contract-exempt; manifest+prompt fingerprint. \\
+Resume semantics and tests & Two-level resume; 40/40 crash/resume checks; torn-tail and no-op tests. \\
+Manifest contract & Required columns, exact label strings, split-pure scored set, SHA-256 lock. \\
+Prediction schema & One JSON schema across six runners; raw output and parse errors retained. \\
+Denominator census & Parse rate, all-definite rate, error rows per model--stage file. \\
+Preprocessing declaration & Per-model effective input geometry, stored resolution, precision. \\
+Batch/throughput operating point & Measured sweep, smallest batch within 5\% of best; silent-collapse documented. \\
+Audit availability & CPU-only scripts; all claims recomputable from frozen predictions. \\
+Dependency and environment lock & Three venv recipes plus frozen \texttt{pip freeze} locks. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Limitations}
+
+\textbf{Single machine, single GPU.} The delivered run used one RTX 4080 SUPER (32\,GB) under Windows WDDM. The durable-writer design is portable, but the throughput numbers and the WDDM oversubscription failure mode are specific to this environment.
+
+\textbf{Stage keys are coarse; the fingerprint is run-level.} Stage keys remain \texttt{layer/model/stage}. A run-level fingerprint hashes the manifests and prompt/schema modules and refuses resume on a mismatch, so a changed configuration cannot silently reuse completed stages. It is not a per-stage content hash: changing a configuration after the fingerprint check still requires \texttt{-Reset}, and the harness says so.
+
+\textbf{No CI in the original run.} The CPU tests and crash/resume suite are now part of a CI workflow, but the 275,218-call matrix was produced before that workflow existed. The frozen artifacts are checksummed; the original run's environment is reconstructed from lock files rather than replayed by CI.
+
+\textbf{No human validation.} The Open-i labeller is rule-based. A judged labeller would change absolute omission and hallucination counts. The harness makes the labeller explicit and records it per row, but it does not validate it.
+
+\textbf{One contract-exempt model.} LLaVA-Med is executed and recorded, but excluded from metrics. The harness distinguishes this from ``not run''; it does not make the model comparable.
+
+\textbf{No distributed execution.} The harness is a single-process, single-GPU runner. Sharding across machines would require the state file and durable writer to coordinate, which is not implemented.

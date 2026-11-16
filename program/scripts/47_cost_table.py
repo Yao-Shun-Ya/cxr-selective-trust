@@ -126,7 +126,7 @@ FIVE_MODELS = ["medgemma_4b_it", "medgemma_15_4b_it", "qwen25_vl_7b_instruct",
 SEVEN_MODELS = FIVE_MODELS + ["internvl3_5_8b", "llava_med_v1_5_7b"]
 
 LAYERS = {
-    "nih": {"images": 1732, "cells": {"shift": 19, "reliance": 4, "precision": 4,
+    "nih": {"images": 1506, "cells": {"shift": 19, "reliance": 4, "precision": 4,
                                       "ablation": 10}},
     "padchest": {"images": 1500, "cells": {"native_shift": 2}},
     "openi": {"images": 947, "cells": {"report": 2}},
@@ -204,7 +204,7 @@ def main() -> int:
         scenario(SEVEN_MODELS, ["nih"], label="_frag_nih7"),
     ]
     synthetic = []
-    for layer, imgs in (("nih", 1732), ("padchest", 1500), ("openi", 947)):
+    for layer, imgs in (("nih", 1506), ("padchest", 1500), ("openi", 947)):
         for models, tag in ((SEVEN_MODELS, "7"), (FIVE_MODELS, "5")):
             calls = imgs * 19 * len(models)
             secs = sum(stage_seconds(m, layer, "shift", imgs * 19) for m in models)

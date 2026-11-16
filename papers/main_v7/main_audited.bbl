@@ -1,0 +1,324 @@
+\begin{thebibliography}{44}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Chen et~al.(2024)Chen, Varma, Delbrouck, Paschali, Blankemeier,
+  Van~Veen, et~al.]{chen2024chexagent}
+Zhihong Chen, Maya Varma, Jean-Benoit Delbrouck, Magdalini Paschali, Louis
+  Blankemeier, Dave Van~Veen, et~al.
+\newblock Chexagent: Towards a foundation model for chest x-ray interpretation,
+  2024.
+\newblock arXiv:2401.12208.
+
+\bibitem[Sellergren et~al.(2025)]{sellergren2025medgemma}
+Andrew Sellergren et~al.
+\newblock Medgemma technical report, 2025.
+\newblock arXiv:2507.05201.
+
+\bibitem[Bai et~al.(2025{\natexlab{a}})Bai, Chen, Liu, Wang, Ge, Song,
+  et~al.]{bai2025qwen25vl}
+Shuai Bai, Keqin Chen, Xuejing Liu, Jialin Wang, Wenbin Ge, Sibo Song, et~al.
+\newblock Qwen2.5-vl technical report, 2025{\natexlab{a}}.
+\newblock arXiv:2502.13923.
+
+\bibitem[Hong and Quan(2026)]{anon2026see}
+Rui Hong and Shuxue Quan.
+\newblock To see or to please: Uncovering visual sycophancy and split beliefs
+  in {VLM}s, 2026.
+\newblock arXiv:2603.18373.
+
+\bibitem[Singla et~al.(2026)Singla, Garg, Singh, and Chopra]{anon2026guess}
+Pratham Singla, Shivank Garg, Vihan Singh, and Paras Chopra.
+\newblock Do vision-language models see or guess? measuring and reducing
+  textual-prior reliance with a phrasing-controlled benchmark, 2026.
+\newblock arXiv:2606.10400.
+
+\bibitem[Imam et~al.(2025)Imam, Marew, and Yaqub]{anon2025corruption}
+Raza Imam, Rufael Marew, and Mohammad Yaqub.
+\newblock On the robustness of medical vision-language models: Are they truly
+  generalizable?, 2025.
+\newblock arXiv:2505.15425; MIUA 2025.
+
+\bibitem[Yang et~al.(2026)Yang, Zhong, Collins, Baird, Wang, and
+  Jiao]{anon2026stress}
+Xinye Yang, Zhusi Zhong, Scott Collins, Grayson Baird, Xuyu Wang, and Zhicheng
+  Jiao.
+\newblock Reliability stress tests and decision-time routing for chest {X}-ray
+  vision-language models, 2026.
+\newblock arXiv:2610.02270.
+
+\bibitem[Cheng et~al.(2025)Cheng, Ong, Wagner, Merle, Ju, Zhang,
+  et~al.]{cheng2025robustness}
+Zijie Cheng, Ariel~Yuhan Ong, Siegfried~K. Wagner, David~A. Merle, Lie Ju,
+  Hanyuan Zhang, et~al.
+\newblock Understanding the robustness of vision-language models to medical
+  image artefacts.
+\newblock \emph{npj Digital Medicine}, 2025.
+\newblock doi:10.1038/s41746-025-02108-w.
+
+\bibitem[Gu et~al.(2025)Gu, Fu, Liu, et~al.]{gu2025illusion}
+Yu~Gu, Jingjing Fu, Xiaodong Liu, et~al.
+\newblock The illusion of readiness: Stress testing large frontier models on
+  multimodal medical benchmarks, 2025.
+\newblock arXiv:2509.18234.
+
+\bibitem[Felizzi et~al.(2025)Felizzi, Riccomi, Ferramola, Causio,
+  et~al.]{felizzi2025grounded}
+Federico Felizzi, Olivia Riccomi, Michele Ferramola, Francesco~Andrea Causio,
+  et~al.
+\newblock Are large vision language models truly grounded in medical images?
+  evidence from {I}talian clinical visual question answering, 2025.
+\newblock arXiv:2511.19220.
+
+\bibitem[Madhusudhan et~al.(2026)Madhusudhan, Yadav, and
+  Lacoste]{anon2026knowing}
+Nishanth Madhusudhan, Vikas Yadav, and Alexandre Lacoste.
+\newblock Knowing when not to answer: Evaluating abstention in multimodal
+  reasoning systems, 2026.
+\newblock arXiv:2604.14799.
+
+\bibitem[Wu et~al.(2026)Wu, Wang, Ye, Du, Jegelka, and Wang]{wu2026whenmore}
+Yuyang Wu, Yifei Wang, Ziyu Ye, Tianqi Du, Stefanie Jegelka, and Yisen Wang.
+\newblock When more is less: Understanding chain-of-thought length in {LLM}s.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2026.
+\newblock arXiv:2502.07266.
+
+\bibitem[Zhou et~al.(2026)Zhou, Ling, Chen, Wang, Fan, and
+  Wang]{zhou2026overthinking}
+Shu Zhou, Rui Ling, Junan Chen, Xin Wang, Tao Fan, and Hao Wang.
+\newblock When more thinking hurts: Overthinking in {LLM} test-time compute
+  scaling, 2026.
+\newblock arXiv:2604.10739.
+
+\bibitem[Su et~al.(2026)Su, Purushothaman, Narayan, Goel, Zhu, Dev, More, and
+  Chaudhary]{su2026broken}
+Ian Su, Gaurav Purushothaman, Jey Narayan, Ruhika Goel, Kevin Zhu, Sunishchal
+  Dev, Yash More, and Maheep Chaudhary.
+\newblock Broken chains: The cost of incomplete reasoning in {LLM}s, 2026.
+\newblock arXiv:2602.14444.
+
+\bibitem[Guo et~al.(2017)Guo, Pleiss, Sun, and Weinberger]{guo2017calibration}
+Chuan Guo, Geoff Pleiss, Yu~Sun, and Kilian~Q. Weinberger.
+\newblock On calibration of modern neural networks.
+\newblock In \emph{International Conference on Machine Learning (ICML)}, 2017.
+
+\bibitem[Ovadia et~al.(2019)Ovadia, Fertig, Ren, Nado, Sculley, Nowozin,
+  Dillon, Lakshminarayanan, and Snoek]{ovadia2019trust}
+Yaniv Ovadia, Emily Fertig, Jie Ren, Zachary Nado, D.~Sculley, Sebastian
+  Nowozin, Joshua~V. Dillon, Balaji Lakshminarayanan, and Jasper Snoek.
+\newblock Can you trust your model's uncertainty? evaluating predictive
+  uncertainty under dataset shift.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, 2019.
+
+\bibitem[Geifman and El-Yaniv(2017)]{geifman2017selective}
+Yonatan Geifman and Ran El-Yaniv.
+\newblock Selective classification for deep neural networks.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, 2017.
+
+\bibitem[Oakden-Rayner et~al.(2021)Oakden-Rayner, Carneiro, Bessenyei, and
+  Searston]{oakdenrayner2021limits}
+Luke Oakden-Rayner, Gustavo Carneiro, Taryn Bessenyei, and Rachel Searston.
+\newblock The limits of global calibration in medical image classification.
+\newblock \emph{Medical Image Analysis}, 67:\penalty0 101862, 2021.
+
+\bibitem[Heiman et~al.(2025)]{heiman2025factchexcker}
+Gregory Heiman et~al.
+\newblock {FactCheXcker}: Mitigating measurement hallucinations in chest
+  {X}-ray report generation models.
+\newblock In \emph{CVPR}, 2025.
+
+\bibitem[Wang et~al.(2017)Wang, Peng, Lu, Lu, Bagheri, and
+  Summers]{wang2017chestxray8}
+Xiaosong Wang, Yifan Peng, Le~Lu, Zhiyong Lu, Mohammadhadi Bagheri, and
+  Ronald~M. Summers.
+\newblock Chestx-ray8: Hospital-scale chest x-ray database and benchmarks on
+  weakly-supervised classification and localization of common thorax diseases.
+\newblock In \emph{CVPR}, 2017.
+
+\bibitem[Bustos et~al.(2020)Bustos, Pertusa, Salinas, and de~la
+  Iglesia-Vaya]{bustos2020padchest}
+Aurelia Bustos, Antonio Pertusa, Jose-Maria Salinas, and Maria de~la
+  Iglesia-Vaya.
+\newblock Padchest: A large chest x-ray image dataset with multi-label
+  annotated reports.
+\newblock \emph{Medical Image Analysis}, 66:\penalty0 101797, 2020.
+
+\bibitem[Irvin et~al.(2019)Irvin, Rajpurkar, Ko, Yu, Ciurea-Ilcus, Chute,
+  Marklund, Haghgoo, Ball, Shpanskaya, et~al.]{irvin2019chexpert}
+Jeremy Irvin, Pranav Rajpurkar, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus,
+  Chris Chute, Henrik Marklund, Behzad Haghgoo, Robyn Ball, Katie Shpanskaya,
+  et~al.
+\newblock {CheXpert}: A large chest radiograph dataset with uncertainty labels
+  and expert comparison.
+\newblock \emph{Proceedings of the AAAI Conference on Artificial Intelligence},
+  2019.
+
+\bibitem[Johnson et~al.(2019)Johnson, Pollard, Berkowitz, Greenbaum, Lungren,
+  Deng, Mark, and Horng]{johnson2019mimic}
+Alistair E.~W. Johnson, Tom~J. Pollard, Seth~J. Berkowitz, Nathaniel~R.
+  Greenbaum, Matthew~P. Lungren, Chih-ying Deng, Roger~G. Mark, and Steven
+  Horng.
+\newblock {MIMIC-CXR}: A large publicly available database of labeled chest
+  radiographs.
+\newblock \emph{Scientific Data}, 2019.
+
+\bibitem[Chambon et~al.(2024)]{chambon2024chexpertplus}
+Pierre Chambon et~al.
+\newblock {CheXpert Plus}: Augmenting a large chest {X}-ray dataset with text
+  radiology reports, patient demographics and additional image formats, 2024.
+\newblock arXiv:2405.19538.
+
+\bibitem[Rafferty et~al.(2026)Rafferty, Ramaesh,
+  et~al.]{rafferty2026limitations}
+Anna Rafferty, Rishi Ramaesh, et~al.
+\newblock Limitations of public chest radiography datasets for artificial
+  intelligence: Label quality, domain shift, bias and evaluation challenges.
+\newblock \emph{Philosophical Transactions of the Royal Society A}, 2026.
+
+\bibitem[Zech et~al.(2018)Zech, Badgeley, Liu, Costa, Titano, and
+  Oermann]{zech2018confounding}
+John~R. Zech, Marcus~A. Badgeley, Manway Liu, Anthony~B. Costa, Joseph~J.
+  Titano, and Eric~K. Oermann.
+\newblock Variable generalization performance of a deep learning model to
+  detect pneumonia in chest radiographs: A cross-sectional study.
+\newblock \emph{PLOS Medicine}, 15\penalty0 (11):\penalty0 e1002683, 2018.
+
+\bibitem[Rajpurkar et~al.(2017)Rajpurkar, Irvin, Zhu, Yang, Mehta, Duan, Ding,
+  Bagul, Langlotz, Shpanskaya, et~al.]{rajpurkar2017chexnet}
+Pranav Rajpurkar, Jeremy Irvin, Kaylie Zhu, Brandon Yang, Hershel Mehta, Tony
+  Duan, Daisy Ding, Aarti Bagul, Curtis Langlotz, Katie Shpanskaya, et~al.
+\newblock {CheXNet}: Radiologist-level pneumonia detection on chest {X}-rays
+  with deep learning, 2017.
+\newblock arXiv:1711.05225.
+
+\bibitem[Huang et~al.(2017)Huang, Liu, van~der Maaten, and
+  Weinberger]{huang2017densely}
+Gao Huang, Zhuang Liu, Laurens van~der Maaten, and Kilian~Q. Weinberger.
+\newblock Densely connected convolutional networks.
+\newblock In \emph{CVPR}, 2017.
+
+\bibitem[Moor et~al.(2023)Moor, Banerjee, Abad, Krumholz, Leskovec, Topol, and
+  Rajpurkar]{moor2023foundation}
+Michael Moor, Oishi Banerjee, Zahra Shakeri~Hossein Abad, Harlan~M. Krumholz,
+  Jure Leskovec, Eric~J. Topol, and Pranav Rajpurkar.
+\newblock Foundation models for generalist medical artificial intelligence.
+\newblock \emph{Nature}, 616:\penalty0 259--265, 2023.
+
+\bibitem[Singhal et~al.(2023)Singhal, Azizi, Tu, Mahdavi, Wei, Chung, Scales,
+  Tanwani, Cole-Lewis, Pfohl, et~al.]{singhal2023medpalm}
+Karan Singhal, Shekoofeh Azizi, Tao Tu, S.~Sara Mahdavi, Jason Wei, Hyung~Won
+  Chung, Nathan Scales, Ajay Tanwani, Heather Cole-Lewis, Stephen Pfohl, et~al.
+\newblock Large language models encode clinical knowledge.
+\newblock \emph{Nature}, 620:\penalty0 172--180, 2023.
+
+\bibitem[Bommasani et~al.(2021)Bommasani, Hudson, Adeli, Altman, Arora, von
+  Arx, et~al.]{bommasani2021foundation}
+Rishi Bommasani, Drew~A. Hudson, Ehsan Adeli, Russ Altman, Simran Arora, Sydney
+  von Arx, et~al.
+\newblock On the opportunities and risks of foundation models, 2021.
+\newblock arXiv:2108.07258.
+
+\bibitem[Gebru et~al.(2021)Gebru, Morgenstern, Vecchione, Vaughan, Wallach,
+  Daum{\'e}~III, and Crawford]{gebru2021datasheets}
+Timnit Gebru, Jamie Morgenstern, Briana Vecchione, Jennifer~Wortman Vaughan,
+  Hanna Wallach, Hal Daum{\'e}~III, and Kate Crawford.
+\newblock Datasheets for datasets.
+\newblock \emph{Communications of the ACM}, 64\penalty0 (12):\penalty0 86--92,
+  2021.
+
+\bibitem[Mitchell et~al.(2019)Mitchell, Wu, Zaldivar, Barnes, Vasserman,
+  Hutchinson, Spitzer, Raji, and Gebru]{mitchell2019model}
+Margaret Mitchell, Simone Wu, Andrew Zaldivar, Parker Barnes, Lucy Vasserman,
+  Ben Hutchinson, Elena Spitzer, Inioluwa~Deborah Raji, and Timnit Gebru.
+\newblock Model cards for model reporting.
+\newblock In \emph{Conference on Fairness, Accountability, and Transparency
+  (FAT*)}, 2019.
+
+\bibitem[Nguyen et~al.(2026)Nguyen, Nguyen, Do, and Doan]{nguyen2026answer}
+Duy~A. Nguyen, Tuan~T. Nguyen, Minh Do, and Khoa Doan.
+\newblock Answer, clarify, or abstain: Fine-grained selective prediction for
+  medical {VLM}s.
+\newblock In \emph{International Conference on Machine Learning (ICML)}, 2026.
+\newblock URL \url{https://icml.cc/virtual/2026/80409}.
+
+\bibitem[Dhinagar et~al.(2026)Dhinagar, Jagad, Senthilkumar, Thomopoulos, Khan,
+  and Liew]{dhinagar2026calm}
+Nikhil~J. Dhinagar, Chirag Jagad, Pavithra Senthilkumar, Sophia~I. Thomopoulos,
+  Mahir~H. Khan, and Sook-Lei Liew.
+\newblock {CALM-VLM}: Calibration and selective prediction in vision-language
+  models for reliable brain {MRI} classification.
+\newblock In \emph{IEEE International Symposium on Biomedical Imaging (ISBI)},
+  2026.
+\newblock \doi{10.1109/ISBI61048.2026.11515735}.
+
+\bibitem[Zafar et~al.(2026)Zafar, Murali, and Vashist]{zafar2026beyond}
+Anas Zafar, Leema~Krishna Murali, and Ashish Vashist.
+\newblock Beyond accuracy: Evaluating visual grounding in multimodal medical
+  reasoning, 2026.
+\newblock arXiv:2603.03437.
+
+\bibitem[Buckley et~al.(2026)Buckley, Diao, Srivastava, Brodeur, Rajpurkar,
+  Rodman, and Manrai]{buckley2026exploit}
+Thomas~A. Buckley, James~A. Diao, Cam~N. Srivastava, Peter~G. Brodeur, Pranav
+  Rajpurkar, Adam Rodman, and Arjun~K. Manrai.
+\newblock Multimodal foundation models exploit text to make medical image
+  predictions.
+\newblock \emph{Nature Communications}, 2026.
+\newblock \doi{10.1038/s41467-026-74207-5}.
+
+\bibitem[Qu et~al.(2026)Qu, Liu, Murrow, Burger, Guo, Vaidya, Rose,
+  Kantarcioglu, Malin, and Yin]{qu2026accuracy}
+Bowen Qu, Weixin Liu, Matthew Murrow, Matthew Burger, Xingyi Guo, Mihir~Sachin
+  Vaidya, Susannah~L. Rose, Murat Kantarcioglu, Bradley~A. Malin, and Zhijun
+  Yin.
+\newblock Accuracy overstates evidence grounding and abstention reliability in
+  mammography vision-language models, 2026.
+\newblock medRxiv, doi:10.64898/2026.09.10.26361944.
+
+\bibitem[Fisher(2025)]{fisher2025negative}
+George Fisher.
+\newblock Vision-language foundation models do not transfer to medical imaging
+  classification: A negative result on chest {X}-ray diagnosis, 2025.
+\newblock medRxiv 2025.12.06.25341759.
+
+\bibitem[Li et~al.(2025)Li, Jiang, Xu, Xia, Jia, Chen, and Shi]{li2025atcxr}
+Xueyang Li, Mingze Jiang, Gelei Xu, Jun Xia, Mengzhao Jia, Danny Chen, and Yiyu
+  Shi.
+\newblock {AT-CXR}: Uncertainty-aware agentic triage for chest {X}-rays, 2025.
+\newblock arXiv:2508.19322.
+
+\bibitem[Demner-Fushman et~al.(2016)Demner-Fushman, Kohli, Rosenman, Shooshan,
+  Rodriguez, Antani, Thoma, and McDonald]{demnerfushman2016openi}
+Dina Demner-Fushman, Marc~D. Kohli, Marc~B. Rosenman, Sonya~E. Shooshan,
+  Laritza Rodriguez, Sameer Antani, George~R. Thoma, and Clement~J. McDonald.
+\newblock Preparing a collection of radiology examinations for distribution and
+  retrieval.
+\newblock \emph{Journal of the American Medical Informatics Association},
+  23\penalty0 (2):\penalty0 304--310, 2016.
+
+\bibitem[Bai et~al.(2025{\natexlab{b}})Bai, Cai, et~al.]{qwen2025qwen3vl}
+Shuai Bai, Yuxuan Cai, et~al.
+\newblock Qwen3-vl technical report, 2025{\natexlab{b}}.
+\newblock arXiv:2511.21631.
+
+\bibitem[Wang et~al.(2025)Wang, Gao, Gu, et~al.]{opengvlab2025internvl35}
+Weiyun Wang, Zhangwei Gao, Lixin Gu, et~al.
+\newblock Internvl3.5: Advancing open-source multimodal models in versatility,
+  reasoning, and efficiency, 2025.
+\newblock arXiv:2508.18265.
+
+\bibitem[Li et~al.(2023)Li, Wong, Zhang, Usuyama, Liu, Yang, Naumann, Poon, and
+  Gao]{li2024llavamed}
+Chunyuan Li, Cliff Wong, Sheng Zhang, Naoto Usuyama, Haotian Liu, Jianwei Yang,
+  Tristan Naumann, Hoifung Poon, and Jianfeng Gao.
+\newblock Llava-med: Training a large language-and-vision assistant for
+  biomedicine in one day, 2023.
+\newblock arXiv:2306.00890.
+
+\end{thebibliography}

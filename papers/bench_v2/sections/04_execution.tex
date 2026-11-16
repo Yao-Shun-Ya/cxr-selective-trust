@@ -1,0 +1,39 @@
+\section{Execution Model}
+\label{sec:execution}
+
+\subsection{Two levels of resumption}
+
+A 275,218-call study is not a single job; it is 38 stages, each of which may be interrupted. The harness resumes at two granularities.
+
+\textbf{Stage level.} A state file records completed stage keys of the form \texttt{layer/model/stage}, plus a separate list of contract-exempt stages. A completed stage is skipped on restart; a stage that exits non-zero, or that exits zero with error rows in its output, is \emph{not} marked complete, so a restart retries it. A run-level configuration fingerprint hashes the three manifests and the prompt/schema modules; if the fingerprint differs from the one recorded in the state file, the run refuses to resume and asks for \texttt{-Reset}. The delivered run has 38 stage entries: 30 completed, of which 8 are flagged contract-exempt for structured-contract metrics (six Open-i stages and two LLaVA stages). Open-i prose metrics are still computed; only the structured-contract metrics are excluded.
+
+\textbf{Row level.} Each runner writes a JSONL prediction file through \texttt{DurableJsonl}. Every record is appended, flushed, and fsynced; the durable byte offset is written to an atomic sidecar (temp file $\rightarrow$ \texttt{os.replace}). On reopen, the reader truncates the JSONL back to the durable offset, so a torn tail cannot survive a crash, and reports exactly which \texttt{(image\_id, condition, severity)} keys are present. A failed row is retried by default; a deterministic failure can be made terminal with \texttt{retry\_failed=False}.
+
+\textbf{Replacement, not duplication.} Retrying a failed key inside one run must not leave both the failure and the success in the file. \texttt{write\_many} collapses repeats inside the batch, then replaces the existing record in place using an in-memory key$\rightarrow$index map. The original implementation scanned the full record list for every key; we replaced that scan with the index, turning an $O(n^2)$ path into $O(n)$ for a stage with tens of thousands of rows. A failing progress sidecar is surfaced as \texttt{progress\_error} and a stderr warning rather than swallowed: the next resume falls back to the last complete line, which is safe but costs re-work.
+
+\subsection{Crash and resume tests}
+
+The claim ``a power cut costs at most the in-flight batch'' spans process boundaries, the CLI, the writer, and the resume key, so it is tested end-to-end with a stubbed model (no GPU, no weights). The suite runs the real PadChest and Open-i runners, kills them after a chosen batch, appends a torn JSON line, resumes, and checks the file. Table~\ref{tab:resume} summarizes the 40 checks.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Crash/resume suite (CPU-only, stubbed model). All 40 checks pass. The suite is part of CI and runs in seconds.}
+\label{tab:resume}
+\begin{tabular}{llr}
+\toprule
+Runner & Check family & Checks \\
+\midrule
+Open-i (44) & clean pass, schema, summary, sidecar & 8 \\
+ & hard failure: non-zero exit, durable prefix, resume & 7 \\
+ & crash: partial file, resume, no duplicates, no failed rows & 8 \\
+ & torn tail: truncation, no duplicates, completeness & 4 \\
+PadChest (43) & clean pass, blank images, summary, schema compatibility & 7 \\
+ & crash/resume: non-zero exit, partial file, no duplicates & 6 \\
+\midrule
+\multicolumn{2}{r}{Total} & \textbf{40} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The strongest check is the third resume: after a clean run, a crash, a torn tail, and two resumes, a third invocation must report nothing to do and leave the JSONL \emph{byte-identical}. That is what ``resumable'' has to mean when it is relied on dozens of times across a multi-day run.

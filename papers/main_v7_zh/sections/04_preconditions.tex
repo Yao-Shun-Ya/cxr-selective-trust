@@ -1,0 +1,98 @@
+\section{四个前提}
+\label{sec:preconditions}
+
+把每个被报告的量写成 $M=f(\text{模型},\text{数据},\text{干预},\text{契约},\text{决策规则})$。只有当设计钉住了目标量所依赖的每一个自变量，该指标才是\emph{可识别}的。表~\ref{tab:framework} 对每个前提给出目标量、识别条件、违反时的失效模式、审计统计量，以及审计通过后仍被允许的最强主张。下面的小节定义这些统计量；该表是可复用的对象。
+
+我们是在弱的、审计意义上使用``识别''一词：若在固定模型的前提下改变测量设计不会系统性地改变该统计量的符号、分母或解释，则该统计量对其目标量是已识别的。这不是充要刻画。阈值（众数占比 0.50、唯一回答 5）是可操作的启发式，而不是证明；第~\ref{sec:sensitivity}~节对其做扫描，并且正文写明审计失败时仍被允许的主张是什么。四个条件是有序的，而不是并列的：P4 固定输出空间及其分母，P1 确认真实图像上的输出支撑集非退化，P2 在该空间中检验分离度，P3 只在已声明或固定的决策规则下才允许鲁棒性主张。
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begingroup\hyphenpenalty=10000
+\caption{四个前提作为识别条件。每行说明：要估计什么；被报告的数字要识别它必须满足什么；条件失败时数字会被怎样误读；用什么统计量审计；以及仍被允许的主张。}
+\label{tab:framework}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.135\textwidth}>{\raggedright\arraybackslash}p{0.13\textwidth}>{\raggedright\arraybackslash}p{0.18\textwidth}>{\raggedright\arraybackslash}p{0.17\textwidth}>{\raggedright\arraybackslash}p{0.15\textwidth}>{\raggedright\arraybackslash}p{0.16\textwidth}@{}}
+\toprule
+前提 & 目标量 & 识别条件 & 违反时的失效模式 & 审计统计量 & 允许的主张 \\
+\midrule
+P1 响应性 & 可归因于图像变化的输出变异 & 真实输入上的输出支撑非退化 & 常数或模板输出使一切对照不可识别 & 唯一回答数；众数占比及 Wilson 区间；空白模板占比 & ``无可测响应''，而非``零依赖'' \\
+P2 零模型 & 干预下的证据特异性偏离 & 同空间分离 $\Delta_{\text{null}}$ 超过零 & 拒答或样板文本伪装成很大的对照 & $D(\text{真实},\text{空白}) - D(\text{真实},\text{真实}')$\newline 其中 $D_{\text{text}}=1-J$，$D_{\text{prob}}=\text{mean}\,|\Delta P|$ & ``对照超过自然变异''，而非``提取了证据'' \\
+P3 工作点 & 被恢复证据的变化 & 在已声明的决策规则下，召回率与阳性预测率、精确率并读 & 移动的工作点被读作鲁棒性提升 & $\Delta$召回率、$\Delta$阳性预测率、$\Delta$精确率、病例级转移 & ``工作点移动''；只有规则固定时才可谈鲁棒性 \\
+P4 契约覆盖 & 已覆盖槽位上的临床正确性 & 契约覆盖与输出模式已声明且可比 & 分母或输出体制在单元间改变 & 确定状态槽位占比；状态分布；标记与概率完整度 & 只在同一契约与输出体制内可比 \\
+\bottomrule
+\end{tabular}
+\endgroup
+\end{table}
+
+\subsection{P1——响应性：模型在真实图像上是否有变化？}
+
+把一个模型在某个数据层上的\textbf{输出支撑大小}定义为 $N$ 张真实图像上不同归一化回答的数量，把\textbf{众数占比}定义为众数回答的频率，并给出 Wilson 区间。只有当模型不是常数函数时，依赖对照才可解释。我们以描述性方式操作化该检查：$\text{众数占比} \ge 0.50$ 或 $\text{唯一回答数} \le 5$ 标记输出坍缩。规则在分析前声明，且从不过滤数据。
+
+\subsection{P2——零模型：没有干预时对照会是多少？}
+
+对每一个真实图像与干预图像的对照，在同一度量空间中报告两张\emph{不同真实}图像之间的同一统计量——真实图像间零模型。文本用 $D_{\text{text}} = 1-J$；结构化输出用八个标签上的 $D_{\text{prob}} = \text{mean}\,|\Delta P|$。两者都是距离，因此可解释的量是二者之差，即\textbf{分离}
+\[
+\Delta_{\text{null}} = D(\text{真实},\text{空白}) - D(\text{真实},\text{另一真实}).
+\]
+\begin{itemize}[leftmargin=1.2em,itemsep=1pt,topsep=2pt]
+\item $\Delta_{\text{null}} > 0$：干预比一张随机真实图像\emph{更远}（存在一定分离）；
+\item $\Delta_{\text{null}} \approx 0$：干预与随机真实图像不可区分（没有证据）；
+\item $\Delta_{\text{null}} < 0$：干预比随机真实图像\emph{更近}（模型用先验作答）。
+\end{itemize}
+两个空间共用同一符号约定很重要：Jaccard 是相似度，而 $|\Delta P|$ 是距离，若比较两个空间的原始``差距''，正值含义会被翻转。
+
+\subsection{P3——工作点：决策阈值发生了什么？}
+
+同时报告阳性召回率、阳性预测率与精确率。没有阳性预测率的召回变化，无法区分``恢复了更多证据''与``阈值移动了''。
+
+\subsection{P4——契约覆盖与输出模式}
+
+报告 (a) 具有确定状态（阳性或阴性）的标签槽位比例，并与 uncertain 与未提及状态分开；以及 (b) 当两次运行跨精度或跨提示比较时，报告输出模式指示量——推理通道触发率、概率完整度。在 19\% 槽位上计算的指标，与在 99\% 槽位上计算的指标不可比。
+
+\subsection{契约术语}
+
+四个量在全文中严格区分。\textbf{模式合规}问回答能否解析为所请求的格式。\textbf{契约覆盖}问有多大比例的标签槽位带有确定状态（阳性或阴性），而非 \texttt{uncertain} 或 \texttt{not\_mentioned}。\textbf{临床正确性}问这些确定状态是否与参考标签一致。\textbf{弃答}问模型是否明确拒绝（\texttt{uncertain} 状态或拒答句）。一个模型可以完全模式合规却只覆盖 19\% 的槽位；可以弃答而不违反任何模式；散文模型则可以既不合规也不被覆盖。混淆这四者是不可比数字最常见的来源，因此下文每个指标都写明其分母。
+
+\subsection{审计}
+
+表~\ref{tab:audit} 把 P1--P2 应用于三个数据层。实现为 \url{scripts/78_responsiveness_audit.py}（仅 CPU）与 \url{scripts/79_export_selective_inputs.py}。坍缩规则是描述性的，从不过滤；第~\ref{sec:sensitivity}~节对其做扫描，表明核心跨数据集结论在众数占比阈值直至 0.80 时仍成立。
+
+\begin{table}[t]
+\centering
+\footnotesize
+\caption{响应性审计（全量数据）。六个模式合规模型覆盖三个数据层，另加 LLaVA-Med 在 PadChest、Open-i 与一个 200 例 NIH 子集上的运行。唯一回答数 = $N$ 张真实图像上不同归一化回答的数量。零模型统计量为\emph{分离} $\Delta_{\text{null}} = D(\text{真实},\text{空白}) - D(\text{真实},\text{另一真实})$，其中 $D_{\text{text}} = 1-J$、$D_{\text{prob}} = \text{mean}\,|\Delta P|$；正值表示干预比随机真实图像离真实图像更远（存在分离），负值表示更近（先验或样板）。众数占比的 Wilson 区间为 $\pm\le 0.02$，为节省篇幅省略。$\dagger$ LLaVA-Med 的空白回答为空，真实-空白 Jaccard 无定义；该统计量记为 n/a，而不是作为对照解释。}
+\label{tab:audit}
+\begin{tabular}{llrrrrcrr}
+\toprule
+数据层 & 模型 & $N$ & 唯一回答 & 众数占比 & 坍缩 & $\Delta_{\text{null}}$（文本） & $\Delta_{\text{null}}$（概率） \\
+\midrule
+NIH & MedGemma-4B & 1,506 & 336 & 0.052 & 否 & $+0.006$ & $+0.131$ \\
+NIH & MedGemma-1.5 & 1,506 & 250 & 0.099 & 否 & $+0.867$ & $+0.007$ \\
+NIH & InternVL3.5 & 1,506 & 313 & 0.161 & 否 & $+0.025$ & $+0.041$ \\
+NIH & Qwen3-VL & 1,506 & 125 & 0.547 & \textbf{是} & $-0.009$ & $-0.066$ \\
+NIH & CheXagent & 1,506 & 10 & 0.687 & \textbf{是} & $-0.070$ & n/a \\
+NIH & Qwen2.5-VL & 1,506 & 6 & 0.986 & \textbf{是} & $0.000$ & $-0.001$ \\
+NIH & LLaVA-Med（子集） & 200 & \textbf{2} & 0.987 & \textbf{是} & n/a$^{\dagger}$ & n/a \\
+\midrule
+PadChest & MedGemma-4B & 1,500 & \textbf{20} & 0.903 & \textbf{是} & $-0.002$ & $-0.009$ \\
+PadChest & MedGemma-1.5 & 1,500 & 329 & 0.373 & 否 & $+0.206$ & $+0.134$ \\
+PadChest & InternVL3.5 & 1,500 & \textbf{2} & 0.892 & \textbf{是} & $-0.006$ & $0.000$ \\
+PadChest & Qwen3-VL & 1,500 & \textbf{3} & 0.998 & \textbf{是} & $0.000$ & $-0.000$ \\
+PadChest & CheXagent & 1,500 & 3 & 0.983 & \textbf{是} & $-0.002$ & n/a \\
+PadChest & Qwen2.5-VL & 1,500 & \textbf{1} & 1.000 & \textbf{是} & $0.000$ & $0.000$ \\
+\midrule
+Open-i & MedGemma-4B & 947 & 78 & 0.604 & \textbf{是} & $-0.070$ & n/a \\
+Open-i & MedGemma-1.5 & 947 & 275 & 0.300 & 否 & $-0.087$ & n/a \\
+Open-i & InternVL3.5 & 947 & 222 & 0.243 & 否 & $+0.112$ & n/a \\
+Open-i & Qwen3-VL & 947 & 109 & 0.326 & 否 & $+0.648$ & n/a \\
+Open-i & CheXagent & 947 & 85 & 0.265 & 否 & $-0.030$ & n/a \\
+Open-i & Qwen2.5-VL & 947 & 218 & 0.226 & 否 & $+0.193$ & n/a \\
+\midrule
+PadChest & LLaVA-Med & 1,500 & 19 & 0.591 & \textbf{是} & n/a$^{\dagger}$ & n/a \\
+Open-i & LLaVA-Med & 947 & \textbf{2} & 0.671 & \textbf{是} & $-0.059$ & n/a \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+由此可得到三个事实。(i) 坍缩并不局限于域外数据层：Qwen2.5-VL 与 CheXagent 在域内也是常数机器。(ii) 在域内具有响应性的模型可以在域外坍缩：MedGemma-4B 336$\rightarrow$20、InternVL3.5 313$\rightarrow$2、Qwen3-VL 125$\rightarrow$3；只有 MedGemma-1.5 保持（250$\rightarrow$329）。(iii) 正的文本分离不是 grounding 的证据：Qwen3-VL 的 $+0.648$ 来自拒答模板，Qwen2.5-VL 的 $+0.193$ 来自第二条样板文本。图~\ref{fig:resp} 展示了该审计。

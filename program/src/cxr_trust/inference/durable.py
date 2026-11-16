@@ -61,6 +61,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Sequence
@@ -126,6 +127,8 @@ class DurableJsonl:
         self._truncated_bytes = 0
         self._deduped = 0
         self._replaced = 0
+        self._index: dict[tuple, int] = {}
+        self.progress_error: str | None = None
 
     # ---------------------------------------------------------------- lifecycle
     def _load_progress(self) -> dict:
@@ -199,6 +202,11 @@ class DurableJsonl:
         # This runs unconditionally: retry_failed only decides whether a *failed*
         # row blocks the next attempt, not whether duplicates are cleaned up.
         self.records = self._dedupe(self.records)
+        self._index = {}
+        for i, rec in enumerate(self.records):
+            k = self._key_of(rec)
+            if k is not None:
+                self._index[k] = i
 
         for rec in self.records:
             if rec.get("error") and self.retry_failed:
@@ -301,11 +309,15 @@ class DurableJsonl:
             self._fh.close()
             self._fh = None
         # Record the durable offset even on an exception, so a crash inside a
-        # stage still leaves a resumable state.
+        # stage still leaves a resumable state.  A failing sidecar is surfaced
+        # rather than swallowed: it means the next resume falls back to the
+        # last complete line, which is safe but costs re-work.
         try:
             self._write_progress(len(self.records))
-        except OSError:
-            pass
+        except OSError as exc:
+            self.progress_error = str(exc)
+            print(f"[durable] WARNING: could not write progress sidecar "
+                  f"{self.progress_path}: {exc}", file=sys.stderr)
         return None
 
     # ------------------------------------------------------------------ reading
@@ -365,25 +377,22 @@ class DurableJsonl:
                 ordered.append(rec)
 
         def store(rec: dict) -> bool:
-            """Append, or replace the existing attempt for this key."""
+            """Replace the existing attempt for this key in place, or append."""
             k = self._key_of(rec)
-            replaced = False
-            if k is not None:
-                for i in range(len(self.records) - 1, -1, -1):
-                    if self._key_of(self.records[i]) == k:
-                        self.records.pop(i)
-                        replaced = True
-                        break
+            if k is not None and k in self._index:
+                idx = self._index[k]
+                self.records[idx] = rec
+                return True
             self.records.append(rec)
-            return replaced
+            if k is not None:
+                self._index[k] = len(self.records) - 1
+            return False
 
         replaces = 0
         appends: list[dict] = []
         for rec in ordered:
             k = self._key_of(rec)
-            known = k is not None and any(
-                self._key_of(r) == k for r in self.records)
-            if known:
+            if k is not None and k in self._index:
                 store(rec)
                 replaces += 1
             else:
@@ -397,6 +406,9 @@ class DurableJsonl:
             self._offset += len(payload)
             for rec in appends:
                 self.records.append(rec)
+                k = self._key_of(rec)
+                if k is not None:
+                    self._index[k] = len(self.records) - 1
         elif replaces:
             # nothing to append, but the file still has to lose the superseded rows
             self._rewrite(self.records)

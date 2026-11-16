@@ -475,6 +475,11 @@ def main() -> int:
                              "serial path; see the Batching note in this file's "
                              "docstring for measured sizes)")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--attn-implementation", default=None,
+                        choices=["eager", "sdpa", "flash_attention_2"],
+                        help="override the attention backend; needed when the "
+                             "default SDPA kernel raises 'attn_bias_ptr is not "
+                             "correctly aligned' on a particular prompt length")
     args = parser.parse_args()
 
     if args.list_variants:
@@ -490,12 +495,21 @@ def main() -> int:
     if unknown:
         parser.error(f"unknown variants {unknown}; known: {sorted(PROMPT_VARIANTS)}")
 
-    model = get_model(
-        args.model,
-        root=ROOT,
-        device_map="auto",
-        load_in_4bit=args.load_in_4bit,
-    )
+    # Escape hatch for the torch 2.5.1 efficient-attention kernel, which raises
+    # "p.attn_bias_ptr is not correctly aligned" for some prompt lengths (the
+    # v3_report_first cells hit it on their first batch and wrote zero rows).
+    # Disabling that kernel leaves flash / math, which carry the same maths.
+    if os.environ.get("CXR_DISABLE_MEM_EFFICIENT_SDPA") == "1":
+        import torch
+        torch.backends.cuda.enable_mem_efficient_sdp(False)
+        print("[sdpa] memory-efficient attention disabled", flush=True)
+
+    model_kwargs = dict(root=ROOT, device_map="auto",
+                        load_in_4bit=args.load_in_4bit)
+    if args.attn_implementation:
+        model_kwargs["attn_implementation"] = args.attn_implementation
+        print(f"[attn] requested backend: {args.attn_implementation}", flush=True)
+    model = get_model(args.model, **model_kwargs)
     model.load()
 
     if os.environ.get("RUNNER_STUB") == "1":

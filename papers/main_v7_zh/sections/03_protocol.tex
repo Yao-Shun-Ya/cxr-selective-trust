@@ -1,0 +1,77 @@
+\section{协议}
+\label{sec:protocol}
+
+\subsection{模型与作为声明变量的精度}
+
+我们评测来自四个家族的六个\emph{模式合规}模型，各按我们实际部署的精度运行：4-bit 为事后 NF4 量化，bf16/fp16 为发布精度；三个 4-bit 模型另做 bf16 对照（表~\ref{tab:models}）。模式合规与契约覆盖是两个概念：CheXagent 可以解析，但只覆盖 18.9\% 的标签槽位（第~\ref{sec:preconditions}~节）。LLaVA-Med-1.5-7B 单独运行：其散文输出不遵守 JSON 契约，\texttt{parse\_success=false} 是设计预期，其数字被排除在所有定量比较之外。
+
+\begin{table}[t]
+\centering
+\small
+\caption{模型与精度。``对照''是同一组四个依赖条件所使用的另一精度。}
+\label{tab:models}
+\begin{tabular}{llll}
+\toprule
+模型 & 家族 & 主精度 & 对照 \\
+\midrule
+MedGemma-4B-IT & MedGemma & 4-bit (NF4) & bf16 \\
+MedGemma-1.5-4B-IT & MedGemma & 4-bit (NF4) & bf16 \\
+Qwen2.5-VL-7B-Instruct & Qwen & 4-bit (NF4) & bf16 \\
+Qwen3-VL-8B-Instruct & Qwen & bf16 & --- \\
+InternVL3.5-8B & InternVL & bf16 & --- \\
+CheXagent-8B & CheXagent & fp16 & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{数据层}
+
+\textbf{NIH（域内，结构化）。}1,506 例研究（\texttt{internal\_test} 1,054 + \texttt{source\_val} 452）。19 格网格：干净图像加六类退化（分辨率、噪声、模糊、JPEG、对比度、亮度），每类三个严重度，每个模型 28,614 个单元。真值来自 NIH 清单中的八标签多标签标注。
+
+\textbf{病例构成。}NIH 评测集由分层采样器构建，刻意富集七个疾病标签，因此其阳性率高于 ChestX-ray14 的自然分布（肺不张 50.7\% 对 10.3\%；no-finding 8.0\% 对 53.8\%；附录~\ref{app:risk}，表~\ref{tab:prevalence}）。AUROC 在期望意义上不受患病率影响，但精确率与阳性预测率不是：这两者只在层内比较，绝不跨层比较。PadChest 保持其原生、稀疏得多的病例构成，因此跨数据集 $\Delta$AUROC 是在未匹配病例谱上得到的域统计量，需与第~\ref{sec:sensitivity}~节的共同标签分析一起解读。
+
+\textbf{依赖条件。}四种条件——原图、空白（同尺寸均匀灰块）、强模糊、打乱图像——每个模型 6,024 个单元。空白是全篇使用的反事实。
+
+\textbf{精度对照。}三个主实验为 4-bit 的模型在另一精度下重复同样四种依赖条件（每个 6,024 个单元）。
+
+\textbf{模式消融。}五种回答模式 $\times$ \{原图, 空白\}，在 MedGemma-4B 上运行（15,060 个单元），仅改变所请求的输出契约。
+
+\textbf{PadChest（跨医院，结构化）。}1,500 例研究，存储分辨率加空白对照（每个模型 3,000 个单元）。图像与标签均不重采样；PadChest 的 120 标签词表被映射到相同的八种发现，其中肺炎结构性缺失。固定处理器可能在模型内部降采样（表~\ref{tab:geometry}）。
+
+\textbf{Open-i（报告生成，散文）。}947 例研究，原图与空白（每个模型 1,894 个单元）。参考报告由冻结的规则标注器打分（关键词加否定窗口），并在每条输出中记为 \texttt{evidence\_method}。
+
+表~\ref{tab:calls} 汇总调用预算：六模型矩阵共 \textbf{270,324 次模型调用}，加上 LLaVA-Med 实验的 5,294 次，共 275,618 次。
+
+\begin{table}[t]
+\centering
+\small
+\caption{数据层、每模型单元数与总调用量。}
+\label{tab:calls}
+\begin{tabular}{llrr}
+\toprule
+数据层 & 阶段 & 每模型单元数 & 模型数 \\
+\midrule
+NIH & shift（19 格网格） & 28,614 & 6 \\
+NIH & 依赖（4 条件） & 6,024 & 6 \\
+NIH & 精度对照 & 6,024 & 3 \\
+NIH & 模式消融 & 15,060 & 1 \\
+PadChest & 原生 + 空白 & 3,000 & 6 \\
+Open-i & 报告 + 空白 & 1,894 & 6 \\
+NIH & LLaVA-Med 子集 & 400 & 1 \\
+\midrule
+\multicolumn{2}{l}{合计（含 LLaVA-Med 5,294）} & \multicolumn{2}{r}{275,618 次调用} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{冻结的测量选择}
+
+所有模型使用贪婪解码（\texttt{do\_sample=False}，单束）、每层单一提示模板与同一解析器。每张图像按存储分辨率送入，直至各模型声明的上限；固定处理器可能在模型内部降采样（表~\ref{tab:geometry}），因此``全分辨率''是模型相关的，而不是共享设置。各模型的有效输入几何因架构而异，作为测量的一部分记录，而不是当作中性设置。在最大的 PadChest 图像（15.37\,MP）上，Qwen3-VL 接收 15.24\,MP，Qwen2.5-VL 接收 12.85\,MP（其检查点上限），MedGemma 接收 0.80\,MP，InternVL/CheXagent 接收 0.20\,MP。因此，跨家族比较的是``同一张图像经过六条不同输入路径''；我们明确报告这一点，而不是把它当作可忽略的干扰。
+
+\subsection{评估口径}
+
+两个层级严格分开。\emph{描述性输出分析}——响应性、干净与退化准确率、工作点变化、契约与报告指标——使用全部 1,506 例 NIH 研究，因为它们不拟合任何参数：每个数字都是冻结输出与标签的函数。\emph{拟合策略分析}——校准温度、风险阈值与三动作策略——所有参数都在 \texttt{source\_val}（452 例）上拟合，只在 \texttt{internal\_test}（1,054 例研究、8,432 个发现项、427 个患者簇）上报告。表~\ref{tab:clean} 与表~\ref{tab:op} 属于第一层；表~\ref{tab:selective} 与图~\ref{fig:selective}--\ref{fig:risk} 属于第二层。第二层中没有任何数字包含用于拟合其阈值的研究。
+
+\subsection{统计}
+
+比例使用 Wilson 95\% 区间。AUROC 与风险--覆盖率区间使用患者聚类自助法（1,000 次重采样）。单位是研究（一张图像）：每例研究带有源元数据中的患者标识，重采样抽取患者，因此同一患者的所有图像一起移动。干净与退化行按研究标识连接，使每例研究同时进入两种条件。工作点指标由模型实际输出的状态计算，而不是来自拟合切点：``positive'' 即模型自己的决策。0.5 概率切点只用于没有显式状态的槽位，校准概率只用于上一节所述的拟合层。校准与决策阈值只在 \texttt{source\_val} 上拟合、在 \texttt{internal\_test} 上评估。我们不对 $n=5$ 或 $n=6$ 拟合模型级回归；跨模型一致性以两两秩相关报告；任何用于\emph{描述性}划分的阈值都标注为``描述性，非拟合''。

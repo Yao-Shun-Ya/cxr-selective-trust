@@ -7,7 +7,7 @@
     answers it -- not the same 19-cell synthetic grid three times (which would cost
     621 h and answer the artificially-degraded question twice):
 
-      NIH eval 1732   in-domain:  19-cell synthetic shift + 4-cell reliance + bf16 control
+      NIH eval 1506   in-domain:  19-cell synthetic shift + 4-cell reliance + bf16 control
       PadChest 1500   cross-hospital: native shift + blank control            (2 cells)
       Open-i 947      report generation: prose report + blank control          (2 cells)
 
@@ -72,6 +72,19 @@ if (-not [System.IO.Path]::IsPathRooted($OutputRoot)) {
 }
 Set-Location $script:Root
 
+# Native-resolution prefill fragments the caching allocator: after an 11.40 MP
+# PadChest cell torch held 28.1 GiB reserved with only 2.5 GiB free, and the next
+# 16,384-token cell spilled past physical VRAM. Windows does NOT raise OOM for
+# that -- WDDM pages VRAM into host RAM, the cell costs ~290 s instead of ~40 s
+# at 100% utilisation and 122 W, and the run looks healthy while its rate rots.
+# Measured with scripts/_diag_vram_cliff.py (2026-10-21); see docs/55 section 10.
+# expandable_segments removes the fragmentation that starts the cascade; the
+# wrappers additionally return the cache after each call.
+if (-not $env:PYTORCH_CUDA_ALLOC_CONF) {
+    $env:PYTORCH_CUDA_ALLOC_CONF = 'expandable_segments:True'
+}
+Write-Host ("  PYTORCH_CUDA_ALLOC_CONF = {0}" -f $env:PYTORCH_CUDA_ALLOC_CONF)
+
 $Models = @($Models | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $Layers = @($Layers | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 
@@ -109,7 +122,12 @@ $StageSecondsPerCall = @{
     # that used to truncate at 1024 run longer -- this rate is a lower bound until
     # the retry re-measures it.
     'medgemma_15_4b_it/shift'        = 2.344
-    'qwen25_vl_7b_instruct/shift'    = 1.590
+    'qwen25_vl_7b_instruct/shift'    = 2.944
+    # Post-contract native-resolution rerun, 2026-10-20..21: 19,318 cells took
+    # 15.8 h = 2.944 s/cell. The old 1.590 was measured when this model still
+    # read a 0.59 MP version of every NIH image; the live progress bar during
+    # the rerun read 2.93 s/img, so the plan had been understating this stage
+    # (and the qwen25 subtotal) by roughly half.
     'qwen3_vl_8b_instruct/shift'     = 1.455
     'internvl3_5_8b/shift'           = 5.722
     # chexagent crashed while offloaded (84.5 s/cell and rising). Post-fix, the
@@ -133,7 +151,8 @@ $StageSecondsPerCall = @{
     # MEAN 2.479 over 128 cells, 128/128 parseable (the blank condition opens the
     # reasoning channel on every cell: 100/100 in the pre-run)
     'medgemma_15_4b_it/reliance'     = 2.479
-    'qwen25_vl_7b_instruct/reliance' = 1.585
+    'qwen25_vl_7b_instruct/reliance' = 2.911
+    # Native-resolution rerun: 6,024 cells in 4.9 h (progress bar 2.91 s/img).
     'qwen3_vl_8b_instruct/reliance'  = 1.477
     'internvl3_5_8b/reliance'        = 5.724
     # ---- NIH precision: the bf16 control, same 4 conditions, batch capped at 4
@@ -146,7 +165,8 @@ $StageSecondsPerCall = @{
     # MEAN 13.305 over 64 cells at bs=4, 64/64 parseable, at_cap=0
     # (outputs/state/medgemma15_precision_parse_budget_2048.json).
     'medgemma_15_4b_it/precision'    = 13.305
-    'qwen25_vl_7b_instruct/precision' = 2.144
+    'qwen25_vl_7b_instruct/precision' = 3.356
+    # bf16 control at native resolution: 3.36 s/img on the live bar (6024 cells).
     # ---- NIH ablation: 5 prompt variants x original/blank, batched 2026-10-05.
     #      The serial stage measured 5.67-9.93 s/cell depending on how much text
     #      the variant asks for (8.28 s/cell on the pre-run as a whole); at batch
@@ -158,12 +178,40 @@ $StageSecondsPerCall = @{
 # measurement of PadChest or Open-i, and the plan says so instead of pretending.
 # The Open-i report stage is the one expected to land here first (prose report,
 # 192 new tokens, a different prompt) -- measure it before trusting its estimate.
-$LayerStageSecondsPerCall = @{}
-# A stage whose rate has no measurement of its own borrows one. The two layer
-# native stages (PadChest's 2-cell original/blank, Open-i's 2-cell prose report)
-# have no measurement yet and therefore borrow the NIH shift rate -- the plan
-# prints them as "proxy-nih" rather than quietly calling them measured, because
-# an Open-i report is prose and cannot be cheaper than a 19-cell NIH cell.
+$LayerStageSecondsPerCall = @{
+    # Rates measured ON the layer, keyed model/layer/stage. Needed because a rate
+    # measured on NIH is not a rate for a native-resolution layer: PadChest images
+    # are 6.7x the pixels of the uniform 1024x1024 NIH set and Open-i 4.5x, and
+    # since 2026-10-18 nothing is downscaled any more, so per-call cost is not
+    # comparable. Measured in isolated smoke mode (4 images, $NonNihBatch).
+    #
+    # padchest, batch 1, native 19.27 MP ceiling -> 8 cells in 122 s. Before the
+    # preprocessing fix this stage "looked" like 1.70 s/cell only because qwen25
+    # was reading a 0.59 MP version of the image and answering in a few tokens.
+    'qwen25_vl_7b_instruct/padchest/shift' = 20.5
+    # 24-image isolated sample on 2026-10-21 (48 cells, 48/48 parsed): 16.3 s for
+    # images <= 11 MP, 52.9 s above it, reweighted to the layer's own pixel mix
+    # (171/1500 = 11.4% above 11 MP) -> 20.5 s/cell -> 17.1 h for 3,000 cells.
+    # The old 15.24 came from a 4-image smoke test that happened to contain no
+    # large image. The remaining >11 MP cost is a WDDM paging tail, not a bug:
+    # see docs/55 section 10. Do NOT "fix" it by lowering max_pixels.
+    # padchest, batch 1 -> 8 cells in 96 s. This is the model that pinned the
+    # 32 GB card at batch 8 before the fix (0 rows written, VRAM full).
+    'qwen3_vl_8b_instruct/padchest/shift' = 13.9
+    # 12-image isolated sample on 2026-10-21 (24 cells, 24/24 parsed, zero paging
+    # samples): 12.6 s <= 11 MP, 24.3 s above, reweighted to 171/1500 -> 13.9
+    # s/cell -> 11.6 h. The old 12.12 came from a 4-image smoke test.
+    # openi, batch 1 -> 8 cells. Faster than padchest per cell because the report
+    # is capped at 192 tokens and the images are smaller (4.75 MP vs 7.00 MP).
+    # qwen25's number is derived from the driver's wall clock (1m over 8 cells,
+    # so +/-0.5 s); qwen3's is the runner's own mean.
+    'qwen25_vl_7b_instruct/openi/shift' = 7.5
+    'qwen3_vl_8b_instruct/openi/shift'  = 3.40
+}
+# A stage whose rate has no measurement of its own borrows one. Open-i's 2-cell
+# prose report still has no measurement and therefore borrows the NIH shift rate
+# -- the plan prints it as "proxy-nih" rather than quietly calling it measured,
+# because an Open-i report is prose and cannot be cheaper than an NIH cell.
 $StageAlias = @{ native_shift = 'shift'; report = 'shift' }
 $SecondsPerCall = @{
     medgemma_4b_it        = 0.61
@@ -197,6 +245,22 @@ $SweetSpotBatch = @{
 # MEASURED batch sizes for the ablation stage only; see Get-AblationBatch.
 $AblationBatch = @{
     medgemma_4b_it = 32
+}
+# Batch size for the two NATIVE-resolution layers (PadChest, Open-i), where the
+# model's image-token count scales with the source image. Only the
+# Qwen-processor models qualify: every other wrapper resizes to a fixed size
+# (CheXagent, LLaVA-Med, MedGemma's Gemma3 processor) or to a capped tile grid
+# (InternVL: 448x448 tiles, max 12 patches), so its token count is constant and
+# its NIH sweet spot stays valid there.
+#
+# Without this override the Qwen family ran the native layers at its NIH sweet
+# spot of 8, which is sized for 1.05 MP images and is ~6-15x too large here.
+# Starting values below are deliberate but are confirmed by
+# scripts/76_layer_smoke.py before the full run; the numbers it prints (peak
+# VRAM, s/img, parse rate) are what justify them.
+$NonNihBatch = @{
+    qwen25_vl_7b_instruct = 1
+    qwen3_vl_8b_instruct  = 1
 }
 # Per-model generation budget, where a model needs more than the shared default.
 #
@@ -275,6 +339,16 @@ $AblationModels = @('medgemma_4b_it')
 $KnownContractFailures = @{
     'llava_med_v1_5_7b' = 'prose, no JSON contract (docs/50 S2.7, docs/51)'
 }
+# A second, independent reason a stage is not structured: the LAYER is free text
+# by design. The open-i layer asks every model to WRITE a report, so a row whose
+# `parse_success` is false is the intended deliverable, not a broken cell -- the
+# report-layer metric reads the raw text through a labeller (42_geographic_shift),
+# not the structured parse. This differs from the model exemption above in one
+# respect: an EMPTY report is still a useless row and still gates the stage, so the
+# open-i branch relaxes only the parse check, not the emptiness check.
+$ProseByDesignLayers = @{
+    'openi' = 'report layer is free text by design (no JSON contract)'
+}
 $StageStartupSeconds = 35
 
 if (-not $Models) { $Models = $DefaultModels }
@@ -295,13 +369,36 @@ if ($badM) {
 }
 
 # --------------------------------------------------------------------------
-# layer definitions: cells per image, dataset size, input paths
+# layer definitions: cells per image, evaluation-set size, input paths
 # --------------------------------------------------------------------------
+# The size that matters is the number of images a layer EVALUATES, which is not
+# the manifest's row count. `nih_eval_1732.csv` carries 226 `internal_train`
+# "donor" rows that exist only for the no_finding repair (docs/48 6.1.2); every
+# runner drops them with --split, so the NIH evaluation set is 1,054 internal_test
+# + 452 source_val = 1,506. Counting the manifest here, instead of trusting the
+# filename, is what keeps the coverage guard's denominator equal to the number of
+# cells the runner really writes: the first full run used the raw 1,732, marked a
+# complete and correct NIH stage [BAD] at 87% coverage, and deleted it.
+function Get-EvalImageCount([string] $manifest, [string] $splits) {
+    $path = Join-Path $script:Root $manifest
+    if (-not (Test-Path $path)) { return 0 }
+    $want = @{}
+    foreach ($s in ($splits -split ',')) { $want[$s.Trim()] = $true }
+    $n = 0
+    foreach ($row in Import-Csv -LiteralPath $path) {
+        if ($want.ContainsKey($row.split)) { $n++ }
+    }
+    return $n
+}
+
 function Get-LayerDef() {
+    $nihManifest = 'data\manifests\nih_eval_1732.csv'
+    $pcManifest  = 'data\manifests\padchest_shift.csv'
+    $oiManifest  = 'data\manifests\openi_rrg.csv'
     return @{
         nih = @{
-            Images        = 1732
-            Manifest      = 'data\manifests\nih_eval_1732.csv'
+            Images        = Get-EvalImageCount $nihManifest 'internal_test,source_val'
+            Manifest      = $nihManifest
             Splits        = 'internal_test,source_val'
             ImagesRoot    = 'data\nih\images'
             Dir           = 'nih_eval'
@@ -309,8 +406,8 @@ function Get-LayerDef() {
             Stages        = @{ shift = 19; reliance = 4; precision = 4; ablation = 10 }
         }
         padchest = @{
-            Images        = 1500
-            Manifest      = 'data\manifests\padchest_shift.csv'
+            Images        = Get-EvalImageCount $pcManifest 'internal_test'
+            Manifest      = $pcManifest
             Splits        = 'internal_test'
             ImagesRoot    = 'data\padchest'
             Dir           = 'padchest'
@@ -318,8 +415,8 @@ function Get-LayerDef() {
             Stages        = @{ shift = 2 }
         }
         openi = @{
-            Images        = 947
-            Manifest      = 'data\manifests\openi_rrg.csv'
+            Images        = Get-EvalImageCount $oiManifest 'external_report'
+            Manifest      = $oiManifest
             Splits        = 'external_report'
             ImagesRoot    = 'data\open-i'
             Dir           = 'openi'
@@ -332,6 +429,16 @@ $LayerDef = Get-LayerDef
 
 function Get-BatchFor([string] $model, [string] $layer) {
     if ($script:BatchSizeExplicit) { return $BatchSize }
+    # Non-NIH layers carry NATIVE images: PadChest averages 7.00 MP (max 15.37)
+    # and Open-i 4.75 MP (max 5.92), against NIH's uniform 1.05 MP. Nothing is
+    # downscaled any more (base.IMAGE_MAX_PIXELS = 19.27 MP), so a processor
+    # whose token count scales with the source image sees ~6-15x more image
+    # tokens per picture, and batch 8 pinned the 32 GB card before the first row
+    # was written (2026-10-18: padchest/qwen3 stalled at 0/3000, VRAM full).
+    # Batch size -- not resolution -- is the VRAM lever on these layers.
+    if ($layer -ne 'nih' -and $script:NonNihBatch.ContainsKey($model)) {
+        return $script:NonNihBatch[$model]
+    }
     $bs = $SweetSpotBatch[$model]
     # PadChest/Open-i are two-cell runs; the bf16 VRAM ceiling is the binding
     # constraint there, so the slowest models stay small.
@@ -456,17 +563,21 @@ function Get-LayerCommand([string] $model, [string] $layer, [string] $stage, [in
     }
 
     if ($layer -eq 'padchest') {
+        # Write into a `shift` subdir, exactly like NIH. Get-PredictionFile resolves
+        # the `shift` stage to `$base\shift`; before this the runner wrote straight
+        # into `$base`, so the guard found nothing and marked a good stage [BAD].
         return @('scripts\43_run_padchest_shift.py', '--model', $model,
             '--manifest', $def.Manifest, '--split', $def.Splits,
-            '--images-root', $def.ImagesRoot, '--output-dir', $outRoot,
+            '--images-root', $def.ImagesRoot, '--output-dir', "$outRoot\shift",
             '--conditions', 'original', 'blank', '--limit', "$limit",
             '--batch-size', "$bs", '--max-new-tokens', "$(Get-MaxNewTokens $model 256)") + $quant
     }
 
     if ($layer -eq 'openi') {
+        # Same `shift` subdir as NIH/PadChest -- see the padchest branch above.
         return @('scripts\44_run_openi_report.py', '--model', $model,
             '--manifest', $def.Manifest, '--split', $def.Splits,
-            '--images-root', $def.ImagesRoot, '--output-dir', $outRoot,
+            '--images-root', $def.ImagesRoot, '--output-dir', "$outRoot\shift",
             '--conditions', 'original', 'blank', '--limit', "$limit",
             '--batch-size', "$bs", '--max-new-tokens', "$(Get-MaxNewTokens $model 192)") + $quant
     }
@@ -483,7 +594,33 @@ function Read-State {
     if (Test-Path $StateFile) {
         try { return (Get-Content $StateFile -Raw | ConvertFrom-Json) } catch { }
     }
-    return [pscustomobject]@{ completed = @(); contract_exempt = @(); started = (Get-Date).ToString('s') }
+    return [pscustomobject]@{ completed = @(); contract_exempt = @(); started = (Get-Date).ToString('s'); config_fingerprint = $null }
+}
+
+function Get-ConfigFingerprint {
+    # Hash the inputs that change what a stage means: the three manifests and
+    # the prompt/schema modules. The stage key itself stays layer/model/stage;
+    # this fingerprint is a run-level guard, not a replacement for it.
+    $root = Split-Path -Parent $PSScriptRoot
+    $files = @(
+        (Join-Path $root 'data\manifests\nih_eval_1732.csv'),
+        (Join-Path $root 'data\manifests\padchest_shift.csv'),
+        (Join-Path $root 'data\manifests\openi_rrg.csv'),
+        (Join-Path $root 'src\cxr_trust\inference\prompts.py'),
+        (Join-Path $root 'src\cxr_trust\inference\prompts_ablation.py'),
+        (Join-Path $root 'src\cxr_trust\inference\prompts_report.py'),
+        (Join-Path $root 'src\cxr_trust\inference\schema.py')
+    )
+    $parts = foreach ($f in $files) {
+        if (Test-Path $f) {
+            $h = (Get-FileHash -Algorithm SHA256 -Path $f).Hash.ToLower()
+            "{0}={1}" -f (Split-Path -Leaf $f), $h
+        }
+    }
+    $text = ($parts -join "`n")
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($text)
+    return (($sha.ComputeHash($bytes) | ForEach-Object { $_.ToString('x2') }) -join '')
 }
 
 function Save-State($state) {
@@ -545,7 +682,7 @@ function Get-PredictionFile([string] $model, [string] $layer, [string] $stage) {
 
 function Test-StageOutput {
     param([string] $model, [string] $layer, [string] $stage, [int] $sample = 200,
-          [int] $Expected = 0, [switch] $ContractExempt)
+          [int] $Expected = 0, [switch] $ContractExempt, [switch] $ProseStage)
     # A stage "succeeds" only if its rows are USABLE, not merely free of exceptions.
     #
     # The first version of this guard tested a single pattern,
@@ -571,7 +708,7 @@ function Test-StageOutput {
     $p = Get-PredictionFile $model $layer $stage
     if (-not $p) { return [pscustomobject]@{ ok = $false; note = 'no output file'; n = 0; bad = 0; file = ''
                                              err = 0; unparsed = 0; empty = 0; rows = 0; cover = $null
-                                             exempt = $ContractExempt } }
+                                             exempt = $ContractExempt; files = @() } }
     $n = 0; $usable = 0; $nErr = 0; $nUnparsed = 0; $nEmpty = 0
     $errs = @{}
     foreach ($line in (Get-Content $p -TotalCount $sample)) {
@@ -588,17 +725,20 @@ function Test-StageOutput {
         $isEmpty = $line -match '"raw_output"\s*:\s*""'
         if ($isEmpty) { $nEmpty++ }
         # A contract-exempt model is EXPECTED to emit prose, or nothing at all --
-        # both are the phenomenon under study, not a broken stage. Only an
-        # exception disqualifies its rows; the unparsed/empty counts are still
-        # reported, they just do not gate the stage. Non-exempt models keep the
-        # strict rule.
-        $rowBad = $isErr -or (-not $ContractExempt -and ($isUnparsed -or $isEmpty))
+        # both are the phenomenon under study, not a broken stage, so only an
+        # exception disqualifies its rows. A prose-by-design LAYER (open-i report)
+        # is expected to emit prose but NOT to emit nothing, so it relaxes the parse
+        # check alone and still fails on an empty reply. Non-exempt structured stages
+        # keep the full strict rule. The unparsed/empty counts are reported either way.
+        $rowBad = $isErr `
+            -or (-not $ContractExempt -and $isEmpty) `
+            -or (-not ($ContractExempt -or $ProseStage) -and $isUnparsed)
         if (-not $rowBad) { $usable++ }
     }
     if ($n -eq 0) {
         return [pscustomobject]@{ ok = $false; note = 'output file empty'; n = 0; bad = 0
                                  file = ''; err = 0; unparsed = 0; empty = 0; rows = 0; cover = $null
-                                 exempt = $ContractExempt }
+                                 exempt = $ContractExempt; files = @($p) }
     }
     # total row count vs the stage's planned cell count
     $rows = 0
@@ -612,7 +752,7 @@ function Test-StageOutput {
     $parts = @()
     if ($nErr) { $parts += "$nErr exception(s)" }
     if ($nUnparsed) {
-        $parts += $(if ($ContractExempt) { "$nUnparsed unparsed (contract-exempt: expected prose)" }
+        $parts += $(if ($ContractExempt -or $ProseStage) { "$nUnparsed unparsed (prose by design: not gated)" }
                      else { "$nUnparsed unparsed" })
     }
     if ($nEmpty) { $parts += "$nEmpty empty reply" }
@@ -632,7 +772,110 @@ function Test-StageOutput {
     if ($Expected -gt 0 -and $rows -lt [int]($Expected * 0.95)) { $ok = $false }
     return [pscustomobject]@{ ok = $ok; note = $note; n = $n; bad = $bad
                               file = $p; err = $nErr; unparsed = $nUnparsed
-                              empty = $nEmpty; rows = $rows; cover = $cover; exempt = $ContractExempt }
+                              empty = $nEmpty; rows = $rows; cover = $cover; exempt = $ContractExempt
+                              files = @($p) }
+}
+
+function Test-AblationOutput {
+    param([string] $model, [string] $layer, [int] $Expected = 0, [int] $sample = 200)
+    # The ablation stage writes ONE FILE PER CELL (5 prompt variants x 2 image
+    # conditions = 10 files), each holding `limit` rows, under
+    # `$base\ablation\<variant>\<condition>\image_reliance_predictions.jsonl`.
+    # `--flat-output` only strips the model-name level, so the per-cell subdirs
+    # remain. The single-file guard (Test-StageOutput) therefore saw one cell's
+    # 1,506 rows, compared them to the whole stage's 15,060 planned cells, read
+    # 10% coverage, and DELETED a complete stage -- the same denominator/path
+    # mismatch that hid behind the earlier 1,732-vs-1,506 NIH bug.
+    #
+    # This guard sums every cell file for coverage, and samples each file for
+    # quality. The `v3_report_first` variant asks the model for a REPORT, so its
+    # rows are prose by design and their parse_success=false is a documented
+    # property of that prompt, not a broken cell (docs/50 S7.6 records the
+    # +0.230 parse-fail). That one variant relaxes the parse check exactly like
+    # the open-i report layer; the other nine keep the strict rule, so a real
+    # parse collapse in any of them is still caught. Errors and empty replies
+    # gate every cell.
+    $def = $LayerDef[$layer]
+    $abDir = Join-Path $script:OutputRoot ("{0}\{1}\ablation" -f $def.Dir, $model)
+    if (-not (Test-Path $abDir)) {
+        return [pscustomobject]@{ ok = $false; note = 'no ablation output dir'; n = 0; bad = 0
+                                  file = ''; files = @(); err = 0; unparsed = 0; empty = 0
+                                  rows = 0; cover = $null; exempt = $false }
+    }
+    $files = @(Get-ChildItem -Path $abDir -Recurse -File -Filter '*_predictions.jsonl' `
+                             -ErrorAction SilentlyContinue | Sort-Object FullName)
+    if ($files.Count -eq 0) {
+        return [pscustomobject]@{ ok = $false; note = 'no cell output files'; n = 0; bad = 0
+                                  file = ''; files = @(); err = 0; unparsed = 0; empty = 0
+                                  rows = 0; cover = $null; exempt = $false }
+    }
+    $perFile = [Math]::Max(20, [int]($sample / [Math]::Max(1, $files.Count)))
+    $n = 0; $usable = 0; $nErr = 0; $nUnparsed = 0; $nEmpty = 0; $rows = 0
+    $errs = @{}
+    foreach ($f in $files) {
+        $relax = ($f.FullName -match 'report_first')
+        $rows += (Get-Content $f.FullName -ErrorAction SilentlyContinue | Measure-Object -Line).Lines
+        foreach ($line in (Get-Content $f.FullName -TotalCount $perFile)) {
+            if (-not $line.Trim()) { continue }
+            $n++
+            $isErr = $line -match '"error"\s*:\s*"([^"]+)"'
+            if ($isErr) {
+                $nErr++
+                $msg = $Matches[1]
+                if ($errs.ContainsKey($msg)) { $errs[$msg]++ } else { $errs[$msg] = 1 }
+            }
+            $isUnparsed = $line -match '"parse_success"\s*:\s*false'
+            if ($isUnparsed) { $nUnparsed++ }
+            $isEmpty = $line -match '"raw_output"\s*:\s*""'
+            if ($isEmpty) { $nEmpty++ }
+            $rowBad = $isErr -or (-not $relax -and $isUnparsed) -or $isEmpty
+            if (-not $rowBad) { $usable++ }
+        }
+    }
+    if ($n -eq 0) {
+        return [pscustomobject]@{ ok = $false; note = 'ablation files empty'; n = 0; bad = 0
+                                  file = $files[0].FullName; files = $files; err = 0; unparsed = 0
+                                  empty = 0; rows = $rows; cover = $null; exempt = $false }
+    }
+    $cover = $null
+    if ($Expected -gt 0) { $cover = [Math]::Round(100.0 * $rows / $Expected, 1) }
+    $bad = $n - $usable
+    $parts = @()
+    if ($nErr) { $parts += "$nErr exception(s)" }
+    if ($nUnparsed) { $parts += "$nUnparsed unparsed (report-first variant is prose by design)" }
+    if ($nEmpty) { $parts += "$nEmpty empty reply" }
+    if ($Expected -gt 0 -and $rows -lt [int]($Expected * 0.95)) {
+        $parts += ("only {0} of {1} rows written across {2} cell(s) ({3}% coverage)" -f `
+                   $rows, $Expected, $files.Count, $cover)
+    }
+    $note = $parts -join ', '
+    if ($errs.Count -gt 0) {
+        $top = $errs.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 1
+        $note = ("{0}x {1}" -f $top.Value, $top.Key) + $(if ($parts.Count -gt 1) {
+            '; ' + (($parts | Where-Object { $_ -notmatch '^\d+x ' }) -join ', ') } else { '' })
+    }
+    $tol = [Math]::Max(2, [int]($n * 0.01))
+    $ok = ($bad -le $tol)
+    if ($Expected -gt 0 -and $rows -lt [int]($Expected * 0.95)) { $ok = $false }
+    return [pscustomobject]@{ ok = $ok; note = $note; n = $n; bad = $bad
+                              file = $files[0].FullName; files = $files; err = $nErr
+                              unparsed = $nUnparsed; empty = $nEmpty; rows = $rows
+                              cover = $cover; exempt = $false }
+}
+
+function Get-StageExempt([string] $model, [string] $layer) {
+    # Resolve the two independent exemption reasons into the flags the guard takes.
+    # `exempt` -> keep the file, tag it contract-exempt, exclude from structured
+    #             metrics; `prose` -> this stage's deliverable is free text, so
+    #             parse_success=false is expected; `reason` -> what the summary prints.
+    $modelExempt = $KnownContractFailures.ContainsKey($model)
+    $proseLayer = $ProseByDesignLayers.ContainsKey($layer)
+    $reason = $null
+    if ($modelExempt) { $reason = $KnownContractFailures[$model] }
+    elseif ($proseLayer) { $reason = $ProseByDesignLayers[$layer] }
+    return [pscustomobject]@{ exempt = ($modelExempt -or $proseLayer)
+                              prose  = $proseLayer
+                              reason = $reason }
 }
 
 if (-not $StateFile) { $StateFile = Join-Path $script:Root 'outputs\state\run_all_layers_state.json' }
@@ -798,6 +1041,7 @@ Write-Host ("=" * 82)
 Write-Host ""
 
 if ($DryRun) {
+    Write-Host ("  config fingerprint: {0}" -f (Get-ConfigFingerprint))
     Write-Host "  (-DryRun given: nothing was run.)"
     exit 0
 }
@@ -806,6 +1050,20 @@ if ($DryRun) {
 # execution
 # --------------------------------------------------------------------------
 $state = Read-State
+$configFingerprint = Get-ConfigFingerprint
+if ($state.PSObject.Properties['config_fingerprint'] -and
+    $state.config_fingerprint -and $state.config_fingerprint -ne $configFingerprint) {
+    Write-Host ""
+    Write-Host "  [refuse] configuration fingerprint changed since this state file was written."
+    Write-Host "           Manifests or prompt/schema modules differ. Re-run with -Reset, or"
+    Write-Host "           use a separate -StateFile for the new configuration."
+    Write-Host ""
+    exit 3
+}
+if (-not $state.PSObject.Properties['config_fingerprint']) {
+    $state | Add-Member -NotePropertyName config_fingerprint -NotePropertyValue $configFingerprint -Force
+    Save-State $state
+}
 $done = 0
 foreach ($p in $plan) {
     if (Test-StageDone $state ("{0}/{1}/{2}" -f $p.Layer, $p.Model, $p.Stage)) { $done++ }
@@ -856,19 +1114,42 @@ foreach ($layer in $Layers) {
         if ($code -eq 0) {
             # pass the planned cell count so the guard can also detect a stage that
             # wrote only a fraction of its work and still exited 0
-            $exempt = $KnownContractFailures.ContainsKey($p.Model)
-            $chk = Test-StageOutput $p.Model $p.Layer $p.Stage -Expected $p.Calls -ContractExempt:$exempt
+            $ex = Get-StageExempt $p.Model $p.Layer
+            $exempt = $ex.exempt
+            if ($p.Stage -eq 'ablation') {
+                # ablation writes one file per cell; the single-file guard cannot
+                # see the whole stage (see Test-AblationOutput).
+                $chk = Test-AblationOutput $p.Model $p.Layer -Expected $p.Calls
+            }
+            else {
+                $chk = Test-StageOutput $p.Model $p.Layer $p.Stage -Expected $p.Calls `
+                    -ContractExempt:$exempt -ProseStage:$ex.prose
+            }
             if (-not $chk.ok) {
                 $failed += $key
                 Write-Host ("  [BAD ] {0} in {1} -- exit 0 but {2} of {3} sampled rows errored" -f `
                     $key, (Format-Duration $dt), $chk.bad, $chk.n) -ForegroundColor Red
                 if ($chk.note) { Write-Host ("         {0}" -f $chk.note) -ForegroundColor Red }
                 Write-Host ("         inspected: {0}" -f $chk.file)
-                $poison = $chk.file
-                if ($poison -and (Test-Path $poison)) {
-                    Remove-Item $poison -Force
-                    Write-Host ("         deleted {0}; a re-run redoes this stage from scratch" -f (Split-Path $poison -Leaf))
+                # QUARANTINE, do not delete. Deleting kept the "a re-run redraws
+                # from scratch" property but destroyed the only evidence of WHY
+                # the stage was bad -- which cost a whole diagnosis cycle on
+                # 2026-10-18: padchest/qwen25 was marked [BAD] at 21.5% parse and
+                # the raw replies that would have explained it (prose? truncated
+                # JSON? empty?) were gone before anyone could read them.
+                # Renaming to `*.bad.<stamp>` keeps the resume property (the
+                # runner keys off the real filename and will not find the renamed
+                # file), keeps the bytes for inspection, and does not disturb the
+                # state file.
+                $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+                foreach ($poison in @($chk.files)) {
+                    if ($poison -and (Test-Path $poison)) {
+                        $dest = "$poison.bad.$stamp"
+                        Move-Item -LiteralPath $poison -Destination $dest -Force
+                        Write-Host ("         quarantined -> {0}" -f (Split-Path $dest -Leaf)) -ForegroundColor Yellow
+                    }
                 }
+                Write-Host ("         {0} file(s) quarantined as *.bad; a re-run redoes this stage from scratch" -f (@($chk.files).Count))
             }
             else {
                 Mark-Done $state $key
@@ -877,7 +1158,7 @@ foreach ($layer in $Layers) {
                     Mark-ContractExempt $state $key
                     Write-Host ("  [done*] {0} in {1} (est {2}) -- contract-exempt: {3}" -f `
                         $key, (Format-Duration $dt), (Format-Duration $p.Seconds),
-                        $KnownContractFailures[$p.Model]) -ForegroundColor Yellow
+                        $ex.reason) -ForegroundColor Yellow
                 }
                 else {
                     Write-Host ("  [done] {0} in {1} (est {2})" -f $key, (Format-Duration $dt), (Format-Duration $p.Seconds))

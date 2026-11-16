@@ -178,12 +178,83 @@ disease finding is negative.
 {_JSON_CONTRACT}"""
 
 
+# --------------------------------------------------------------------------- #
+# R0 -- prompted reasoning channel: ask the model to write a trace inside
+#       <think>...</think> before the same JSON contract.  Used only for the
+#       second-model marker probe; it is a *prompted* channel, not an intrinsic
+#       one, and must not be compared to MedGemma-1.5's native marker without
+#       saying so.
+# --------------------------------------------------------------------------- #
+R0_SYSTEM = """You are a careful chest X-ray interpretation assistant.
+Before answering, reason about the image inside <think> ... </think>.
+Do not put JSON inside the think block. After </think>, return only the JSON object.
+Answer only from the provided radiograph."""
+R0_USER = f"""Assess these chest X-ray findings:
+{", ".join(PRIMARY_LABELS)}
+
+First write a short image-grounded reasoning trace inside <think>...</think>.
+Then return exactly one JSON object after </think>:
+{_JSON_CONTRACT}"""
+
+
+# --------------------------------------------------------------------------- #
+# P1/P2 -- paraphrase controls. Same JSON contract and same label set as V0,
+# only the wording changes. Used to test whether the schema result is a
+# wording artefact.
+# --------------------------------------------------------------------------- #
+P1_SYSTEM = _SYSTEM
+P1_USER = f"""Review this chest radiograph and decide the status of each
+finding below. Use only what is visible in the image.
+
+Findings:
+{_finding_block()}
+
+{_STATUS_RULE}
+
+{_JSON_CONTRACT}"""
+
+P2_SYSTEM = _SYSTEM
+P2_USER = f"""Act as a second reader on this chest X-ray. For every finding
+listed, state whether the visual evidence supports it.
+
+Checklist:
+{_finding_block()}
+
+Decide each item independently; do not let one normal region decide another.
+
+{_STATUS_RULE}
+
+{_JSON_CONTRACT}"""
+
+
+Q_SYSTEM = _SYSTEM
+Q_USER = f"""For each of the following chest X-ray findings, give only a
+probability between 0.0 and 1.0 that the finding is present. Do not decide a
+positive/negative status: the decision rule is applied outside the model, so the
+same probabilities can be read at any fixed threshold. Use "uncertain" in the
+status map as a placeholder; only the probabilities are scored.
+
+Findings:
+{_finding_block()}
+
+Return exactly one JSON object:
+{{
+  "findings": {{"<label>": "uncertain"}},
+  "probability_positive": {{"<label>": 0.0}}
+}}
+No markdown, no text outside the JSON."""
+
+
 PROMPT_VARIANTS = {
     "v0_simple": (V0_SYSTEM, V0_USER),
     "v1_per_label_binary": (V1_SYSTEM, V1_USER),
     "v2_few_shot": (V2_SYSTEM, V2_USER),
     "v3_report_first": (V3_SYSTEM, V3_USER),
     "v4_normality_pressure": (V4_SYSTEM, V4_USER),
+    "r0_think_json": (R0_SYSTEM, R0_USER),
+    "p1_paraphrase_short": (P1_SYSTEM, P1_USER),
+    "p2_paraphrase_second_reader": (P2_SYSTEM, P2_USER),
+    "q_probs_only": (Q_SYSTEM, Q_USER),
 }
 
 # variant -> short description used in reports
@@ -193,6 +264,10 @@ VARIANT_NOTES = {
     "v2_few_shot": "Adds one abnormal and one normal worked example.",
     "v3_report_first": "Elicits a region-by-region narrative before labelling.",
     "v4_normality_pressure": "Explicitly removes the 'normal is the safe answer' prior.",
+    "r0_think_json": "Prompted <think> trace before JSON; for the second-model marker probe only.",
+    "p1_paraphrase_short": "V0 semantics, shorter wording, same JSON contract.",
+    "p2_paraphrase_second_reader": "V0 semantics, second-reader wording, same JSON contract.",
+    "q_probs_only": "Probabilities only, no status; the decision rule is applied outside the model.",
 }
 
 

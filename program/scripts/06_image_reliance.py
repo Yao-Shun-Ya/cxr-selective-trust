@@ -106,7 +106,7 @@ def make_conditions(manifest: pd.DataFrame, images_root: Path, out_dir: Path, se
     # One pass to build id -> relpath. The previous version filtered the whole
     # dataframe (`manifest["image_id"].astype(str) == shuffled_id`) once per image,
     # which is O(n^2) with a full string cast each time -- about 1-3 minutes of pure
-    # CPU for 1,732 images, paid again on every stage start. The dict changes
+    # CPU for 1,506 images, paid again on every stage start. The dict changes
     # nothing semantically: rng is consumed in the same order, so the same partner
     # is chosen for the same image.
     relpath_of = dict(zip(image_ids, manifest["image_relpath"].astype(str).tolist()))
@@ -127,7 +127,7 @@ def make_conditions(manifest: pd.DataFrame, images_root: Path, out_dir: Path, se
             "shuffle": shuffled_path,
         }
         # Regenerate only what is missing. The controls are ~106 s of PNG encoding
-        # for 1,732 images, paid again on every stage start -- a resume that has
+        # for 1,506 images, paid again on every stage start -- a resume that has
         # already built them would spend that time rewriting identical pixels.
         #
         # Skipping is only safe because _save_atomic makes the write atomic: with a
@@ -155,10 +155,22 @@ def main() -> None:
     parser.add_argument("--load-in-4bit", action="store_true")
     parser.add_argument("--max-new-tokens", type=int, default=256)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--split", default=None,
-                        help="comma-separated splits to keep, e.g. internal_test,source_val")
+    parser.add_argument("--split", default="internal_test,source_val",
+                        help="comma-separated splits to keep (default: the evaluation "
+                             "splits); pass 'all' to use every manifest row")
+    parser.add_argument("--all-splits", action="store_true",
+                        help="explicitly allow training rows; equivalent to --split all")
     parser.add_argument("--batch-size", type=int, default=1, help="Batch size for inference")
     args = parser.parse_args()
+
+    # Greedy decoding is deterministic in exact arithmetic, but batch-dependent
+    # kernels can still change the last bits of a logit. Seeding torch makes the
+    # run reproducible for a fixed batch size; the batch-size comparison in
+    # scripts/110_greedy_determinism.py measures what remains.
+    import torch
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
 
     model = get_model(
         args.model,
@@ -176,6 +188,11 @@ def main() -> None:
             "RUNNER_STUB=1 but get_model returned "
             + type(model).__name__ + "; the stub did not patch this import path")
 
+
+    if args.all_splits:
+        args.split = "all"
+    if str(args.split).lower() == "all":
+        args.split = None
 
     manifest = pd.read_csv(args.manifest)
     if args.split and "split" in manifest.columns:

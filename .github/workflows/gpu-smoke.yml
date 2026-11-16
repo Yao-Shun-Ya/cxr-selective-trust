@@ -1,0 +1,32 @@
+name: gpu-smoke
+
+# GPU smoke test. This job must run on a self-hosted runner with a CUDA GPU and
+# the three project venvs; GitHub-hosted runners have no GPU, so they cannot
+# catch the failure mode this job exists for (a checkpoint that loads on CPU
+# checks but pages VRAM on the real card). Register a runner with the labels
+# [self-hosted, windows, gpu] and run this workflow manually or weekly.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1"   # Mondays 03:00 UTC
+
+jobs:
+  one-image-smoke:
+    runs-on: [self-hosted, windows, gpu]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preflight (environment and manifests)
+        working-directory: program
+        run: .\.venv-vl\Scripts\python.exe scripts\39_preflight.py
+
+      - name: Durable writer and resume harness
+        working-directory: program
+        run: .\.venv-vl\Scripts\python.exe scripts\41_test_runner_resume.py
+
+      - name: One-image model smoke (MedGemma-4B, 4-bit)
+        working-directory: program
+        run: >
+          .\.venv-vl\Scripts\python.exe scripts\27_smoke_one.py
+          --model medgemma_4b_it --precision 4bit --vram-budget-gb 12

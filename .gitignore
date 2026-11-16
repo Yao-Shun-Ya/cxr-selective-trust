@@ -66,7 +66,9 @@ outputs/
 /program/memory_*.log
 *.log
 /program/stub_counter.json
-/program/scripts/_stub/
+# program/scripts/_stub is deliberately tracked: the CPU-only crash/resume
+# test (41_test_runner_resume.py) imports it and a clone must be able to run
+# that test without a GPU or model weights.
 **/.cache/
 **/__pycache__/
 *.pyc
@@ -117,6 +119,9 @@ env/
 !/docs/49_data_manifest_contract.md
 
 # ---------- 8. Secrets and machine-specific files ----------
+# papers/参考/ holds third-party notes and, at times, provider credentials
+# (the frontier-API handoff file contains a live key). Never publish it.
+/papers/参考/
 .env
 .env.*
 *.pem
@@ -156,3 +161,14 @@ Thumbs.db
 /papers/main/
 /papers/main_v2/overleaf_package.zip
 /papers/main_v2/sections/*.md
+# Superseded manuscript generations: v7 and bench_v2 are the published versions;
+# carrying v4-v6 beside them would put contradictory numbers in one repository.
+/papers/main_v4/
+/papers/main_v4_zh/
+/papers/main_v5/
+/papers/main_v5_zh/
+/papers/main_v6/
+/papers/main_v6_zh/
+/papers/现在评价.md
+/papers/arxiv_v7.zip
+/papers/arxiv_bench_v2.zip

@@ -377,6 +377,15 @@ def main() -> int:
     ap.add_argument("--output-dir", required=True)
     ap.add_argument("--n-boot", type=int, default=1000)
     ap.add_argument("--seed", type=int, default=0)
+    # Responsiveness guard (scripts/78_responsiveness_audit.py). A blank-control
+    # contrast is only readable as image reliance when the model's real outputs
+    # vary; five of six models emit 1--20 distinct answers for 1,500 PadChest
+    # images (2026-10-23). Without this check the transfer section would report
+    # "reliance ~0" for models that had no variation to begin with.
+    ap.add_argument("--model", default=None,
+                    help="model name; defaults to the --output-dir basename")
+    ap.add_argument("--responsiveness", default=None,
+                    help="responsiveness_by_cell.csv from 78_responsiveness_audit.py")
     args = ap.parse_args()
 
     out_dir = Path(args.output_dir)
@@ -479,6 +488,56 @@ def main() -> int:
         print(f"report: {len(rep_rows)} cells from {rep_path.name}", flush=True)
         result["report"] = report_metrics(rep_rows, "original")
         result["report_blank_control"] = reliance_contrast(rep_rows, "blank")
+
+    # ------------------------------------------------------------------ #
+    # responsiveness guard
+    # ------------------------------------------------------------------ #
+    # Attached BEFORE the numbers are written, so a downstream reader cannot
+    # take a reliance delta at face value without also seeing whether the model
+    # produced any variation to explain. The guard never deletes or rescales a
+    # metric; it declares interpretability.
+    if args.responsiveness:
+        rpath = Path(args.responsiveness)
+        model = args.model or Path(args.output_dir).name
+        if not rpath.exists():
+            result["responsiveness_guard"] = {"error": f"missing {rpath}"}
+        else:
+            import pandas as _pd
+            tab = _pd.read_csv(rpath, encoding="utf-8-sig")
+            sub = tab[tab["model"] == model]
+            guard: dict[str, Any] = {"model": model, "source": str(rpath), "layers": {}}
+            for _, row in sub.iterrows():
+                layer = str(row["layer"])
+                raw_ci = row["real_top_share_ci"]
+                try:
+                    ci = json.loads(str(raw_ci).replace("'", '"'))
+                except Exception:
+                    ci = None
+                guard["layers"][layer] = {
+                    "n_real": int(row["real_n"]),
+                    "n_unique_text": int(row["real_n_unique_text"]),
+                    "top_share_text": float(row["real_top_share_text"]),
+                    "top_share_ci": ci,
+                    "gap_text": (None if _pd.isna(row["gap_text"])
+                                 else float(row["gap_text"])),
+                    "gap_prob": (None if _pd.isna(row["gap_prob"])
+                                 else float(row["gap_prob"])),
+                    "blank_top_is_refusal": bool(row["blank_top_is_refusal"]),
+                    "output_collapsed": bool(row["output_collapsed"]),
+                    "blank_contrast_usable": bool(row["blank_contrast_usable"]),
+                }
+                if bool(row["output_collapsed"]):
+                    print(f"[GUARD] {layer}/{model}: output collapsed "
+                          f"({int(row['real_n_unique_text'])} distinct replies for "
+                          f"{int(row['real_n'])} images, top share "
+                          f"{float(row['real_top_share_text']):.1%}) -- the blank "
+                          f"contrast on this layer cannot be read as image reliance",
+                          flush=True)
+                elif bool(row["blank_top_is_refusal"]):
+                    print(f"[GUARD] {layer}/{model}: the blank reply is a refusal; "
+                          f"this contrast measures absence detection, not evidence "
+                          f"extraction", flush=True)
+            result["responsiveness_guard"] = guard
 
     # strip in-memory arrays before serialising
     def clean(obj):

@@ -1,0 +1,106 @@
+\subsection{Controlled replications}
+\label{sec:results-round2}
+
+The 2026 literature left three questions that decide how much of the above travels: whether a supervised model would also sit at chance, whether the schema result is one checkpoint's habit, and whether a second reasoning model shows the same axes. This section answers the three with pre-deployed controls rather than post-hoc argument, and tests the fourth---cross-family generality---for the schema result; the remaining cross-family claims are still open and flagged as such.
+
+\subsubsection{A supervised baseline is not at chance}
+\label{sec:results-baseline}
+
+We trained DenseNet-121~\citep{huang2017densely} from ImageNet initialisation at $224$\,px with a class-weighted BCE objective, AdamW, and a fixed eight epochs with no early stopping or test-time model selection. It saw only the 3,871 \texttt{internal\_train} images and shares no patient with the 1,506 evaluation studies (patient overlap 0). On the same seven pathology labels it reaches \textbf{macro AUROC 0.733} (95\% patient-cluster bootstrap CI 0.718--0.749, 725 patients, 1,000 resamples; per-label 0.620--0.805; Table~\ref{tab:baseline}), and 0.724 on its own patient-disjoint 1,352-study \texttt{internal\_test} split (the VLM evaluation uses the 1,054-study subset of that split; Section~\ref{sec:protocol}).
+
+\begin{table}[t]
+\centering
+\small
+\caption{Clean NIH macro AUROC over the seven pathology labels, $n=1{,}506$. The baseline trains on 3,871 disjoint-patient images only; the six VLMs are the matrix from Table~\ref{tab:clean}.}
+\label{tab:baseline}
+\begin{tabular}{lrr}
+\toprule
+Model & Macro AUROC & Family \\
+\midrule
+\textbf{DenseNet-121 (supervised)} & \textbf{0.7329} & CNN, trained here \\
+MedGemma-4B & 0.6270 & medical VLM \\
+InternVL3.5-8B & 0.6066 & general VLM \\
+MedGemma-1.5 & 0.5852 & medical VLM \\
+Qwen3-VL-8B & 0.5455 & general VLM \\
+Qwen2.5-VL-7B & 0.5013 & general VLM \\
+CheXagent-8B & 0.5001 & CXR specialist \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The labels are therefore learnable from these images at $0.73$, from 3,871 training images---under 5\% of the 86{,}524-image released training split. ``No usable discrimination'' is a statement about the models, not about the task or the label noise alone. The baseline also bounds the claim in the other direction: 0.73 is not clinical-grade, so the paper's negative result concerns \emph{measurement identifiability} at this performance level, not the impossibility of CXR classification.
+
+\subsubsection{Schema dependence replicates on a second medical model, with a different mapping}
+\label{sec:results-schema2}
+
+We repeated the five-schema sweep on MedGemma-1.5 (15,060 calls). The headline result replicates: on a blank image, \textbf{all five schemas produce pathology recall 0.000}, against 0.493--0.614 on real images (Table~\ref{tab:r2schema}). No wording creates image dependence.
+
+What does \emph{not} replicate is which failure form each schema takes. MedGemma-4B had two forms (confident normal, or forced abstention). MedGemma-1.5 shows three: confident normal (\texttt{no\_finding} positive in 100\% of blank replies for v0, v1 and v3), a \emph{contract collapse} (v2 returns labels but drops the probability object in 99.9\% of blank replies), and refusal to assert (v4 returns \texttt{no\_finding} negative in 100\% of blank replies with the same contract collapse). The schema with the highest real-image recall is v4 (0.614, $+6.3$\,\pp{} over v0) while its blank recall stays 0.000: the prompt moved the operating point, not the model's access to evidence.
+
+The correct reading is therefore narrower than ``the contract decides the form of the shortcut'' (Section~\ref{sec:results-schema}): the contract and the model \emph{jointly} decide it, and the joint mapping is not transferable across checkpoints. What transfers is the invariance that matters for a benchmark: real-image recall and blank-image behaviour are set by different things, so a schema cannot be validated on either alone.
+
+\subsubsection{The blank-image result travels across a model family; the contract signature does not}
+\label{sec:results-xfamily}
+
+To separate a MedGemma habit from a contract effect we repeated the sweep on Qwen3-VL-8B, a general model from a different family (Table~\ref{tab:r2xfamily}). The blank-image result replicates exactly: pathology recall is \textbf{0.000} on the blank image under all three schemas, against 0.258--0.306 on real images. The observable signature does not replicate. Qwen3's v0 is confident-normal (\texttt{no\_finding} positive in 100\% of blank replies) but emits only one of the eight requested probabilities, so probability completeness is 12.5\% on blank and 47.1\% on real; v1 keeps the same confident-normal answer while restoring completeness to 100\% and 95.2\%; v4 refuses the normal assertion (\texttt{no\_finding} positive in 0\% of blanks) and collapses the contract in 98\% of real replies. The same three-form structure appears in both models, with a different variant-to-form mapping. Contract coverage is therefore a property of the schema, not of the model, while the blank-image dependence is a property of both.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\caption{Cross-family schema sweep on Qwen3-VL-8B ($n=1{,}506$ per cell). Blank-image pathology recall is 0.000 under all three schemas, so the blank dependence is not a MedGemma habit. The observable signature differs: v0 is confident-normal with one probability emitted, v1 is confident-normal with a complete contract, v4 refuses the normal assertion and collapses the contract.}
+\label{tab:r2xfamily}
+\begin{tabular}{lrrrrrr}
+\toprule
+Variant & Real recall & Blank recall & Blank \texttt{no\_finding} pos. & Violation (real/blank) & Completeness (real/blank) \\
+\midrule
+v0 simple & 0.306 & \textbf{0.000} & 1.000 & 0.611 / 1.000 & 0.471 / 0.125 \\
+v1 per-label binary & 0.258 & \textbf{0.000} & 1.000 & 0.054 / 0.000 & 0.952 / 1.000 \\
+v4 normality pressure & 0.263 & \textbf{0.000} & 0.000 & 0.983 / 1.000 & 0.849 / 0.875 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Wording is not the mechanism, but it sets the blank-image answer}
+\label{sec:results-paraphrase}
+
+Two paraphrases of the v0 contract, identical in label set, status rule and JSON shape, were run against real and blank images on MedGemma-4B (6,024 calls). On real images the finding-level answer is reproducible: 90.9\% and 91.4\% agreement with the v0 baseline, Cohen's $\kappa$ 0.624 and 0.642. The schema result is not a single-wording artifact.
+
+On blank images the same two paraphrases disagree with the baseline on exactly one label. v0 asserts \texttt{no\_finding} positive in 100\% of blank replies; p2 does the same (agreement 1.000); p1 asserts it negative in 100\% (agreement 0.000). Pathology labels are identical across all three (all negative, agreement 1.000). A blank image therefore yields an answer that is a function of the wording and carries no image information---which is precisely why the null-model precondition needs a blank control \emph{and} a wording control, not either alone.
+
+The control also runs on Qwen3-VL (Table~\ref{tab:r2para}). Both paraphrases reproduce the real-image answer (p1 93.1\% agreement, $\kappa$ 0.723; p2 90.3\%, $\kappa$ 0.701), but neither flips the blank-image answer: agreement with v0 on the blank image is 1.000 for both, whereas p1 flips MedGemma-4B's blank answer completely. Wording therefore sets a prior that is model-specific: the same paraphrase that turns MedGemma's blank answer negative leaves Qwen3's confident-normal answer intact.
+
+\subsubsection{A second reasoning model: same operating point, new failure mode}
+\label{sec:results-second}
+
+Qwen3-VL-8B-Thinking exposes a native reasoning channel (the chat template pre-fills \texttt{<think>}, the model closes it before answering), so the noticeability axis is readable in a second model for the first time. We ran seven cells (clean plus six severe) on all 1,506 studies. A reply counts only if it closes the reasoning block \emph{and} a JSON object parses after the close; the rest are retained as a measured outcome (Table~\ref{tab:r2recon}).
+
+\textbf{Coverage is a measurable quantity, and it degrades with damage.} At a 5,120-token budget the model produces a usable answer on 9,381 of 10,542 cells (89.0\%); the 8,192-token sample of 40 cells adds 20 (89.2\% final). Coverage is 92.6\% on clean images, 80.9\% on resolution-severe, 84.3\% on brightness-severe (Table~\ref{tab:r2think}). The failures are not truncation artefacts that a larger budget removes: replies that still fail have a median length of 9.8\,k characters at a 2,560-token cap, 13.5\,k at 3,584, 19.3\,k at 5,120, and 28.1\,k in the 40-cell sample at 8,192, i.e.\ they expand to fill whatever budget they are given; that sample rescues 50\% (Table~\ref{tab:r2budget}). Non-termination is a behaviour of the model, and we report it as one. This is the vision-language counterpart of the overthinking literature: beyond some point additional reasoning tokens have negative marginal value and can abandon answers the model already had~\citep{wu2026whenmore,zhou2026overthinking}, and truncated traces can be worse than none~\citep{su2026broken}. Here the failure is more severe---the reply never becomes parsable---so the budget curve is a measurement property of the model, not only a cost.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Second reasoning model, severe cells ($n=1{,}506$ studies per cell). Coverage is the share of studies with a usable answer at a 5,120-token budget; $\Delta$ recall is paired against clean on studies answered in both cells (noise $n=1{,}238$; resolution $n=1{,}132$). AUROC is macro over the seven pathology labels; positive rate is the share of pathology slots called positive.}
+\label{tab:r2think}
+\begin{tabular}{lrrrrr}
+\toprule
+Cell & Coverage & Trace (k chars) & Pos.\ rate & Macro AUROC & $\Delta$ recall \\
+\midrule
+clean & 0.926 & 8.73 & 0.250 & 0.547 & --- \\
+blur & 0.932 & 8.84 & 0.189 & 0.547 & $-5.5$\,\pp{} \\
+brightness & 0.843 & 9.56 & 0.213 & 0.550 & $-5.1$\,\pp{} \\
+contrast & 0.924 & 8.99 & 0.280 & 0.545 & $+2.2$\,\pp{} \\
+JPEG & 0.923 & 9.37 & 0.240 & 0.537 & $-1.8$\,\pp{} \\
+noise & 0.885 & 9.06 & 0.173 & 0.527 & $\mathbf{-10.3}$\,\pp{} \\
+resolution & \textbf{0.809} & \textbf{10.22} & \textbf{0.125} & 0.549 & $\mathbf{-13.2}$\,\pp{} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{The operating-point mechanism replicates, in the opposite direction.} The positive-call rate falls from 0.250 to 0.125 under resolution loss, the \texttt{no\_finding} rate rises from 0.283 to 0.450, and macro AUROC is flat at 0.527--0.550 in every cell. Because coverage also falls, we recomputed the rate on the paired subset (studies answered in both cells): 0.250 $\rightarrow$ 0.128, i.e.\ the move is not a coverage artefact (Appendix~\ref{app:round2}, Table~\ref{tab:r2posrate}). The model does not lose ranking information---it never had any---it moves its operating point toward ``normal.'' This is the mirror image of Section~\ref{sec:results-op}: there, models with a high clean positive rate moved it up under damage and recall rose; here a model with a 25\% positive rate moves it down and recall falls. Both are operating-point shifts, and neither is a robustness change.
+
+Per-label, the paired loss survives cluster bootstrap and multiplicity control: pleural effusion $-8.8$ $[-11.9,-5.8]$\,\pp{} and pneumonia $-11.0$ $[-16.4,-5.5]$\,\pp{} ($q<0.001$), cardiomegaly $-6.0$ $[-9.9,-1.9]$\,\pp{} ($q=0.014$), atelectasis $-2.2$ and edema $-4.2$\,\pp{} ($q=0.053$), consolidation and pneumothorax not significant (Table~\ref{tab:r2label}).
+
+\textbf{The axis pair generalises; the quadrant does not.} Using coverage loss as the noticeability readout of this model and paired recall change as damage, the two quantities are again separable (Spearman 0.49 with $|\Delta|$, $p=0.33$; $-0.54$ with signed $\Delta$, $p=0.27$; $n=6$). The MedGemma-1.5 marker--damage correlation is 0.49 under the same $|\Delta|$ definition, but with six points neither estimate is distinguishable from zero: we claim the same \emph{direction}, not a common slope. Noise moves: for MedGemma-1.5 it was the silent corruption (marker 0.46\%, second-lowest) with damage comparable to resolution loss, whereas for Qwen3-VL-Thinking noise is loud (11.5\% coverage loss, third-highest) and damages recall by 10.3\,\pp{}. \emph{Silent failure is a property of the monitoring channel, not of the corruption}: a channel that watches reasoning termination sees noise, one that watches a specific marker token does not.
+
+This also explains why the second model does not reproduce Reversal~3's positive sign. The reversal needs headroom in the positive rate; a model that calls 25\% of slots positive has little, and degradation moves it down rather than up. Reporting the operating point, as required by the fourth precondition, is what makes the two models comparable at all.

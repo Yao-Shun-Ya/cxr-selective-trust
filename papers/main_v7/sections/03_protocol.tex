@@ -1,0 +1,36 @@
+\section{Protocol}
+\label{sec:protocol}
+
+\subsection{Models and precision as a declared variable}
+
+We evaluate six \emph{schema-compliant} models from four families, each at the precision we deployed: 4-bit is post-hoc NF4 quantization, bf16/fp16 are the released precisions; the three 4-bit models also get a bf16 control (Table~\ref{tab:models}). Schema compliance is separate from contract coverage: CheXagent parses, but covers only 18.9\% of label slots (Section~\ref{sec:preconditions}). LLaVA-Med-1.5-7B is run separately: its prose does not obey the JSON contract, \texttt{parse\_success=false} is expected by design, and its numbers are excluded from every quantitative comparison.
+
+\subsection{Layers}
+
+\textbf{NIH (in-domain, structured).} 1,506 studies (\texttt{internal\_test} 1,054 + \texttt{source\_val} 452). A 19-cell grid: clean plus six degradation types (resolution, noise, blur, JPEG, contrast, brightness) at three severities, giving 28,614 cells per model. Ground truth is the eight-label multi-label annotation from the NIH manifest.
+
+\textbf{Case mix.} The NIH evaluation set was assembled by a stratified sampler that enriches the seven disease labels, so its prevalences are deliberately higher than the natural ChestX-ray14 distribution (atelectasis 50.7\% vs.\ 10.3\%; no-finding 8.0\% vs.\ 53.8\%; Appendix~\ref{app:risk}, Table~\ref{tab:prevalence}). AUROC is insensitive to prevalence in expectation, but precision and positive-prediction rate are not: those are compared within a layer and never across layers. PadChest keeps its native, much sparser case mix, so the cross-hospital $\Delta$AUROC is a domain statistic on non-matched case spectra, and is read together with the common-label analysis in Section~\ref{sec:sensitivity}.
+
+\textbf{Reliance.} Four conditions---original, blank (uniform gray, same dimensions), strong blur, shuffled image---6,024 cells per model. Blank is the counterfactual used throughout this paper.
+
+\textbf{Precision control.} The same four reliance conditions at the alternate precision for the three models whose primary run is 4-bit (6,024 cells each).
+
+\textbf{Schema ablation.} Five answer schemas $\times$ \{original, blank\} on MedGemma-4B (15,060 cells), differing only in the requested output contract.
+
+\textbf{PadChest (cross-hospital, structured).} 1,500 studies at their stored resolution plus a blank control (3,000 cells per model). Neither the images nor the labels are resampled; PadChest's 120-label vocabulary is mapped to the same eight findings, with pneumonia structurally absent. Fixed processors may downsample inside the model (Table~\ref{tab:geometry}).
+
+\textbf{Open-i (report generation, prose).} 947 studies, original and blank (1,894 cells per model). The reference report is scored with a frozen rule-based labeller (keyword plus negation window), recorded as \texttt{evidence\_method} in every output.
+
+Table~\ref{tab:calls} (Appendix~\ref{app:protocol}) summarizes the call budget: \textbf{270,324 model calls} for the six-model matrix, plus 5,294 for the LLaVA-Med run (275,618 total).
+
+\subsection{Frozen measurement choices}
+
+All models use greedy decoding (\texttt{do\_sample=False}, one beam), a single prompt template per layer, and the same parser. Every image is passed at its stored resolution up to each model's declared ceiling; fixed processors may downsample inside the model (Table~\ref{tab:geometry}), so ``full resolution'' is model-specific, not a shared setting. The per-model effective input geometry differs by architecture and is recorded as part of the measurement, not as a neutral setting. On the largest PadChest image (15.37\,MP), Qwen3-VL receives 15.24\,MP, Qwen2.5-VL 12.85\,MP (its checkpoint ceiling), MedGemma 0.80\,MP, and InternVL/CheXagent 0.20\,MP. Cross-family comparisons therefore compare ``the same image through six different input paths''; we report this explicitly rather than treating it as a nuisance.
+
+\subsection{Evaluation universes}
+
+Two tiers are kept separate. \emph{Descriptive output analyses}---responsiveness, clean and degraded accuracy, operating-point changes, contract and report metrics---use all 1,506 NIH studies because they apply no fitted parameter: each number is a function of frozen outputs and labels only. \emph{Fitted-policy analyses}---calibration temperatures, risk thresholds, and the three-action policy---fit every parameter on \texttt{source\_val} (452 studies) and report on \texttt{internal\_test} only (1,054 studies, 8,432 finding items, 427 patients). Tables~\ref{tab:clean} and~\ref{tab:op} belong to the first tier; Table~\ref{tab:selective} and Figures~\ref{fig:selective}--\ref{fig:risk} belong to the second. No number in the second tier includes a study used to fit its threshold.
+
+\subsection{Statistics}
+
+Proportions carry Wilson 95\% intervals. AUROC and risk--coverage intervals use a patient-cluster bootstrap (1,000 resamples). The unit is the study (one image): each study carries a patient identifier from the source metadata, and resampling draws patients, so all images of a patient move together. Clean and degraded rows are joined on the study identifier, so each study contributes to both conditions. Operating-point metrics are computed from the model's emitted status, not from a fitted cut: ``positive'' is the model's own decision. The 0.5 probability cut applies only to slots without an explicit status, and calibrated probabilities are used only in the fitted tier above. Calibration and decision thresholds are fitted on \texttt{source\_val} only and evaluated on \texttt{internal\_test}. We do not fit model-level regressions with $n=5$ or $n=6$; cross-model agreement is reported as pairwise rank correlation, and any threshold used for a \emph{descriptive} split is labelled ``descriptive, not fitted.''

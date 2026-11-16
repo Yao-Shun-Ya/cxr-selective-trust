@@ -27,6 +27,7 @@ if str(ROOT) not in sys.path:
 
 from src.cxr_trust.inference.durable import DurableJsonl  # noqa: E402
 from src.cxr_trust.inference.prompts import SIMPLE_SYSTEM_PROMPT, build_simple_prompt  # noqa: E402
+from src.cxr_trust.inference.prompts_ablation import build_prompt  # noqa: E402
 from src.cxr_trust.inference.schema import parse_vlm_output  # noqa: E402
 from src.cxr_trust.models.registry import MODEL_NAMES, get_model  # noqa: E402
 
@@ -53,42 +54,12 @@ def _shift_key(rec: dict) -> tuple:
 _BATCH_REJECTION_ERRORS = (TypeError, ValueError, AttributeError, AssertionError,
                            NotImplementedError, KeyError, IndexError)
 
-DEFAULT_SEVERITIES = {
-    "blur": {"mild": 0.5, "moderate": 1.0, "severe": 2.0},
-    "noise": {"mild": 0.02, "moderate": 0.05, "severe": 0.10},
-    "jpeg": {"mild": 70, "moderate": 40, "severe": 20},
-    "brightness": {"mild": 0.8, "moderate": 1.2, "severe": 1.5},
-    "contrast": {"mild": 0.7, "moderate": 1.3, "severe": 1.6},
-    "resolution": {"mild": 0.5, "moderate": 0.25, "severe": 0.125},
-}
-
-
-def apply_shift(image: Image.Image, shift: str, severity: str) -> Image.Image:
-    image = image.convert("RGB")
-    if shift == "blur":
-        return image.filter(ImageFilter.GaussianBlur(radius=float(DEFAULT_SEVERITIES["blur"][severity])))
-    if shift == "noise":
-        sigma = float(DEFAULT_SEVERITIES["noise"][severity])
-        arr = np.asarray(image, dtype=np.float32) / 255.0
-        rng = np.random.default_rng(0)
-        arr = np.clip(arr + rng.normal(0, sigma, arr.shape), 0, 1)
-        return Image.fromarray((arr * 255).astype(np.uint8))
-    if shift == "jpeg":
-        quality = int(DEFAULT_SEVERITIES["jpeg"][severity])
-        buf = io.BytesIO()
-        image.save(buf, format="JPEG", quality=quality)
-        buf.seek(0)
-        return Image.open(buf).convert("RGB")
-    if shift == "brightness":
-        return ImageEnhance.Brightness(image).enhance(float(DEFAULT_SEVERITIES["brightness"][severity]))
-    if shift == "contrast":
-        return ImageEnhance.Contrast(image).enhance(float(DEFAULT_SEVERITIES["contrast"][severity]))
-    if shift == "resolution":
-        factor = float(DEFAULT_SEVERITIES["resolution"][severity])
-        w, h = image.size
-        small = image.resize((max(1, int(w * factor)), max(1, int(h * factor))), Image.BILINEAR)
-        return small.resize((w, h), Image.BILINEAR)
-    raise ValueError(f"unknown shift: {shift}")
+# The operators now live in src/cxr_trust/inference/shifts.py, so the cross-modal
+# arm imports the same function object instead of a second copy. They are
+# re-exported here because existing callers import them from this module.
+# tests/test_cxr_trust.py pins every cell's pixels to digests recorded before the
+# move, so this is a verified move rather than a rewrite.
+from src.cxr_trust.inference.shifts import DEFAULT_SEVERITIES, apply_shift  # noqa: F401
 
 
 def _select_rows(manifest: pd.DataFrame, split, seed: int) -> pd.DataFrame:
@@ -142,15 +113,25 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=200)
     parser.add_argument("--shifts", nargs="+", default=["blur", "noise", "jpeg", "brightness", "contrast", "resolution"])
     parser.add_argument("--severities", nargs="+", default=["mild", "moderate", "severe"])
-    parser.add_argument("--split", default=None,
-                        help="comma-separated splits to keep, e.g. internal_test,source_val; "
-                             "without it every row in the manifest is used")
+    parser.add_argument("--split", default="internal_test,source_val",
+                        help="comma-separated splits to keep (default: the evaluation "
+                             "splits); pass 'all' to use every manifest row")
+    parser.add_argument("--all-splits", action="store_true",
+                        help="explicitly allow training rows; equivalent to --split all")
     parser.add_argument("--seed", type=int, default=0,
                         help="seed for the manifest shuffle that --limit subsamples")
     parser.add_argument("--load-in-4bit", action="store_true")
     parser.add_argument("--max-new-tokens", type=int, default=256)
     parser.add_argument("--batch-size", type=int, default=1, help="Batch size for inference")
+    parser.add_argument("--prompt-variant", default=None,
+                        help="optional variant from prompts_ablation (e.g. r0_think_json); "
+                             "default uses the standard simple prompt")
     args = parser.parse_args()
+
+    import torch
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
 
     model = get_model(
         args.model,
@@ -159,7 +140,12 @@ def main() -> None:
         load_in_4bit=args.load_in_4bit,
     )
     model.load()
-    prompt = SIMPLE_SYSTEM_PROMPT + chr(10) * 2 + build_simple_prompt()
+    if args.prompt_variant:
+        system, user = build_prompt(args.prompt_variant)
+        prompt = system + chr(10) * 2 + user
+        print(f"prompt variant: {args.prompt_variant}", flush=True)
+    else:
+        prompt = SIMPLE_SYSTEM_PROMPT + chr(10) * 2 + build_simple_prompt()
 
     if os.environ.get("RUNNER_STUB") == "1":
         # Fail loudly if the stub did not take over: a silently un-stubbed test run
@@ -169,12 +155,16 @@ def main() -> None:
             + type(model).__name__ + "; the stub did not patch this import path")
 
 
+    if args.all_splits:
+        args.split = "all"
+    split = None if str(args.split).lower() == "all" else args.split
+
     manifest = pd.read_csv(args.manifest)
-    manifest = _select_rows(manifest, args.split, args.seed)
+    manifest = _select_rows(manifest, split, args.seed)
     if args.limit:
         manifest = manifest.head(args.limit)
     print(f"manifest: {len(manifest)} images"
-          f"{' (split=' + args.split + ')' if args.split else ' (all splits)'}", flush=True)
+          f"{' (split=' + split + ')' if split else ' (all splits)'}", flush=True)
     images_root = Path(args.images_root)
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -276,6 +266,7 @@ def main() -> None:
                     "condition": condition,
                     "severity": severity,
                     "param": param,
+                    "prompt_variant": args.prompt_variant or "simple",
                     "raw_output": raw,
                     "error": error,
                     "elapsed_sec": time_per_img,

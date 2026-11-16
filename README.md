@@ -37,9 +37,11 @@
 
 | 项目 | 状态 |
 |---|---|
-| 阶段 | **Phase 5：6K Curated Benchmark 代码架构就绪，等待 GPU** |
-| 数据 | **已锁定 6,000 例精筛多中心数据**：NIH (评测集 1,732), PadChest (1500, 地理偏移), Open-i (947, 报告生成) |
-| 三层次评测 | **一键驱动已就绪**：`program\scripts\run_all_layers.ps1`（默认 261,754 次调用 / 143.9 h）；崩溃安全与测试全通过；**7 模型 × 100 张 NIH 预跑已全部跑完**（发现见 `docs/50`/`docs/52`），**正式 6K 全跑尚未开跑**。协议见 `docs/48` |
+| 阶段 | **论文 v6.0（中英双语）与工程副产出 v1.1 已完成，可进入投稿准备** |
+| 第四轮确证实验 | **已完成**：DenseNet-121 监督基线、MedGemma-1.5 五套 schema 扫描、改写对照、Qwen3-VL-8B-Thinking 七格网格；追加 31,626 次调用。主论文见 `papers/main_v6/` 与 `papers/main_v6_zh/`，结果表在 `program/outputs/analysis_round2/` |
+| 第二模型覆盖率 | 5,120 token 预算下 **9,381/10,542 = 89.0%** 严格有效；并入 8,192 的 40 格抽样后 **9,401 = 89.2%**；剩余 1,141 条不终止，按预算曲线（2,560 / 3,584 / 5,120 / 8,192）如实报告 |
+| 数据 | **三层评估集共 3,953 例**：NIH 1,506（计分行；manifest 1,732 含 226 供体行）、PadChest 1,500、Open-i 947 |
+| 三层次评测 | **已完成**：`program\scripts\run_all_layers.ps1`；38 个 stage 条目（30 完成，8 个结构化契约豁免），**275,218 次调用**，39 个冻结预测文件（0.49 GiB），**0 错误行**。协议见 `docs/48`，论文见 `papers/main_v6/` 与 `papers/main_v6_zh/` |
 | 模型 | **已锁定**：CheXagent-8b + MedGemma-4B-IT + Qwen2.5-VL-7B-Instruct；三层默认矩阵另含 `google/medgemma-1.5-4b-it` 与 Qwen3-VL-8B。注意不存在 "MedGemma-15B"：`1.5` 是 MedGemma 的修订版本号，两个 MedGemma 检查点均为 4B |
 | 学术准则 | **严格遵循 `docs/42` 学术诚信红线**：拥抱 Negative Findings (零数据预支，无阈值捏造)，基准退回 `main_v2.pdf`。 |
 | 核心现象 | shift 响应非单调；Qwen2.5-VL 存在极端的“无图盲猜（Visual Reliance ≈ 0）”语言先验幻觉；预跑深挖另见：图像依赖呈三梯队谱系、退化打击的是**阳性召回**而非宏观准确率（`docs/52`）。 |
@@ -309,7 +311,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_all_layers.ps1 `
      Open-i 的 8 个标签列全部诚实地是 `unknown`，**不能做分类指标**。
 
 2. **修正 4-bit / FP16 精度对比**
-   - 通过 `22_benchmark_batch.py` 量化吞吐量，在本地 `.venv-vl-modern` 跑通新基线。
+   - 通过 `22_benchmark_batch.py` 量化吞吐量，在本地 `.venv-modern` 跑通新基线。
    - 利用分离环境解决 `Qwen3-VL` 需要 `transformers >= 4.57` 的依赖冲突。
 
 3. **撰写最终论文图表与投稿准备**

@@ -1,0 +1,496 @@
+\section{Artifact index}
+\label{app:artifacts}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\caption{Artifacts that back every number in this paper.}
+\label{tab:artifacts}
+\begin{tabular}{ll}
+\toprule
+Item & Path \\
+\midrule
+Responsiveness audit & \url{scripts/78_responsiveness_audit.py} \\
+Selective-input adapter & \url{scripts/79_export_selective_inputs.py} \\
+Figure generator & \url{scripts/80_make_figures.py} \\
+Sensitivity analyses & \url{scripts/81_sensitivity_analyses.py} \\
+Image-side detectability & \url{scripts/82_image_side_baseline.py} \\
+Quality-language audit & \url{scripts/83_quality_language_audit.py} \\
+PadChest disease-positive subset & \url{scripts/84_padchest_abnormal_subset.py} \\
+Operating-point intervals & \url{scripts/85_operating_point_ci.py} \\
+Prevalence stratification & \url{scripts/87_label_hierarchy_prevalence.py} \\
+Per-label CI / BH-FDR & \url{scripts/88_per_label_ci_fdr.py} \\
+Fixed-threshold post-hoc & \url{scripts/89_fixed_threshold_posthoc.py} \\
+Coverage census & \url{scripts/90_coverage_census.py} \\
+Manifest lock & \url{scripts/91_manifest_lock.py} \\
+Round-2 summary & \url{scripts/96_analyze_round2.py} \\
+Paired positive rate & \url{scripts/102_paired_positive_rate.py} \\
+DenseNet patient bootstrap & \url{scripts/103_densenet_bootstrap.py} \\
+Table consistency check & \url{scripts/104_table_consistency_check.py} \\
+Outputs manifest & \url{scripts/105_outputs_manifest.py} \\
+Clean AUROC intervals & \url{scripts/106_clean_auroc_ci.py} \\
+PadChest label hierarchy & \url{scripts/107_padchest_label_hierarchy.py} \\
+Fixed-rule rerun & \url{scripts/108_fixed_rule_rerun.py} \\
+CheXbert cross-check & \url{scripts/109_chexbert_openi.py} \\
+Greedy determinism & \url{scripts/110_compare_determinism.py} \\
+DenseNet 19-cell grid & \url{scripts/111_densenet_grid.py} \\
+Cross-family schema & \url{scripts/112_analyze_xfamily_schema.py} \\
+DenseNet condition metrics & \url{scripts/113_densenet_conditions.py} \\
+Labeller agreement & \url{scripts/114_report_labeller_agreement.py} \\
+LLaVA-Med NIH subset & \url{scripts/115_llava_nih.py} \\
+Cross-family paraphrase & \url{scripts/116_paraphrase_xfamily.py} \\
+Determinism outputs & \url{outputs/determinism/medgemma_4b_it/determinism.csv} \\
+Fixed-rule outputs & \url{outputs/fixed_rule/} \\
+LLaVA-Med NIH run & \url{outputs/llava_nih/} \\
+Sensitivity tables & \url{outputs/analysis_sensitivity/} \\
+Responsiveness table & \url{outputs/analysis_responsiveness/} \\
+LLaVA-Med responsiveness & \url{outputs/analysis_responsiveness_llava/} \\
+Contract coverage & \url{outputs/analysis_selective/export_manifest.json} \\
+Geographic-shift summaries & \url{outputs/geographic/<model>/} \\
+Selective metrics & \url{outputs/selective_v2/}, \url{outputs/trust_v1/} \\
+Risk--coverage bands & \url{outputs/selective_v2/<model>/risk_coverage_bands.csv} \\
+Cross-parameter mining & \url{outputs/analysis_nih_mine/joint_*.csv} \\
+Run state (38 stages) & \url{outputs/state/run_all_layers_state.json} \\
+Preprocessing contract & \url{docs/55_preprocessing_contract.md} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Protocol tables}
+\label{app:protocol}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Models and precision. ``Control'' is the alternate precision used for the same four reliance conditions.}
+\label{tab:models}
+\begin{tabular}{llll}
+\toprule
+Model & Family & Primary precision & Control \\
+\midrule
+MedGemma-4B-IT & MedGemma & 4-bit (NF4) & bf16 \\
+MedGemma-1.5-4B-IT & MedGemma & 4-bit (NF4) & bf16 \\
+Qwen2.5-VL-7B-Instruct & Qwen & 4-bit (NF4) & bf16 \\
+Qwen3-VL-8B-Instruct & Qwen & bf16 & --- \\
+InternVL3.5-8B & InternVL & bf16 & --- \\
+CheXagent-8B & CheXagent & fp16 & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Layers, cells per model, and total calls.}
+\label{tab:calls}
+\begin{tabular}{llrr}
+\toprule
+Layer & Stage & Cells/model & Models \\
+\midrule
+NIH & shift (19-cell grid) & 28,614 & 6 \\
+NIH & reliance (4 conditions) & 6,024 & 6 \\
+NIH & precision control & 6,024 & 3 \\
+NIH & schema ablation & 15,060 & 1 \\
+PadChest & native + blank & 3,000 & 6 \\
+Open-i & report + blank & 1,894 & 6 \\
+NIH & LLaVA-Med subset & 400 & 1 \\
+\midrule
+\multicolumn{2}{l}{Total (incl.\ LLaVA-Med, 5,294)} & \multicolumn{2}{r}{275,618 calls} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Same model, same design, same data---only precision changes. VRS (visual reliance score) is the mean absolute probability difference between real and blank images (a probability-space contrast, not a text similarity).}
+\label{tab:precision}
+\begin{tabular}{lrrrrr}
+\toprule
+Model & VRS 4-bit & VRS bf16 & Marker (real) & Marker (blank) & Blank \texttt{no\_finding} pos. \\
+\midrule
+MedGemma-1.5 & 0.129 & 0.284 & \textbf{0.13\% $\rightarrow$ 99.07\%} & 100\% $\rightarrow$ 100\% & \textbf{0\% $\rightarrow$ 100\%} \\
+MedGemma-4B & 0.339 & 0.296 & 0\% $\rightarrow$ 0\% & 0\% $\rightarrow$ 0\% & 100\% $\rightarrow$ 100\% \\
+Qwen2.5-VL & 0.003 & 0.015 & --- & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Parse and contract coverage on the NIH shift grid (28,614 calls per model). ``All definite'' is the fraction of parsed replies whose eight statuses are all positive/negative. The full 41-stage census (39 delivered stages plus two round-2 reasoning stages) is \url{outputs/analysis_sensitivity/coverage_census.csv}.}
+\label{tab:coverage}
+\begin{tabular}{lrrr}
+\toprule
+Model & Parse rate & All definite & Error rows \\
+\midrule
+Qwen2.5-VL & 1.000 & \textbf{1.000} & 0 \\
+InternVL3.5 & 1.000 & 0.956 & 0 \\
+MedGemma-1.5 & 0.998 & 0.824 & 0 \\
+Qwen3-VL & 1.000 & 0.795 & 0 \\
+MedGemma-4B & 1.000 & 0.605 & 0 \\
+CheXagent & 0.985 & \textbf{0.096} & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Open-i report layer ($n=947$, rule-based labeller).}
+\label{tab:report}
+\begin{tabular}{lrrl}
+\toprule
+Model & Omissions & Hallucinations & Regime \\
+\midrule
+CheXagent & \textbf{1,198} & \textbf{113} & mostly ``uninterpretable'' \\
+MedGemma-1.5 & 571 & 268 & conservative \\
+Qwen2.5-VL & 302 & 2,128 & moderate omission, high hallucination \\
+InternVL3.5 & 274 & 2,198 & same \\
+MedGemma-4B & 196 & \textbf{3,021} & low omission, very high hallucination \\
+Qwen3-VL & \textbf{181} & \textbf{3,508} & lowest omission, highest hallucination \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{The same 947 Open-i studies under two labellers (both slot-level: eight labels $\times$ 947 decisions). Absolute counts are not comparable across labellers; rank order is. Hallucination order is preserved in direction (Spearman 0.71, $n=6$, $p=0.11$), omission order is not ($-0.49$, $p=0.33$).}
+\label{tab:chexbert}
+\begin{tabular}{lrrrr}
+\toprule
+Model & Rule omissions & Rule hallucinations & CheXbert omissions & CheXbert hallucinations \\
+\midrule
+MedGemma-4B & 196 & \textbf{3,021} & 118 & 609 \\
+MedGemma-1.5 & 571 & 268 & 103 & 583 \\
+InternVL3.5 & 274 & 2,198 & 187 & 870 \\
+Qwen3-VL & \textbf{181} & \textbf{3,508} & 363 & 786 \\
+Qwen2.5-VL & 302 & 2,128 & 231 & 660 \\
+CheXagent & \textbf{1,198} & \textbf{113} & 165 & 532 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Effective input geometry}
+\label{app:geometry}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Effective input geometry on the largest PadChest image (15.37\,MP). The same radiograph becomes six different inputs; this is a measurement declaration, not a neutral setting.}
+\label{tab:geometry}
+\begin{tabular}{llrl}
+\toprule
+Model & Effective input & Image tokens & Resize mechanism \\
+\midrule
+Qwen3-VL-8B & 15.24\,MP & 14,884 & contract hint \\
+Qwen2.5-VL-7B & 12.85\,MP (ceiling) & 16,384 & checkpoint config \\
+MedGemma-4B/1.5 & 0.80\,MP & 256 & fixed processor \\
+InternVL3.5-8B & 0.20\,MP & 256 & $1\times1$ tile grid \\
+CheXagent-8B & 0.20\,MP & 0 (cross-att.) & fixed processor \\
+LLaVA-Med-7B & 0.11\,MP & 576 & fixed CLIP \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Sensitivity analyses}
+\label{app:risk}
+
+All values are produced by scripts 81--85 (Table~\ref{tab:artifacts}) from the frozen prediction files and the original images.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Collapse flags under the top-share threshold sweep (unique bound fixed at 5). The cross-dataset verdict is invariant from 0.40 upward; only at the most permissive 0.30 cut does the sixth PadChest model join, and only in-domain and prose cells move at the margin.}
+\label{tab:sweep}
+\begin{tabular}{lrrrrrr}
+\toprule
+Layer & 0.30 & 0.40 & 0.50 & 0.60 & 0.70 & 0.80 \\
+\midrule
+NIH (of 6) & 3 & 3 & 3 & 2 & 1 & 1 \\
+PadChest (of 6) & 6 & 5 & 5 & 5 & 5 & 5 \\
+Open-i (of 6) & 2 & 1 & 1 & 1 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Sensitivity of the two cross-domain statistics. Common-label $\Delta$AUROC excludes pneumonia (structurally absent from PadChest). The null is recomputed under random and reference-length-matched real pairs. CheXagent contributes a single estimable shared label (shown as ``(1)''). The last column is the range of $\Delta_{\text{null}}$ over the two nulls; positive means the blank intervention is farther from the real image than a random real image.}
+\label{tab:sens}
+\begin{tabular}{lrrrrrr}
+\toprule
+Model & Mean $\Delta$ (7 labels) & Worst label & $J$(real,blank) & Null random & Null length & $\Delta_{\text{null}}$ range \\
+\midrule
+MedGemma-4B & $-0.107$ & $-0.246$ & 0.894 & 0.824 & 0.844 & $-0.070$ to $-0.050$ \\
+MedGemma-1.5 & $-0.079$ & $-0.161$ & 0.736 & 0.648 & 0.654 & $-0.087$ to $-0.081$ \\
+InternVL3.5 & $-0.134$ & $-0.274$ & 0.562 & 0.673 & 0.677 & $+0.112$ to $+0.116$ \\
+Qwen3-VL & $-0.059$ & $-0.185$ & 0.091 & 0.740 & 0.734 & $+0.643$ to $+0.648$ \\
+CheXagent & $-0.004$ (1) & $-0.004$ & 0.277 & 0.247 & 0.252 & $-0.030$ to $-0.024$ \\
+Qwen2.5-VL & $-0.002$ & $-0.008$ & 0.576 & 0.770 & 0.767 & $+0.191$ to $+0.193$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{The label hierarchy is partly confounded by prevalence. Panel A: per model, Spearman between severe-degradation retention and NIH prevalence, and mean retention in high- vs low-prevalence label strata. Panel B: pairwise concordance before and after rank-residualising prevalence. Raw concordance is positive, but partial concordance changes sign across pairs, so we do not claim a prevalence-independent lesion law.}
+\label{tab:hierarchy}
+\begin{tabular}{lrrr}
+\toprule
+\multicolumn{4}{l}{\emph{Panel A: retention vs prevalence}} \\
+Model & $\rho$(retention, prev.) & Mean ret.\ (high prev.) & Mean ret.\ (low prev.) \\
+\midrule
+InternVL3.5 & 0.571 & 0.935 & 0.764 \\
+Qwen3-VL & 0.429 & 0.718 & 0.629 \\
+MedGemma-1.5 & 0.714 & 0.873 & 0.701 \\
+MedGemma-4B & 0.464 & 0.735 & 0.514 \\
+\midrule
+\multicolumn{4}{l}{\emph{Panel B: pairwise model concordance}} \\
+Model pair & Raw $\rho$ & Partial $\rho$ & Exact $p$ \\
+\midrule
+InternVL / Qwen3 & 0.771 & 0.765 & 0.658 \\
+InternVL / MedGemma-1.5 & 0.857 & $-0.654$ & 0.012 \\
+InternVL / MedGemma-4B & 0.750 & $-0.685$ & 0.200 \\
+Qwen3 / MedGemma-1.5 & 0.657 & 0.525 & 0.058 \\
+Qwen3 / MedGemma-4B & 0.657 & $-0.691$ & 0.242 \\
+MedGemma-1.5 / MedGemma-4B & 0.750 & 0.847 & 0.200 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Per-label clean $\rightarrow$ severe recall change with patient-cluster bootstrap intervals (1,000 resamples) and Benjamini--Hochberg $q$ across the seven labels within each model. Severe cells pool all six degradation types. Cardiomegaly and near-zero-recall pneumothorax are the non-significant exceptions; 22 of 28 cells have $q<0.05$. Full CSV: \url{outputs/analysis_sensitivity/per_label_bootstrap_fdr.csv}.}
+\label{tab:perlabel}
+\begin{tabular}{llrrr}
+\toprule
+Model & Label & $\Delta$ recall (pp) & 95\% CI & $q_{\mathrm{BH}}$ \\
+\midrule
+InternVL3.5 & atelectasis & $-4.23$ & $[-5.71,-2.65]$ & $<0.001$ \\
+ & cardiomegaly & $+0.19$ & $[-1.63,+2.18]$ & 0.878 \\
+ & consolidation & $-3.04$ & $[-4.85,-1.18]$ & $<0.001$ \\
+ & edema & $-8.43$ & $[-12.04,-4.71]$ & $<0.001$ \\
+ & pleural effusion & $-2.40$ & $[-3.83,-1.16]$ & $<0.001$ \\
+ & pneumonia & $-5.91$ & $[-8.71,-3.11]$ & $<0.001$ \\
+ & pneumothorax & $-0.08$ & $[-0.81,+0.29]$ & 0.878 \\
+\midrule
+Qwen3-VL & atelectasis & $-4.08$ & $[-5.73,-2.42]$ & $<0.001$ \\
+ & cardiomegaly & $-2.33$ & $[-6.71,+2.21]$ & 0.401 \\
+ & consolidation & $-5.54$ & $[-7.98,-3.29]$ & $<0.001$ \\
+ & edema & $-11.98$ & $[-17.13,-7.27]$ & $<0.001$ \\
+ & pleural effusion & $-4.02$ & $[-5.64,-2.38]$ & $<0.001$ \\
+ & pneumonia & $-10.03$ & $[-14.26,-6.77]$ & $<0.001$ \\
+ & pneumothorax & $0.00$ & $[0.00,0.00]$ & 1.000 \\
+\midrule
+MedGemma-1.5 & atelectasis & $-4.23$ & $[-5.08,-3.40]$ & $<0.001$ \\
+ & cardiomegaly & $-5.56$ & $[-7.55,-3.67]$ & $<0.001$ \\
+ & consolidation & $-5.05$ & $[-7.67,-2.43]$ & $<0.001$ \\
+ & edema & $-17.32$ & $[-20.80,-13.90]$ & $<0.001$ \\
+ & pleural effusion & $-13.57$ & $[-15.55,-11.71]$ & $<0.001$ \\
+ & pneumonia & $-13.08$ & $[-17.58,-8.57]$ & $<0.001$ \\
+ & pneumothorax & $-2.83$ & $[-4.78,-1.12]$ & $<0.001$ \\
+\midrule
+MedGemma-4B & atelectasis & $-3.49$ & $[-4.40,-2.68]$ & $<0.001$ \\
+ & cardiomegaly & $-9.44$ & $[-11.54,-7.49]$ & $<0.001$ \\
+ & consolidation & $-11.22$ & $[-14.09,-8.44]$ & $<0.001$ \\
+ & edema & $-31.43$ & $[-34.90,-28.06]$ & $<0.001$ \\
+ & pleural effusion & $-14.53$ & $[-16.85,-12.33]$ & $<0.001$ \\
+ & pneumonia & $-21.68$ & $[-26.51,-17.48]$ & $<0.001$ \\
+ & pneumothorax & $-0.13$ & $[-0.54,+0.11]$ & 0.746 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Post-hoc fixed-threshold check on the three operating-point cells. ``Status'' uses the model's emitted positive/negative status; ``$p\ge0.5$'' applies a fixed cut to the verbalised probability; ``clean-matched'' chooses a cut on clean images that reproduces the clean status-positive count. All three rules reproduce the recall and positive-prediction-rate change within 0.11\,\pp{}, so the shift is not an artifact of a changed discrete status rule. Table~\ref{tab:fixedrerun} reports the fixed-rule rerun that separates threshold movement from a shift in the score distribution.}
+\label{tab:fixedthr}
+\begin{tabular}{llrrr}
+\toprule
+Cell & Rule & $\Delta$ recall & $\Delta$ precision & $\Delta$ pos.\ rate \\
+\midrule
+InternVL contrast & status & $+4.69$ & $-1.38$ & $+4.06$ \\
+ & $p\ge0.5$ & $+4.80$ & $-1.35$ & $+4.13$ \\
+ & clean-matched & $+4.69$ & $-1.38$ & $+4.06$ \\
+\midrule
+InternVL brightness & status & $+2.52$ & $-0.64$ & $+2.09$ \\
+ & $p\ge0.5$ & $+2.47$ & $-0.78$ & $+2.15$ \\
+ & clean-matched & $+2.52$ & $-0.59$ & $+2.06$ \\
+\midrule
+Qwen3-VL contrast & status & $+3.44$ & $+0.19$ & $+2.51$ \\
+ & $p\ge0.5$ & $+3.36$ & $+0.38$ & $+2.40$ \\
+ & clean-matched & $+3.44$ & $+0.25$ & $+2.49$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Fixed-rule rerun on 200 paired studies (InternVL3.5). The model was re-prompted for probabilities only, and the positive/negative status was assigned externally at 0.5. Because the decision rule cannot move in this run, the recall and positive-rate increase under both corruptions is a shift in the score distribution, not a changed discrete status. Qwen3-VL under the same probability-only contract returned 0.0 for every label (nonzero rate 1.0\%, positive rate at 0.5 $\le$ 1.0\%), so its cell is degenerate and excluded.}
+\label{tab:fixedrerun}
+\begin{tabular}{lrrrrr}
+\toprule
+Cell & $n$ & Recall clean & Recall severe & Pos.\ rate clean & Pos.\ rate severe \\
+\midrule
+contrast severe & 200 & 0.510 & \textbf{0.575} & 0.404 & \textbf{0.449} \\
+brightness severe & 200 & 0.510 & \textbf{0.584} & 0.404 & \textbf{0.457} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\clearpage
+\begin{table}[H]
+\centering
+\small
+\caption{Image-side detectability. A single no-reference statistic separates the 1,506 clean in-domain evaluation images from their degraded versions; AUC is direction-adjusted, so 1.000 means perfect separation. Highest-AUC statistic per condition shown. Degradation is trivially visible at the image level; the silent-failure result concerns the model-side channel only.}
+\label{tab:imageside}
+\begin{tabular}{llrrrr}
+\toprule
+Condition & Statistic & AUC & Direction & Median clean & Median severe \\
+\midrule
+noise (severe) & Laplacian variance & \textbf{1.000} & higher & 0.0011 & 0.0844 \\
+blur (severe) & Laplacian variance & \textbf{1.000} & lower & 0.0011 & 0.000024 \\
+contrast (severe) & intensity entropy & 0.966 & lower & 7.451 & 6.546 \\
+contrast (severe) & intensity std & 0.900 & higher & 0.231 & 0.320 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Case-level transitions, InternVL3.5, clean $\rightarrow$ contrast/severe. ``Gained'' are clean-negative images called positive under degradation; ``new FP'' are clean-correct negatives called positive.}
+\label{tab:flip}
+\begin{tabular}{lrrrrrr}
+\toprule
+Finding & TP kept & TP lost & TP gained & FP corrected & New FP & TN stable \\
+\midrule
+atelectasis & 535 & 10 & 43 & 5 & 36 & 256 \\
+cardiomegaly & 324 & 3 & 30 & 28 & 59 & 495 \\
+consolidation & 99 & 1 & 50 & 8 & 69 & 770 \\
+edema & 135 & 0 & 23 & 9 & 40 & 993 \\
+pleural effusion & 592 & 19 & 34 & 5 & 21 & 311 \\
+pneumonia & 57 & 1 & 22 & 8 & 98 & 1,034 \\
+pneumothorax & 0 & 1 & 2 & 1 & 0 & 1,108 \\
+no finding & 83 & 6 & 1 & 53 & 11 & 1,128 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Case mix by label (positive rate, \%). Natural NIH is the official ChestX-ray14 annotation over all 112,120 images; the 1,506-image evaluation set is disease-enriched by the stratified sampler. PadChest is at its native rate after label mapping; pneumonia is structurally absent. Precision and positive-prediction rate are therefore compared within a layer only.}
+\label{tab:prevalence}
+\begin{tabular}{lrrr}
+\toprule
+Finding & NIH evaluation & NIH natural & PadChest native \\
+\midrule
+atelectasis & 50.7 & 10.3 & 2.8 \\
+cardiomegaly & 29.0 & 2.5 & 5.8 \\
+consolidation & 36.0 & 4.2 & 5.5 \\
+edema & 17.5 & 2.1 & 0.7 \\
+pleural effusion & 66.3 & 11.9 & 2.5 \\
+pneumonia & 13.7 & 1.3 & 0.0 \\
+pneumothorax & 26.4 & 4.7 & 0.3 \\
+no finding & 8.0 & 53.8 & 16.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{PadChest per-label AUROC at native resolution ($n=1{,}500$; 1,499 for CheXagent; 1,000 patient-cluster resamples). The five non-responsive models emit at most 20 distinct replies, so their AUROC is at or within 0.04 of 0.500 without a meaningful label ranking. Only MedGemma-1.5 is estimable: cardiomegaly 0.541 (95\% CI 0.505--0.584) and atelectasis 0.531 (0.464--0.605); the other four estimable labels are 0.489--0.490. Pneumonia is structurally absent.}
+\label{tab:padlabel}
+\begin{tabular}{lrrrrrr}
+\toprule
+Finding & MG-1.5 & MG-4B & InternVL & Qwen3 & Qwen2.5 & CheXagent \\
+\midrule
+atelectasis & 0.531 & 0.505 & 0.500 & 0.499 & 0.500 & 0.500 \\
+cardiomegaly & \textbf{0.541} & 0.492 & 0.500 & 0.500 & 0.500 & 0.500 \\
+consolidation & 0.490 & 0.503 & 0.500 & 0.500 & 0.500 & 0.500 \\
+edema & 0.489 & 0.536 & 0.500 & 0.500 & 0.500 & 0.500 \\
+pleural effusion & 0.489 & 0.516 & 0.500 & 0.500 & 0.500 & 0.500 \\
+pneumonia & --- & --- & --- & --- & --- & --- \\
+pneumothorax & 0.489 & 0.492 & 0.500 & 0.500 & 0.500 & 0.500 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{DenseNet-121 (the checkpoint of Table~\ref{tab:baseline}) over the 19-cell grid, with a fixed 0.5 rule. Contrast-severe raises recall and positive rate while macro AUROC stays flat, reproducing the operating-point movement outside a language model; noise and resolution lower both. PadChest macro AUROC is 0.515, so cross-dataset collapse is not VLM-specific.}
+\label{tab:densenetgrid}
+\begin{tabular}{lrrr}
+\toprule
+Cell & Macro AUROC & Pooled recall & Positive rate \\
+\midrule
+clean & 0.7329 & 0.5673 & 0.3599 \\
+contrast severe & 0.7292 & \textbf{0.5878} & \textbf{0.3775} \\
+blur severe & 0.7296 & 0.5655 & 0.3585 \\
+brightness severe & 0.7109 & 0.5315 & 0.3602 \\
+noise severe & 0.6824 & 0.4766 & 0.3208 \\
+resolution severe & 0.7107 & 0.5230 & 0.3548 \\
+PadChest (native) & 0.5153 & 0.3232 & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Per-cell evidence for the responsiveness audit}
+
+\label{app:cell}
+
+The audit reports, for every (layer, model), the real-image output-support size, the modal-reply share with a Wilson interval, the number of distinct \emph{status vectors} for structured layers, the blank-template concentration, and both null gaps. The full table is \url{outputs/analysis_responsiveness/responsiveness_by_cell.csv}; Table~\ref{tab:audit} is its condensed form. The collapse rule (top-share $\ge 0.50$ or unique $\le 5$) is declared in the script header and is descriptive only: no row is removed or rescaled by it.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\caption{Responsiveness audit (full data). Six schema-compliant models on all three layers, plus LLaVA-Med on PadChest, Open-i, and a 200-study NIH subset. Unique = distinct normalized replies over $N$ real images. The null statistic is a \emph{separation}, $\Delta_{\text{null}} = D(\text{real},\text{blank}) - D(\text{real},\text{real}')$, with $D_{\text{text}} = 1-J$ and $D_{\text{prob}} = \text{mean}\,|\Delta P|$; positive means the intervention is farther from the real image than a random real image is (separation), negative means closer (prior or boilerplate). Top-share Wilson intervals are $\pm\le 0.02$ and omitted for space. $\dagger$ LLaVA-Med's blank replies are empty, so a real-vs-blank Jaccard is undefined; the statistic is reported as n/a rather than as a contrast.}
+\label{tab:audit}
+\begin{tabular}{llrrrrcrr}
+\toprule
+Layer & Model & $N$ & Unique & Top-share & Collapsed & $\Delta_{\text{null}}$ (text) & $\Delta_{\text{null}}$ (prob) \\
+\midrule
+NIH & MedGemma-4B & 1,506 & 336 & 0.052 & no & $+0.006$ & $+0.131$ \\
+NIH & MedGemma-1.5 & 1,506 & 250 & 0.099 & no & $+0.867$ & $+0.007$ \\
+NIH & InternVL3.5 & 1,506 & 313 & 0.161 & no & $+0.025$ & $+0.041$ \\
+NIH & Qwen3-VL & 1,506 & 125 & 0.547 & \textbf{yes} & $-0.009$ & $-0.066$ \\
+NIH & CheXagent & 1,506 & 10 & 0.687 & \textbf{yes} & $-0.070$ & n/a \\
+NIH & Qwen2.5-VL & 1,506 & 6 & 0.986 & \textbf{yes} & $0.000$ & $-0.001$ \\
+NIH & LLaVA-Med (subset) & 200 & \textbf{2} & 0.987 & \textbf{yes} & n/a$^{\dagger}$ & n/a \\
+\midrule
+PadChest & MedGemma-4B & 1,500 & \textbf{20} & 0.903 & \textbf{yes} & $-0.002$ & $-0.009$ \\
+PadChest & MedGemma-1.5 & 1,500 & 329 & 0.373 & no & $+0.206$ & $+0.134$ \\
+PadChest & InternVL3.5 & 1,500 & \textbf{2} & 0.892 & \textbf{yes} & $-0.006$ & $0.000$ \\
+PadChest & Qwen3-VL & 1,500 & \textbf{3} & 0.998 & \textbf{yes} & $0.000$ & $-0.000$ \\
+PadChest & CheXagent & 1,500 & 3 & 0.983 & \textbf{yes} & $-0.002$ & n/a \\
+PadChest & Qwen2.5-VL & 1,500 & \textbf{1} & 1.000 & \textbf{yes} & $0.000$ & $0.000$ \\
+\midrule
+Open-i & MedGemma-4B & 947 & 78 & 0.604 & \textbf{yes} & $-0.070$ & n/a \\
+Open-i & MedGemma-1.5 & 947 & 275 & 0.300 & no & $-0.087$ & n/a \\
+Open-i & InternVL3.5 & 947 & 222 & 0.243 & no & $+0.112$ & n/a \\
+Open-i & Qwen3-VL & 947 & 109 & 0.326 & no & $+0.648$ & n/a \\
+Open-i & CheXagent & 947 & 85 & 0.265 & no & $-0.030$ & n/a \\
+Open-i & Qwen2.5-VL & 947 & 218 & 0.226 & no & $+0.193$ & n/a \\
+\midrule
+PadChest & LLaVA-Med & 1,500 & 19 & 0.591 & \textbf{yes} & n/a$^{\dagger}$ & n/a \\
+Open-i & LLaVA-Med & 947 & \textbf{2} & 0.671 & \textbf{yes} & $-0.059$ & n/a \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\input{sections/09b_round2_appendix}

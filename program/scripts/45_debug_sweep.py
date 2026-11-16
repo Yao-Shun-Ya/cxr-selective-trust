@@ -572,6 +572,58 @@ def check_stage_aware_guard() -> None:
                              f"expected a file under {want_dir}/")
 
 
+def check_layer_eval_counts() -> None:
+    """The coverage denominator must be the SPLIT-FILTERED size, not the file rows.
+
+    ``nih_eval_1732.csv`` holds 1,732 rows, but 226 of them are ``internal_train``
+    donors for the no_finding repair, so the runner -- which passes
+    ``--split internal_test,source_val`` -- writes only 1,506 x cells. The first
+    full run expected 1,732 x cells, measured 87% coverage on a complete and
+    correct stage, marked it [BAD] and DELETED it. The driver must therefore count
+    the manifest's eval rows; this loads the real ``Get-LayerDef`` to prove the NIH
+    denominator is 1,506 and not 1,732.
+    """
+    head("14. layer eval-set size is the split-filtered count (behavioural)")
+    ps = ROOT / "scripts" / "run_all_layers.ps1"
+    if not ps.exists():
+        add("ERROR", "run_all_layers.ps1 missing")
+        return
+    text = ps.read_text(encoding="utf-8", errors="replace")
+    f_count = re.search(r"(?ms)^function Get-EvalImageCount.*?\n\}", text)
+    f_def = re.search(r"(?ms)^function Get-LayerDef.*?\n\}", text)
+    if not (f_count and f_def):
+        add("ERROR", "cannot find Get-EvalImageCount/Get-LayerDef in the driver")
+        return
+    harness = (
+        f"$script:Root = '{ROOT}'\n"
+        + f_count.group(0) + "\n" + f_def.group(0) + "\n"
+        + "$d = Get-LayerDef\n"
+        + "$r = [ordered]@{ nih = $d.nih.Images; padchest = $d.padchest.Images; "
+          "openi = $d.openi.Images }\n"
+        + "$r | ConvertTo-Json -Compress\n"
+    )
+    out = subprocess.run(["powershell", "-NoProfile", "-Command", harness],
+                         capture_output=True, text=True, encoding="utf-8",
+                         errors="replace", timeout=120)
+    if out.returncode != 0:
+        add("ERROR", f"eval-count harness failed: {(out.stderr or '')[:200]}")
+        return
+    try:
+        got = json.loads((out.stdout or "{}").strip().splitlines()[-1])
+    except (json.JSONDecodeError, IndexError):
+        add("ERROR", f"eval-count harness produced no JSON: {out.stdout!r}")
+        return
+    expect = {"nih": 1506, "padchest": 1500, "openi": 947}
+    for layer, want in expect.items():
+        g = got.get(layer)
+        ok = (g == want)
+        print(f"  {'ok  ' if ok else 'FAIL'} {layer:9s} eval images = {g} (want {want})")
+        if not ok:
+            add("ERROR", f"{layer} eval count is {g}, expected {want} -- the coverage "
+                         f"denominator must be the split-filtered count, not the "
+                         f"manifest's row count")
+
+
 def check_contract_exempt_guard() -> None:
     """LLaVA-Med's prose must be KEPT and marked contract-exempt, not deleted.
 
@@ -581,6 +633,10 @@ def check_contract_exempt_guard() -> None:
     that evidences the prose-without-the-contract failure mode. The exemption must
     (a) name exactly the documented model, (b) actually relax Test-StageOutput, and
     (c) not leak to any other model. (b) is checked by loading the real function.
+
+    The same section also guards the second, layer-level mechanism: the open-i
+    report layer is free text for every model, so it relaxes the parse check but
+    must still fail on an empty reply (an empty report is not a deliverable).
     """
     head("13. contract-exempt guard (behavioural + source)")
     ps = ROOT / "scripts" / "run_all_layers.ps1"
@@ -605,17 +661,32 @@ def check_contract_exempt_guard() -> None:
     if "contract-exempt (prose by design); no label census" not in text:
         add("ERROR", "the coverage census does not skip contract-exempt models")
 
+    # (d) the layer-level prose exemption exists and reaches the guard
+    if "$ProseByDesignLayers" not in text:
+        add("ERROR", "no $ProseByDesignLayers table in the driver")
+    if "-ProseStage:$ex.prose" not in text:
+        add("ERROR", "the guard call site does not pass -ProseStage")
+
     # (b) behavioural: the same all-unparsed file must fail strict and pass exempt
     import tempfile
     with tempfile.TemporaryDirectory(prefix="exempt_") as td:
         root = Path(td)
-        base = root / "nih_eval" / "m1" / "shift"
-        base.mkdir(parents=True, exist_ok=True)
         prose = ('{"image_id":"a","raw_output":"There is cardiomegaly.",'
                  '"parsed":{"parse_success":false}}')
         empty = '{"image_id":"a","raw_output":"","parsed":{"parse_success":false}}'
-        (base / "shift_predictions.jsonl").write_text(
-            (prose + "\n") * 2 + (empty + "\n") * 2, encoding="utf-8")
+        # Three fixtures, one per behaviour under test:
+        #   nih      prose + empty, all unparsed  -> model exemption tolerates both
+        #   openi    non-empty prose only         -> prose LAYER must accept it
+        #   padchest all empty                    -> prose LAYER must still reject it
+        fixtures = {
+            "nih_eval/m1/shift": (prose + "\n") * 2 + (empty + "\n") * 2,
+            "openi/m1/shift":    (prose + "\n") * 4,
+            "padchest/m1/shift": (empty + "\n") * 4,
+        }
+        for rel, body in fixtures.items():
+            d = root / rel
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "shift_predictions.jsonl").write_text(body, encoding="utf-8")
         f_pred = re.search(r"(?ms)^function Get-PredictionFile.*?\n\}", text)
         f_guard = re.search(r"(?ms)^function Test-StageOutput.*?\n\}", text)
         if not (f_pred and f_guard):
@@ -623,11 +694,14 @@ def check_contract_exempt_guard() -> None:
             return
         harness = (
             f"$script:OutputRoot = '{root}'\n"
-            "$LayerDef = @{ nih = @{ Dir = 'nih_eval' } }\n"
+            "$LayerDef = @{ nih = @{ Dir = 'nih_eval' }; openi = @{ Dir = 'openi' }; "
+            "padchest = @{ Dir = 'padchest' } }\n"
             + f_pred.group(0) + "\n" + f_guard.group(0) + "\n"
             + "$r = [ordered]@{}\n"
             + "$r['strict'] = (Test-StageOutput 'm1' 'nih' 'shift' -Expected 4).ok\n"
             + "$r['exempt'] = (Test-StageOutput 'm1' 'nih' 'shift' -Expected 4 -ContractExempt).ok\n"
+            + "$r['prose'] = (Test-StageOutput 'm1' 'openi' 'shift' -Expected 4 -ProseStage).ok\n"
+            + "$r['prose_empty'] = (Test-StageOutput 'm1' 'padchest' 'shift' -Expected 4 -ProseStage).ok\n"
             + "$r | ConvertTo-Json -Compress\n"
         )
         out = subprocess.run(["powershell", "-NoProfile", "-Command", harness],
@@ -642,12 +716,19 @@ def check_contract_exempt_guard() -> None:
             add("ERROR", f"contract-exempt harness produced no JSON: {out.stdout!r}")
             return
         strict_ok, exempt_ok = got.get("strict"), got.get("exempt")
-        print(f"  {'ok  ' if strict_ok is False else 'FAIL'} strict  -> ok={strict_ok} (must reject all-prose)")
-        print(f"  {'ok  ' if exempt_ok is True else 'FAIL'} exempt  -> ok={exempt_ok} (must accept all-prose)")
+        prose_ok, prose_empty = got.get("prose"), got.get("prose_empty")
+        print(f"  {'ok  ' if strict_ok is False else 'FAIL'} strict     -> ok={strict_ok} (must reject all-prose)")
+        print(f"  {'ok  ' if exempt_ok is True else 'FAIL'} exempt     -> ok={exempt_ok} (must accept prose+empty)")
+        print(f"  {'ok  ' if prose_ok is True else 'FAIL'} prose      -> ok={prose_ok} (prose layer must accept non-empty prose)")
+        print(f"  {'ok  ' if prose_empty is False else 'FAIL'} prose/empty-> ok={prose_empty} (prose layer must reject all-empty)")
         if strict_ok is not False:
             add("ERROR", f"strict guard accepted an all-unparsed file (ok={strict_ok})")
         if exempt_ok is not True:
             add("ERROR", f"contract-exempt guard rejected prose (ok={exempt_ok})")
+        if prose_ok is not True:
+            add("ERROR", f"prose-by-design layer rejected non-empty prose (ok={prose_ok})")
+        if prose_empty is not False:
+            add("ERROR", f"prose-by-design layer accepted an all-empty file (ok={prose_empty})")
 
 
 def check_calibration_universe() -> None:
@@ -791,6 +872,7 @@ def main() -> int:
     check_scripts_exist()
     check_durable_usage()
     check_isolation_guard()
+    check_layer_eval_counts()
     check_ece_convention()
     check_stage_aware_guard()
     check_contract_exempt_guard()

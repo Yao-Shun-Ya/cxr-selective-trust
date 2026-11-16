@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -174,17 +175,29 @@ def gpu_state() -> tuple[str, str]:
 
 
 def stray_python() -> tuple[str, str]:
+    """Other python processes, excluding this self-check.
+
+    On Windows a venv's `python.exe` is a launcher shim: running it spawns the
+    real interpreter as a child, so every invocation shows up as TWO python.exe
+    processes (shim + real). `os.getpid()` is the child, so excluding only it
+    leaves the shim behind. Exclude our PID and our parent PID, then name the
+    survivors so the warning is actionable.
+    """
+    ps = ("$me = {0}; $pa = {1}; "
+          "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" "
+          "| Where-Object {{ $_.ProcessId -ne $me -and $_.ProcessId -ne $pa }} "
+          "| Select-Object -ExpandProperty CommandLine").format(os.getpid(), os.getppid())
     try:
-        r = subprocess.run(
-            ["powershell", "-NoProfile", "-Command",
-             "(Get-Process python -ErrorAction SilentlyContinue | Measure-Object).Count"],
-            capture_output=True, text=True, timeout=60)
-        n = int((r.stdout or "0").strip() or 0)
+        r = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
+                           capture_output=True, text=True, timeout=60)
     except Exception:  # noqa: BLE001
         return WARN, "could not count python processes"
-    if n:
-        return WARN, f"{n} python process(es) already running"
-    return OK, "no stray python processes"
+    cmds = [c.strip() for c in (r.stdout or "").splitlines() if c.strip()]
+    if not cmds:
+        return OK, "no stray python processes"
+    shown = "; ".join(c[:80] for c in cmds[:2])
+    more = f" (+{len(cmds) - 2} more)" if len(cmds) > 2 else ""
+    return WARN, f"{len(cmds)} other python process(es): {shown}{more}"
 
 
 def main() -> int:

@@ -1,0 +1,25 @@
+\section{CPU-Only Audit Toolkit}
+\label{sec:audit}
+
+The harness separates measurement from inference. Once predictions are frozen, four audits run on CPU and can be re-run by a reader without weights or a GPU:
+
+\begin{table}[t]
+\centering
+\small
+\caption{The four audits, their inputs, and the failure they expose. All read frozen JSONL/CSV; none calls a model.}
+\label{tab:audits}
+\begin{tabular}{p{0.18\textwidth}p{0.30\textwidth}p{0.42\textwidth}}
+\toprule
+Audit & Input & Failure exposed \\
+\midrule
+Responsiveness & Real-image replies per (layer, model) & A model that emits 1--20 distinct answers for 1,500 images; ``reliance'' has no variation to explain. \\
+Null model & Real, blank, and real-vs-real pairs & A blank template that looks like grounding; a contrast that measures absence detection. \\
+Operating point & Clean and severe rows joined by study & Recall rises while precision falls and false positives grow; accuracy alone misses it. \\
+Contract coverage & Parsed statuses and schema & Schema compliance without definite slots; a denominator that changes across models. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The audits are implemented in scripts 78--89 and write CSV artifacts, not figures by hand. The responsiveness audit reports output-support size, modal-reply share with a Wilson interval, distinct status vectors, blank-template concentration, and both null gaps. The null audit compares the blank contrast to random and length-matched real pairs. The operating-point audit uses a patient-cluster bootstrap over studies. The contract audit counts parse success, all-definite replies, and per-model coverage.
+
+This design is the main interface between the harness and the companion paper: the companion can change its scientific claim without changing the harness, and the harness can be tested without changing the claim. It also means that a reader who disputes a claim can recompute the audit from the frozen predictions rather than requesting a new run.

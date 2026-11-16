@@ -8,7 +8,7 @@
 #                                    own question. See docs\48_three_layer_protocol.md.
 #   scripts\run_all_experiments.ps1  (this file) the NIH layer only: 19-cell synthetic
 #                                    shift + reliance + bf16 control + prompt ablation.
-#                                    223.5 h for all 7 models, 133.0 h for the default 5.
+#                                    194.4 h for all 7 models, 115.7 h for the default 5.
 #                                    Still correct and still supported; use it when the
 #                                    external layers are not wanted or are already done.
 #
@@ -49,8 +49,8 @@ param(
     [string[]] $Models,
     [Parameter(ValueFromRemainingArguments = $true)]
     [string[]] $Stages,
-    [int]      $Limit      = 1732,
-    [int]      $AblationLimit = 1732,
+    [int]      $Limit      = 1506,
+    [int]      $AblationLimit = 1506,
     [int]      $BatchSize  = 4,
     [switch]   $NoAblation,
     [switch]   $Reset,
@@ -59,7 +59,7 @@ param(
     # $plan already holds the stage table below.
     [switch]   $DryRun,
     # Manifest the stages read. The default is the 6K-strategy evaluation set
-    # (docs/41): NIH internal_test + source_val only, 1,732 images. Point this at
+    # (docs/41): NIH internal_test + source_val only, 1,506 images. Point this at
     # data\manifests\nih_shared_500.csv for a fast pipeline check, or at
     # nih_shared_5000.csv together with -Splits to go wider.
     [string]   $Manifest = 'data\manifests\nih_eval_1732.csv',
@@ -128,8 +128,8 @@ $StageStartupSeconds = 35
 # padding penalty: batching mixed-size images costs ~20% over the benchmark figure
 $PaddingFactor = 1.20
 
-# The recommended matrix. NIH internal_test+source_val is 1,732 images x 19
-# shift cells = 32,908 shift calls per model, so every model added costs real
+# The recommended matrix. NIH internal_test+source_val is 1,506 images x 19
+# shift cells = 28,614 shift calls per model, so every model added costs real
 # days. LLaVA-Med (26 h) and InternVL (94 h) are the two slowest and are left
 # out of the primary matrix; their wrappers still work, so they can be added
 # with -Models when the budget allows.

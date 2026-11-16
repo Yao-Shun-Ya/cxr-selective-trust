@@ -1,0 +1,383 @@
+\section{工件索引}
+\label{app:artifacts}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{0.92}
+\caption{支撑本文每个数字的工件。}
+\label{tab:artifacts}
+\begin{tabular}{ll}
+\toprule
+项目 & 路径 \\
+\midrule
+响应性审计 & \url{scripts/78_responsiveness_audit.py} \\
+选择输入适配器 & \url{scripts/79_export_selective_inputs.py} \\
+绘图脚本 & \url{scripts/80_make_figures.py} \\
+敏感性分析 & \url{scripts/81_sensitivity_analyses.py} \\
+图像侧可检测性 & \url{scripts/82_image_side_baseline.py} \\
+质量语言审计 & \url{scripts/83_quality_language_audit.py} \\
+PadChest 疾病阳性子集 & \url{scripts/84_padchest_abnormal_subset.py} \\
+工作点区间 & \url{scripts/85_operating_point_ci.py} \\
+患病率分层 & \url{scripts/87_label_hierarchy_prevalence.py} \\
+逐标签 CI / BH-FDR & \url{scripts/88_per_label_ci_fdr.py} \\
+固定阈值事后分析 & \url{scripts/89_fixed_threshold_posthoc.py} \\
+覆盖普查 & \url{scripts/90_coverage_census.py} \\
+清单锁定 & \url{scripts/91_manifest_lock.py} \\
+round-2 汇总 & \url{scripts/96_analyze_round2.py} \\
+配对阳性率 & \url{scripts/102_paired_positive_rate.py} \\
+DenseNet 患者自助法 & \url{scripts/103_densenet_bootstrap.py} \\
+表格一致性核查 & \url{scripts/104_table_consistency_check.py} \\
+输出清单 & \url{scripts/105_outputs_manifest.py} \\
+干净 AUROC 区间 & \url{scripts/106_clean_auroc_ci.py} \\
+PadChest 标签层级 & \url{scripts/107_padchest_label_hierarchy.py} \\
+固定规则重跑 & \url{scripts/108_fixed_rule_rerun.py} \\
+CheXbert 交叉核验 & \url{scripts/109_chexbert_openi.py} \\
+贪婪确定性 & \url{scripts/110_compare_determinism.py} \\
+DenseNet 19 格网格 & \url{scripts/111_densenet_grid.py} \\
+跨家族 schema & \url{scripts/112_analyze_xfamily_schema.py} \\
+DenseNet 条件指标 & \url{scripts/113_densenet_conditions.py} \\
+标注器一致性 & \url{scripts/114_report_labeller_agreement.py} \\
+LLaVA-Med NIH 子集 & \url{scripts/115_llava_nih.py} \\
+跨家族改写 & \url{scripts/116_paraphrase_xfamily.py} \\
+确定性输出 & \url{outputs/determinism/medgemma_4b_it/determinism.csv} \\
+固定规则输出 & \url{outputs/fixed_rule/} \\
+LLaVA-Med NIH 运行 & \url{outputs/llava_nih/} \\
+敏感性结果表 & \url{outputs/analysis_sensitivity/} \\
+响应性结果表 & \url{outputs/analysis_responsiveness/} \\
+LLaVA-Med 响应性 & \url{outputs/analysis_responsiveness_llava/} \\
+契约覆盖 & \url{outputs/analysis_selective/export_manifest.json} \\
+地理迁移汇总 & \url{outputs/geographic/<model>/} \\
+选择性指标 & \url{outputs/selective_v2/}, \url{outputs/trust_v1/} \\
+风险--覆盖带 & \url{outputs/selective_v2/<model>/risk_coverage_bands.csv} \\
+跨参数挖掘 & \url{outputs/analysis_nih_mine/joint_*.csv} \\
+运行状态（38 阶段） & \url{outputs/state/run_all_layers_state.json} \\
+预处理契约 & \url{docs/55_preprocessing_contract.md} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{协议表}
+\label{app:protocol}
+
+\begin{table}[H]
+\centering
+\small
+\caption{NIH shift 网格上的解析与契约覆盖（每模型 28,614 次调用）。``全部确定''是解析成功回答中八个状态全为阳性/阴性的比例。完整 41 阶段普查（交付的 39 个阶段加两个 round-2 推理阶段）见 \url{outputs/analysis_sensitivity/coverage_census.csv}。}
+\label{tab:coverage}
+\begin{tabular}{lrrr}
+\toprule
+模型 & 解析率 & 全部确定 & 错误行 \\
+\midrule
+Qwen2.5-VL & 1.000 & \textbf{1.000} & 0 \\
+InternVL3.5 & 1.000 & 0.956 & 0 \\
+MedGemma-1.5 & 0.998 & 0.824 & 0 \\
+Qwen3-VL & 1.000 & 0.795 & 0 \\
+MedGemma-4B & 1.000 & 0.605 & 0 \\
+CheXagent & 0.985 & \textbf{0.096} & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{同一批 947 例 Open-i 研究在两种标注器下的结果（均为槽位级：八个标签 $\times$ 947 次判定）。绝对计数不可跨标注器比较，但排序可以。幻觉排序方向保持一致（Spearman 0.71，$n=6$，$p=0.11$），漏报排序不一致（$-0.49$，$p=0.33$）。}
+\label{tab:chexbert}
+\begin{tabular}{lrrrr}
+\toprule
+模型 & 规则漏报 & 规则幻觉 & CheXbert 漏报 & CheXbert 幻觉 \\
+\midrule
+MedGemma-4B & 196 & \textbf{3,021} & 118 & 609 \\
+MedGemma-1.5 & 571 & 268 & 103 & 583 \\
+InternVL3.5 & 274 & 2,198 & 187 & 870 \\
+Qwen3-VL & \textbf{181} & \textbf{3,508} & 363 & 786 \\
+Qwen2.5-VL & 302 & 2,128 & 231 & 660 \\
+CheXagent & \textbf{1,198} & \textbf{113} & 165 & 532 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{有效输入几何}
+\label{app:geometry}
+
+\begin{table}[H]
+\centering
+\small
+\caption{最大 PadChest 图像（15.37\,MP）上的有效输入几何。同一张胸片变成六种不同输入；这是测量声明，不是中性设置。}
+\label{tab:geometry}
+\begin{tabular}{llrl}
+\toprule
+模型 & 有效输入 & 图像 token 数 & 缩放机制 \\
+\midrule
+Qwen3-VL-8B & 15.24\,MP & 14,884 & 契约提示 \\
+Qwen2.5-VL-7B & 12.85\,MP（上限） & 16,384 & 检查点配置 \\
+MedGemma-4B/1.5 & 0.80\,MP & 256 & 固定处理器 \\
+InternVL3.5-8B & 0.20\,MP & 256 & $1\times1$ 切片网格 \\
+CheXagent-8B & 0.20\,MP & 0（交叉注意力） & 固定处理器 \\
+LLaVA-Med-7B & 0.11\,MP & 576 & 固定 CLIP \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{敏感性分析}
+\label{app:risk}
+
+所有数值由脚本 81--85（表~\ref{tab:artifacts}）从冻结预测文件与原始图像生成。
+
+\begin{table}[H]
+\centering
+\small
+\caption{众数占比阈值扫描下的坍缩标记（唯一回答数上限固定为 5）。跨数据集判定在 0.40 以上不变；只有在最宽松的 0.30 切点，PadChest 的第六个模型才加入，且只有域内与散文单元在边际上移动。}
+\label{tab:sweep}
+\begin{tabular}{lrrrrrr}
+\toprule
+数据层 & 0.30 & 0.40 & 0.50 & 0.60 & 0.70 & 0.80 \\
+\midrule
+NIH（共 6） & 3 & 3 & 3 & 2 & 1 & 1 \\
+PadChest（共 6） & 6 & 5 & 5 & 5 & 5 & 5 \\
+Open-i（共 6） & 2 & 1 & 1 & 1 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{两个跨域统计量的敏感性。共同标签 $\Delta$AUROC 排除肺炎（在 PadChest 中结构性缺失）。零模型在随机真实图像对与参考长度匹配真实图像对下重算。CheXagent 只有一个可估计的共同标签（记为``(1)''）。最后一列是两种零模型下 $\Delta_{\text{null}}$ 的范围；正值表示空白干预比随机真实图像离真实图像更远。}
+\label{tab:sens}
+\begin{tabular}{lrrrrrr}
+\toprule
+模型 & 平均 $\Delta$（7 标签） & 最差标签 & $J$(真实,空白) & 零模型（随机） & 零模型（长度） & $\Delta_{\text{null}}$ 范围 \\
+\midrule
+MedGemma-4B & $-0.107$ & $-0.246$ & 0.894 & 0.824 & 0.844 & $-0.070$ 至 $-0.050$ \\
+MedGemma-1.5 & $-0.079$ & $-0.161$ & 0.736 & 0.648 & 0.654 & $-0.087$ 至 $-0.081$ \\
+InternVL3.5 & $-0.134$ & $-0.274$ & 0.562 & 0.673 & 0.677 & $+0.112$ 至 $+0.116$ \\
+Qwen3-VL & $-0.059$ & $-0.185$ & 0.091 & 0.740 & 0.734 & $+0.643$ 至 $+0.648$ \\
+CheXagent & $-0.004$ (1) & $-0.004$ & 0.277 & 0.247 & 0.252 & $-0.030$ 至 $-0.024$ \\
+Qwen2.5-VL & $-0.002$ & $-0.008$ & 0.576 & 0.770 & 0.767 & $+0.191$ 至 $+0.193$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{标签层级部分受患病率混杂。A 面板：每个模型的保持率与 NIH 患病率 Spearman，以及高/低患病率标签分层的平均保持率。B 面板：秩残差化患病率前后的两两一致性。原始一致性为正，但偏一致性在不同模型对间变号，因此我们不主张患病率无关的病灶规律。}
+\label{tab:hierarchy}
+\begin{tabular}{lrrr}
+\toprule
+\multicolumn{4}{l}{\emph{A 面板：保持率与患病率}} \\
+模型 & $\rho$(保持率, 患病率) & 平均保持率（高患病率） & 平均保持率（低患病率） \\
+\midrule
+InternVL3.5 & 0.571 & 0.935 & 0.764 \\
+Qwen3-VL & 0.429 & 0.718 & 0.629 \\
+MedGemma-1.5 & 0.714 & 0.873 & 0.701 \\
+MedGemma-4B & 0.464 & 0.735 & 0.514 \\
+\midrule
+\multicolumn{4}{l}{\emph{B 面板：模型对一致性}} \\
+模型对 & 原始 $\rho$ & 偏 $\rho$ & 精确 $p$ \\
+\midrule
+InternVL / Qwen3 & 0.771 & 0.765 & 0.658 \\
+InternVL / MedGemma-1.5 & 0.857 & $-0.654$ & 0.012 \\
+InternVL / MedGemma-4B & 0.750 & $-0.685$ & 0.200 \\
+Qwen3 / MedGemma-1.5 & 0.657 & 0.525 & 0.058 \\
+Qwen3 / MedGemma-4B & 0.657 & $-0.691$ & 0.242 \\
+MedGemma-1.5 / MedGemma-4B & 0.750 & 0.847 & 0.200 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{逐标签干净 $\rightarrow$ 重度召回变化，附患者聚类自助法区间（1,000 次重采样）与每个模型内七个标签的 Benjamini--Hochberg $q$。重度单元合并六种退化类型。心脏增大与接近零召回的气胸是不显著例外；28 个单元中 22 个 $q<0.05$。完整 CSV：\url{outputs/analysis_sensitivity/per_label_bootstrap_fdr.csv}。}
+\label{tab:perlabel}
+\begin{tabular}{llrrr}
+\toprule
+模型 & 标签 & $\Delta$ 召回（pp） & 95\% CI & $q_{\mathrm{BH}}$ \\
+\midrule
+InternVL3.5 & 肺不张 & $-4.23$ & $[-5.71,-2.65]$ & $<0.001$ \\
+ & 心脏增大 & $+0.19$ & $[-1.63,+2.18]$ & 0.878 \\
+ & 实变 & $-3.04$ & $[-4.85,-1.18]$ & $<0.001$ \\
+ & 水肿 & $-8.43$ & $[-12.04,-4.71]$ & $<0.001$ \\
+ & 胸腔积液 & $-2.40$ & $[-3.83,-1.16]$ & $<0.001$ \\
+ & 肺炎 & $-5.91$ & $[-8.71,-3.11]$ & $<0.001$ \\
+ & 气胸 & $-0.08$ & $[-0.81,+0.29]$ & 0.878 \\
+\midrule
+Qwen3-VL & 肺不张 & $-4.08$ & $[-5.73,-2.42]$ & $<0.001$ \\
+ & 心脏增大 & $-2.33$ & $[-6.71,+2.21]$ & 0.401 \\
+ & 实变 & $-5.54$ & $[-7.98,-3.29]$ & $<0.001$ \\
+ & 水肿 & $-11.98$ & $[-17.13,-7.27]$ & $<0.001$ \\
+ & 胸腔积液 & $-4.02$ & $[-5.64,-2.38]$ & $<0.001$ \\
+ & 肺炎 & $-10.03$ & $[-14.26,-6.77]$ & $<0.001$ \\
+ & 气胸 & $0.00$ & $[0.00,0.00]$ & 1.000 \\
+\midrule
+MedGemma-1.5 & 肺不张 & $-4.23$ & $[-5.08,-3.40]$ & $<0.001$ \\
+ & 心脏增大 & $-5.56$ & $[-7.55,-3.67]$ & $<0.001$ \\
+ & 实变 & $-5.05$ & $[-7.67,-2.43]$ & $<0.001$ \\
+ & 水肿 & $-17.32$ & $[-20.80,-13.90]$ & $<0.001$ \\
+ & 胸腔积液 & $-13.57$ & $[-15.55,-11.71]$ & $<0.001$ \\
+ & 肺炎 & $-13.08$ & $[-17.58,-8.57]$ & $<0.001$ \\
+ & 气胸 & $-2.83$ & $[-4.78,-1.12]$ & $<0.001$ \\
+\midrule
+MedGemma-4B & 肺不张 & $-3.49$ & $[-4.40,-2.68]$ & $<0.001$ \\
+ & 心脏增大 & $-9.44$ & $[-11.54,-7.49]$ & $<0.001$ \\
+ & 实变 & $-11.22$ & $[-14.09,-8.44]$ & $<0.001$ \\
+ & 水肿 & $-31.43$ & $[-34.90,-28.06]$ & $<0.001$ \\
+ & 胸腔积液 & $-14.53$ & $[-16.85,-12.33]$ & $<0.001$ \\
+ & 肺炎 & $-21.68$ & $[-26.51,-17.48]$ & $<0.001$ \\
+ & 气胸 & $-0.13$ & $[-0.54,+0.11]$ & 0.746 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{三个工作点单元的事后固定阈值检查。``状态''使用模型输出的阳性/阴性状态；``$p\ge0.5$''对口头概率施加固定切点；``干净匹配''在干净图像上选一个切点，使其阳性数与状态规则相同。三种规则都在 0.11\,\pp{} 内复现召回率与阳性预测率变化，因此该移动不是离散状态规则改变造成的伪影。表~\ref{tab:fixedrerun} 给出固定规则重跑，用于分离阈值移动与分数分布移动。}
+\label{tab:fixedthr}
+\begin{tabular}{llrrr}
+\toprule
+单元 & 规则 & $\Delta$ 召回 & $\Delta$ 精确率 & $\Delta$ 阳性率 \\
+\midrule
+InternVL 对比度 & 状态 & $+4.69$ & $-1.38$ & $+4.06$ \\
+ & $p\ge0.5$ & $+4.80$ & $-1.35$ & $+4.13$ \\
+ & 干净匹配 & $+4.69$ & $-1.38$ & $+4.06$ \\
+\midrule
+InternVL 亮度 & 状态 & $+2.52$ & $-0.64$ & $+2.09$ \\
+ & $p\ge0.5$ & $+2.47$ & $-0.78$ & $+2.15$ \\
+ & 干净匹配 & $+2.52$ & $-0.59$ & $+2.06$ \\
+\midrule
+Qwen3-VL 对比度 & 状态 & $+3.44$ & $+0.19$ & $+2.51$ \\
+ & $p\ge0.5$ & $+3.36$ & $+0.38$ & $+2.40$ \\
+ & 干净匹配 & $+3.44$ & $+0.25$ & $+2.49$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{图像侧可检测性。单一无参考统计量把 1,506 张干净的域内评估图像与其退化版本分开；AUC 已做方向调整，1.000 表示完全分离。每个条件只列出 AUC 最高的统计量。退化在图像层面一目了然；静默失效结果只涉及模型侧通道。}
+\label{tab:imageside}
+\begin{tabular}{llrrrr}
+\toprule
+条件 & 统计量 & AUC & 方向 & 干净中位数 & 重度中位数 \\
+\midrule
+噪声（重度） & Laplacian 方差 & \textbf{1.000} & 退化后更高 & 0.0011 & 0.0844 \\
+模糊（重度） & Laplacian 方差 & \textbf{1.000} & 退化后更低 & 0.0011 & 0.000024 \\
+对比度（重度） & 强度熵 & 0.966 & 退化后更低 & 7.451 & 6.546 \\
+对比度（重度） & 强度标准差 & 0.900 & 退化后更高 & 0.231 & 0.320 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{病例级转移，InternVL3.5，干净 $\rightarrow$ 对比度/重度。``获得''是干净阴性图像在退化下被判为阳性；``新假阳性''是干净时正确的阴性被判为阳性。}
+\label{tab:flip}
+\begin{tabular}{lrrrrrr}
+\toprule
+发现 & 保留 TP & 丢失 TP & 获得 TP & 纠正 FP & 新 FP & 稳定 TN \\
+\midrule
+肺不张 & 535 & 10 & 43 & 5 & 36 & 256 \\
+心脏增大 & 324 & 3 & 30 & 28 & 59 & 495 \\
+实变 & 99 & 1 & 50 & 8 & 69 & 770 \\
+水肿 & 135 & 0 & 23 & 9 & 40 & 993 \\
+胸腔积液 & 592 & 19 & 34 & 5 & 21 & 311 \\
+肺炎 & 57 & 1 & 22 & 8 & 98 & 1,034 \\
+气胸 & 0 & 1 & 2 & 1 & 0 & 1,108 \\
+无发现 & 83 & 6 & 1 & 53 & 11 & 1,128 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{按标签的病例构成（阳性率，\%）。NIH 自然值为官方 ChestX-ray14 在全部 112,120 张图像上的标注；1,506 张评估集由分层采样器做疾病富集。PadChest 为标签映射后的原生阳性率；肺炎结构性缺失。因此精确率与阳性预测率只在层内比较。}
+\label{tab:prevalence}
+\begin{tabular}{lrrr}
+\toprule
+发现 & NIH 评估集 & NIH 自然值 & PadChest 原生值 \\
+\midrule
+肺不张 & 50.7 & 10.3 & 2.8 \\
+心脏增大 & 29.0 & 2.5 & 5.8 \\
+实变 & 36.0 & 4.2 & 5.5 \\
+水肿 & 17.5 & 2.1 & 0.7 \\
+胸腔积液 & 66.3 & 11.9 & 2.5 \\
+肺炎 & 13.7 & 1.3 & 0.0 \\
+气胸 & 26.4 & 4.7 & 0.3 \\
+无发现 & 8.0 & 53.8 & 16.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{PadChest 原生分辨率下的逐标签 AUROC（$n=1{,}500$；CheXagent 为 1,499；1,000 次患者聚类重采样）。五个无响应模型最多给出 20 种不同回答，其 AUROC 在 0.500 的 $\pm0.04$ 以内，不构成有意义的标签排序。只有 MedGemma-1.5 可估计：心脏增大 0.541（95\% CI 0.505--0.584）、肺不张 0.531（0.464--0.605）；其余四个可估计标签为 0.489--0.490。肺炎结构性缺失。}
+\label{tab:padlabel}
+\begin{tabular}{lrrrrrr}
+\toprule
+发现 & MG-1.5 & MG-4B & InternVL & Qwen3 & Qwen2.5 & CheXagent \\
+\midrule
+肺不张 & 0.531 & 0.505 & 0.500 & 0.499 & 0.500 & 0.500 \\
+心脏增大 & \textbf{0.541} & 0.492 & 0.500 & 0.500 & 0.500 & 0.500 \\
+实变 & 0.490 & 0.503 & 0.500 & 0.500 & 0.500 & 0.500 \\
+水肿 & 0.489 & 0.536 & 0.500 & 0.500 & 0.500 & 0.500 \\
+胸腔积液 & 0.489 & 0.516 & 0.500 & 0.500 & 0.500 & 0.500 \\
+肺炎 & --- & --- & --- & --- & --- & --- \\
+气胸 & 0.489 & 0.492 & 0.500 & 0.500 & 0.500 & 0.500 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\small
+\caption{DenseNet-121（表~\ref{tab:baseline} 的检查点）在 19 格网格上以固定 0.5 规则运行。对比度 severe 提高召回与阳性率而宏 AUROC 保持平稳，说明工作点移动并不需要语言模型；噪声与分辨率使两者同时下降。PadChest 宏 AUROC 为 0.515，因此跨数据集坍缩也不是 VLM 特有的。}
+\label{tab:densenetgrid}
+\begin{tabular}{lrrr}
+\toprule
+格子 & 宏 AUROC & 合并召回 & 阳性率 \\
+\midrule
+clean & 0.7329 & 0.5673 & 0.3599 \\
+对比度 severe & 0.7292 & \textbf{0.5878} & \textbf{0.3775} \\
+模糊 severe & 0.7296 & 0.5655 & 0.3585 \\
+亮度 severe & 0.7109 & 0.5315 & 0.3602 \\
+噪声 severe & 0.6824 & 0.4766 & 0.3208 \\
+分辨率 severe & 0.7107 & 0.5230 & 0.3548 \\
+PadChest（原生） & 0.5153 & 0.3232 & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{200 例配对研究上的固定规则重跑（InternVL3.5）。模型被重新提示为只输出概率，阳性/阴性状态由我们在 0.5 处赋予。由于该运行的决策规则不可能移动，两种退化下召回与阳性率的上升来自分数分布移动，而不是离散状态改变。Qwen3-VL 在同一``只输出概率''契约下对每个标签都返回 0.0（非零率 1.0\%，0.5 切点阳性率 $\le$ 1.0\%），因此该单元退化、被排除。}
+\label{tab:fixedrerun}
+\begin{tabular}{lrrrrr}
+\toprule
+单元 & $n$ & 召回（干净） & 召回（重度） & 阳性率（干净） & 阳性率（重度） \\
+\midrule
+对比度 severe & 200 & 0.510 & \textbf{0.575} & 0.404 & \textbf{0.449} \\
+亮度 severe & 200 & 0.510 & \textbf{0.584} & 0.404 & \textbf{0.457} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{响应性审计的逐单元证据}
+\label{app:cell}
+
+审计对每个（数据层，模型）报告：真实图像上的输出支撑大小、带 Wilson 区间的众数回答占比、结构化层中不同\emph{状态向量}的数量、空白模板集中度，以及两个零模型差距。完整表见 \url{outputs/analysis_responsiveness/responsiveness_by_cell.csv}；表~\ref{tab:audit} 是其精简形式。坍缩规则（众数占比 $\ge 0.50$ 或唯一回答数 $\le 5$）在脚本头部声明，仅作描述：没有任何一行被它删除或重新缩放。
+
+\input{sections/09b_round2_appendix}

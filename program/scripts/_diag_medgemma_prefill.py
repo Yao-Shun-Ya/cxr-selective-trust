@@ -10,7 +10,7 @@ Context (scripts/61_measure_medgemma_think_budget.py, 8 images, bf16):
 
 So the model can be made to satisfy the JSON contract by giving it ~4x the token
 budget every other model needs -- and it pays for it: 12.5 s/cell against 2.85
-s/cell at 256. Over the precision stage alone (6,928 cells) that is 29 h instead
+s/cell at 256. Over the precision stage alone (6,024 cells) that is ~25 h instead
 of 6 h.
 
 The token layout is fixed: ``<unused94>`` (id 100) opens the thought channel and

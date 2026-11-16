@@ -10,7 +10,9 @@ evaluation images and 12 pneumonia positives, and a large ``--limit`` would have
 pulled training rows into the reported metrics without any warning.
 
 This script writes the evaluation set explicitly: ``internal_test`` plus
-``source_val``, 1,732 images, which is the number the 6K plan (docs/41) states.
+``source_val`` = 1,506 scored images, plus 226 ``internal_train`` donor rows used
+only to repair ``no_finding`` (1,732 manifest rows total), which is the number the
+6K plan (docs/41) states.
 
 It also repairs a second defect in the upstream sampling
 --------------------------------------------------------

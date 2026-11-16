@@ -1,0 +1,132 @@
+\section{确证性实验表}
+\label{app:round2}
+
+\subsection*{第二个医学模型上的 schema 扫描}
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\caption{schema 扫描，MedGemma-1.5（每格 $n=1{,}506$，共 15,060 次调用）。``空白召回''为均匀灰色图像上七个病理标签的合并召回；``违约''为至少一个标签缺少明确状态或概率的回答比例。}
+\label{tab:r2schema}
+\begin{tabular}{lrrrrr}
+\toprule
+schema & 真实召回 & 空白召回 & 空白 \texttt{no\_finding} 阳性 & 空白违约 & 真实违约 \\
+\midrule
+v0 简单 & 0.551 & \textbf{0.000} & 1.000 & 0.000 & 0.059 \\
+v1 逐标签二分类 & 0.493 & \textbf{0.000} & 1.000 & 0.000 & 0.221 \\
+v2 few-shot & 0.550 & \textbf{0.000} & 0.001 & 0.999 & 0.250 \\
+v3 先报告后标注 & 0.552 & \textbf{0.000} & 1.000 & 0.000 & 0.152 \\
+v4 正常性施压 & \textbf{0.614} & \textbf{0.000} & 0.000 & 1.000 & 0.531 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{改写与 v0 基线的一致性}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{改写对照（每格 $n=1{,}506$）。MedGemma-4B 六格、6,024 次调用；Qwen3-VL 同批研究四格。一致率与 $\kappa$ 按标签与同模型 v0 比较后对八个标签取平均；单一状态时 $\kappa$ 无定义。}
+\label{tab:r2para}
+\begin{tabular}{llrrr}
+\toprule
+模型 & 图像 / 改写 & 一致率 & $\kappa$ & \texttt{no\_finding} 一致率 \\
+\midrule
+MedGemma-4B & 真实 / p1 简短 & 0.909 & 0.624 & 0.999 \\
+ & 真实 / p2 第二读者 & 0.914 & 0.642 & 0.946 \\
+ & 空白 / p1 简短 & 0.875 & 0.000 & \textbf{0.000} \\
+ & 空白 / p2 第二读者 & 1.000 & 0.000 & \textbf{1.000} \\
+\midrule
+Qwen3-VL & 真实 / p1 简短 & 0.931 & 0.723 & 0.926 \\
+ & 真实 / p2 第二读者 & 0.903 & 0.701 & 0.909 \\
+ & 空白 / p1 简短 & 1.000 & --- & \textbf{1.000} \\
+ & 空白 / p2 第二读者 & 1.000 & --- & \textbf{1.000} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{第二个推理模型的终止预算}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Qwen3-VL-8B-Thinking 的预算升级（10,542 个格子）。前三行为全量运行；第四行并入仍失败格子的 40 格随机抽样。``中位长度''指该预算下仍无可用答案的回复；它随上限上升，说明这些回复会撑满给它的任何预算。计数为格子，不是模型调用。}
+\label{tab:r2budget}
+\begin{tabular}{lrrrr}
+\toprule
+预算（token） & 可用格子 & 覆盖率 & 仍失败 & 中位长度（千字符） \\
+\midrule
+2,560 & 6,067 & 57.6\% & 4,475 & 9.8 \\
+3,584 & 8,738 & 82.9\% & 1,804 & 13.5 \\
+5,120 & 9,381 & 89.0\% & 1,161 & 19.3 \\
+5,120 + 8,192 抽样 & 9,401 & 89.2\% & 1,141 & 28.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{失败归档与残余格子的对账}
+
+\begin{table}[H]
+\centering
+\small
+\caption{失败归档的构成。行是\emph{尝试}，因此一个格子在更大预算下重试就会在每个预算上各出现一次；最终过滤后的格子级残余是 1,141，而不是归档行数。}
+\label{tab:r2recon}
+\begin{tabular}{llrr}
+\toprule
+轮次标签 & 预算（token） & 归档行数 & 不同格子数 \\
+\midrule
+\texttt{pre\_5120} & 2,560 / 3,584 & 3,085 & 2,491 \\
+\texttt{post\_5120} & 5,120 & 1,161 & 1,161 \\
+\texttt{cap8192} & 8,192 & 37 & 20 \\
+\midrule
+合计 & --- & \textbf{4,283} & 2,761 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+这一区分对报告很重要：``1,141 个格子在 5,120 下从不终止''是格子级陈述，而``4,283 条归档失败''跨四个预算计尝试数。若把二者等同，会把残余高估 3.8 倍。
+
+\subsection*{配对工作点（控制覆盖率）}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Qwen3-VL-8B-Thinking 在配对子集上的阳性率：在 clean 格与 severe 格都能给出可用答案的研究。配对与非配对的移动一致，因此工作点移动不是由差异化覆盖率造成的。}
+\label{tab:r2posrate}
+\begin{tabular}{lrrrr}
+\toprule
+格子 & 配对 $n$ & clean & severe & $\Delta$ \\
+\midrule
+blur & 1,302 & 0.249 & 0.192 & $-5.7$\,\pp{} \\
+brightness & 1,178 & 0.255 & 0.215 & $-4.0$\,\pp{} \\
+contrast & 1,299 & 0.254 & 0.278 & $+2.4$\,\pp{} \\
+JPEG & 1,290 & 0.254 & 0.243 & $-1.0$\,\pp{} \\
+noise & 1,238 & 0.249 & 0.172 & $-7.7$\,\pp{} \\
+resolution & 1,132 & 0.250 & 0.128 & $\mathbf{-12.2}$\,\pp{} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{第二个推理模型的逐标签损伤}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Qwen3-VL-8B-Thinking 的 clean $\rightarrow$ 合并 severe 逐标签召回变化，在 clean 与全部六个 severe 格都有答案的 1,394 例研究（695 名患者）上配对；逐格配对 $n$ 从 1,130（resolution）到 1,297（blur），逐格估计见表~\ref{tab:r2think}。区间为患者聚类自助法（1,000 次重采样，95\%）；$q$ 为七个标签上的 Benjamini--Hochberg 值。}
+\label{tab:r2label}
+\begin{tabular}{lrrrrr}
+\toprule
+标签 & clean & severe & $\Delta$ & 95\% CI & $q$ \\
+\midrule
+肺不张 & 0.089 & 0.067 & $-2.2$\,\pp{} & $[-4.4,-0.2]$ & 0.053 \\
+心影增大 & 0.592 & 0.532 & $-6.0$\,\pp{} & $[-9.9,-1.9]$ & 0.014 \\
+实变 & 0.314 & 0.288 & $-2.6$\,\pp{} & $[-6.5,+1.1]$ & 0.166 \\
+肺水肿 & 0.117 & 0.075 & $-4.2$\,\pp{} & $[-8.5,-0.2]$ & 0.053 \\
+胸腔积液 & 0.482 & 0.394 & $\mathbf{-8.8}$\,\pp{} & $[-11.9,-5.8]$ & $<0.001$ \\
+肺炎 & 0.451 & 0.341 & $\mathbf{-11.0}$\,\pp{} & $[-16.4,-5.5]$ & $<0.001$ \\
+气胸 & 0.003 & 0.001 & $-0.1$\,\pp{} & $[-0.8,+0.3]$ & 0.820 \\
+\bottomrule
+\end{tabular}
+\end{table}

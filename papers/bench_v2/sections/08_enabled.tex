@@ -1,0 +1,15 @@
+\section{What the Harness Enabled}
+\label{sec:enabled}
+
+The harness was built before the scientific claims were known, and that ordering matters. Once the 39 prediction files were frozen, the audits could be run, re-run, and revised without touching a GPU. The companion measurement-validity paper reports four reversals and a negative selective-trust result; we summarize only their \emph{engineering} provenance here.
+
+\begin{enumerate}[leftmargin=1.2em,itemsep=2pt,topsep=2pt]
+\item \textbf{Responsiveness.} The audit found that five of six models emit only 1--20 distinct replies for 1,500 PadChest images. The harness had already stored the raw replies and the blank images, so the claim could be checked per cell rather than asserted from a summary.
+\item \textbf{Null model.} The Open-i comparison required a real-vs-real null that the original runners did not produce. Because the predictions retained raw prose, the null could be computed CPU-only, including random and length-matched pairings.
+\item \textbf{Operating point.} The clean and severe rows share a study identifier, so a patient-cluster bootstrap and a case-level transition table could be produced from frozen rows. No stage was re-run.
+\item \textbf{Contract coverage.} The coverage census exposed the denominator difference between Qwen2.5-VL (100\% definite) and CheXagent (9.6\% all-definite on the shift grid) before any comparative claim was made.
+\end{enumerate}
+
+\textbf{Why two papers rather than one.} The companion's contribution is a measurement argument; this paper's contribution is a systems argument. Combining them would force a reviewer to evaluate two different claims under one page limit, and would obscure the engineering failure modes behind the scientific narrative. We keep the artifact set shared, cross-cite the companion, and state in each paper which claims belong to which contribution. This is also a practical guard against salami slicing: the two papers do not report the same experiments as independent evidence; one reports the science, the other reports the harness that produced it.
+
+\textbf{What the harness does not solve.} It does not validate the scientific claim, choose the right metric, or replace a supervised baseline. It makes the claim's inputs visible and recomputable. That is a narrower contribution, and we state it as such.

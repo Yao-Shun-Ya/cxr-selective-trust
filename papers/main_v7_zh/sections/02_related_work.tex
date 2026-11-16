@@ -1,0 +1,48 @@
+\section{相关工作}
+\label{sec:related}
+
+\textbf{反事实依赖。}\emph{To See or To Please}~\citep{anon2026see} 提出的 Visual Necessity Score 是最接近的先行工具：它在 full、blind、noise、conflict 四种条件下评测九个 VLM、9,000 个模型--样本对，并报告模型家族尺度规律与一种免训练的选择性预测增益。我们的依赖条件属于同一家族，但问题不同：不是``分数是多少''，而是``分数何时可识别''。该文的无图像对照没有报告真实图像间的零模型；我们表明这一省略可能反转排序（第~\ref{sec:results-null}~节）。\emph{Do VLMs See or Guess?}~\citep{anon2026guess} 固定图像、改变问题措辞，以隔离文本先验依赖。我们的结果与之互补：当图像被移除或退化时，坍缩或模板化的模型可以产生很大的表观对照，却没有证据提取，因此仅靠措辞控制不足以识别图像使用。
+
+\textbf{退化鲁棒性。}医学 VLM 鲁棒性通常用干净误差与平均退化误差~\citep{anon2025corruption}，或用准确率与伪影检测率~\citep{cheng2025robustness} 来概括。这些指标在标签上聚合，因而看不到工作点移动：当真阳性与假阳性同时上升时，准确率可能不变甚至提高。我们对胸片 VLM 评测中的这一失效模式给出了明确的实证分析，表明退化可以\emph{提高}召回率，同时精确率与假阳性朝不利于鲁棒性的方向变化；要检测这一模式，两者都必须报告。压力测试套件报告了提示与工作流变化下的类似脆弱性~\citep{gu2025illusion}，接地研究则质疑医学 VLM 是否真正使用图像证据~\citep{felizzi2025grounded}。
+
+\textbf{保守的默认正常行为。}\emph{Reliability Stress Tests}~\citep{anon2026stress} 表明，在提示与工作流变化下，精确匹配准确率会高估那些默认回答``正常''的保守模型，并以 CheXagent~\citep{chen2024chexagent} 与 MedGemma~\citep{sellergren2025medgemma} 为例。我们在更大规模上复现了这一现象，并加入契约轴：捷径的\emph{形式}（自信正常还是弃答）由回答模式决定，而不是由模型决定（第~\ref{sec:results-schema}~节）。我们的标签级分析还把``默认正常''与``输出坍缩''区分开来，而后者未被该框架区分。
+
+\textbf{弃答与拒答。}\emph{Knowing When Not to Answer}~\citep{anon2026knowing} 评测不可回答的多模态输入上的弃答，并表明假设所有输入均可回答的基准会遗漏这一失效模式。我们的空白对照分析展示了一个互补的伪影：在散文契约下，对空白图像弃答很常见，除非检查空白模板，否则会产生虚假的``强依赖''读数（第~\ref{sec:results-null}~节）。
+
+\textbf{推理长度与终止。}另一条工作线表明更长的推理并非单调更优：准确率随思维链长度呈倒 U 形~\citep{wu2026whenmore}，延长的思考可能放弃模型本来已经得到的答案~\citep{zhou2026overthinking}，而被截断的推理链可能比不推理更糟~\citep{su2026broken}。这些文献在固定预算下测量准确率。我们的第二模型结果是测量层面的后果：当推理检查点被要求输出结构化答案时，不终止会把该格子从分母中移除，因此覆盖率本身成为退化的函数（第~\ref{sec:results-second}~节）。
+
+\textbf{校准与选择性预测。}校准通常用 ECE 度量、用温度缩放修正~\citep{guo2017calibration}，而它在分布偏移下的脆弱性已有充分记录~\citep{ovadia2019trust}。风险--覆盖率分析是医学机器学习的标准工具~\citep{geifman2017selective,oakdenrayner2021limits}。我们的贡献是具体而负面的：在预先声明的代价模型下，复合策略在图像级从不接受（接受率 0.000）；在发现级，它接受 17--41\% 的条目，但接受项误差率为 5.7--21.7\%，高于 5\% 预算。图像级 5\%/10\%/20\% 风险下的覆盖率均为 0.000；发现级覆盖率最多为 0.093。把 shift 或依赖信号加入置信度，最多使发现级 AUROC 变化 0.034，因此即便排序有所改善，也不能转化为可用的决策规则（第~\ref{sec:results-selective}~节）。
+
+\textbf{报告生成与幻觉。}胸片报告生成除流畅度外，还以事实完整性与幻觉来评价~\citep{heiman2025factchexcker}。我们的 Open-i 层用一个刻意简单的标注器同时处理参考报告与生成报告；CheXbert 交叉核验表明漏报排序依赖标注器，而幻觉排序方向保持一致，因此我们只把后者作为稳定结果报告（第~\ref{sec:results-report}~节）。
+
+\textbf{数据集与标签来源。}本文使用的公开胸片语料由弱监督与报告导出标签构建~\citep{wang2017chestxray8,bustos2020padchest,irvin2019chexpert,johnson2019mimic,chambon2024chexpertplus}。其标签噪声、站点构成与评测惯例限制了基准所能主张的范围~\citep{rafferty2026limitations}，而病理与站点之间的混杂可以在随机划分后继续存在~\citep{zech2018confounding}。监督胸片分类器（DenseNet、CheXNet）仍是判别力的参照~\citep{rajpurkar2017chexnet,huang2017densely}。为把模型弱点与任务固有难度分开，我们与 VLM 并行训练了一个患者不重叠的 DenseNet-121 基线（宏 AUROC 0.733；第~\ref{sec:results-baseline} 节）。因此我们把标签来源与病例构成当作测量声明，而不是事后补上的注意事项（表~\ref{tab:prevalence}）。
+
+\textbf{医学基础模型与报告规范。}通用医学 AI 与医学 LLM 的动机是规模与广度~\citep{moor2023foundation,singhal2023medpalm,bommasani2021foundation}，但基准主张需要可追溯的数据与模型来源。数据表~\citep{gebru2021datasheets} 与模型卡~\citep{mitchell2019model} 是既有的记录工具；我们的四个前提是针对单个评测数字的、任务特定的同类契约。
+
+\textbf{测量有效性与直接竞品。}若干 2026 年工作提出了相邻问题（表~\ref{tab:competitors}）。\emph{Answer, Clarify, or Abstain}~\citep{nguyen2026answer} 为医学 VLM 提出细粒度选择性预测；CALM-VLM~\citep{dhinagar2026calm} 把校准与选择性预测用于脑 MRI；两者都在输出层面行动，但没有审计测量前提。\emph{Beyond Accuracy}~\citep{zafar2026beyond} 评估多模态医学推理中的视觉 grounding；Buckley 等~\citep{buckley2026exploit} 表明多模态基础模型可能利用文本捷径做医学预测。Qu 等~\citep{qu2026accuracy} 在乳腺摄影中发现，回答准确率会高估证据接地与弃答可靠性；我们的胸片多标签协议加入响应性、真实图像间零模型、工作点与契约覆盖四项审计，并报告选择性可信的负结果。两项负结果也很接近：Fisher~\citep{fisher2025negative} 报告视觉语言基础模型可能无法迁移到 CXR 分类；AT-CXR~\citep{li2025atcxr} 提出不确定性感知的分诊。
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{与最接近的 2025--2026 工作的定位。``重叠''是该文已经建立的内容；``增量''是本文在其之外增加的内容。我们不主张任何单一组件为首创。}
+\label{tab:competitors}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.22\textwidth}>{\raggedright\arraybackslash}p{0.25\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}@{}}
+\toprule
+工作 & 主要问题 & 重叠 & 本文增量 \\
+\midrule
+\emph{To See or To Please}~\citep{anon2026see} & blind/noise/conflict 下的 VLM 依赖 & 依赖分数（VRS）、家族尺度 & 真实图像间零模型；响应性；工作点；契约覆盖 \\
+\emph{Reliability Stress Tests}~\citep{anon2026stress} & 胸片 VLM 的提示/工作流压力测试 & 精确匹配高估默认正常 & 契约轴；三层；标签级与选择性指标 \\
+\emph{Do VLMs See or Guess?}~\citep{anon2026guess} & 措辞控制的文本先验 & 无图像对照 & 坍缩/模板零模型；响应性审计 \\
+\emph{Answer, Clarify, or Abstain}~\citep{nguyen2026answer} & 医学 VLM 的细粒度选择性策略 & 回答/澄清/弃答决策 & 负结果；策略可信前的四项前提 \\
+\emph{Accuracy Overstates}~\citep{qu2026accuracy} & 乳腺摄影接地与弃答 & 准确率高估可靠性 & 胸片多标签；跨数据集层；工作点 \\
+CALM-VLM~\citep{dhinagar2026calm} & 脑 MRI 校准 + 选择性预测 & 校准与选择性指标 & 胸片；契约覆盖；跨数据集坍缩 \\
+AT-CXR~\citep{li2025atcxr} & 不确定性感知的胸片智能分诊 & 用于分诊的不确定性 & 审计测量，而非分诊策略 \\
+VL FMs do not transfer~\citep{fisher2025negative} & 胸片分类的负迁移 & 迁移失败 & 机制：响应性与零模型；三层 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+我们的增量不是新分数或新策略，而是对响应性、零模型、工作点与契约覆盖的联合审计，以及发现级负结果：复合策略接受 17--41\% 的条目，但接受项误差率为 5.7--21.7\%，高于 5\% 预算。我们不主张任何单一组件的优先权。
+
+\textbf{数据集与模型。}我们使用 NIH ChestX-ray14~\citep{wang2017chestxray8}、PadChest~\citep{bustos2020padchest} 与 Open-i~\citep{demnerfushman2016openi}，以及 Qwen2.5-VL~\citep{bai2025qwen25vl}、Qwen3-VL~\citep{qwen2025qwen3vl}、InternVL3.5~\citep{opengvlab2025internvl35}、MedGemma~\citep{sellergren2025medgemma} 与 CheXagent~\citep{chen2024chexagent}。LLaVA-Med~\citep{li2024llavamed} 单独运行，并因不遵守结构化契约而被排除在定量比较之外。

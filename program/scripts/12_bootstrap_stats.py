@@ -1,5 +1,13 @@
 #!/usr/bin/env python
-"""Bootstrap CI and paired clean-vs-shift tests on a flat predictions CSV.
+"""DEPRECATED (2026-11): superseded by 85_operating_point_ci.py and
+88_per_label_ci_fdr.py.
+
+This script bootstraps over images, not patients, so its intervals are too
+narrow for a dataset in which one patient contributes several studies. It is
+kept only so that old command lines fail loudly rather than silently producing
+image-level intervals; use scripts 85 and 88 for the paper's numbers.
+
+Bootstrap CI and paired clean-vs-shift tests on a flat predictions CSV.
 
 Expected columns: image_id, condition, severity, label, y_true, p
 """
