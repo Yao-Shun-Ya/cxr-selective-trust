@@ -1,0 +1,125 @@
+\subsection{A frontier closed-weight model reproduces the reversal, and collapses on the cross-hospital layer}
+\label{sec:results-frontier}
+
+The local matrix establishes the four reversals for open-weight checkpoints. A
+natural objection is that they are a property of models small enough to fit on one
+GPU. We therefore ran the same measurement stack against a closed-weight frontier
+model through an OpenAI-compatible relay (\texttt{deepseek-v4.1-flash}), without
+changing any part of the protocol that defines the object being measured.
+
+{\sloppy
+\paragraph{Protocol.} 9{,}400 calls. Images are produced by the same operators
+(\texttt{shifts.apply\_shift}, \texttt{make\_blank}), re-encoded at a 1{,}024-pixel
+long edge (JPEG $q{=}95$) and recorded with their transmitted geometry; prompts,
+label sets and the JSON parser are byte-identical to the local arm. The CXR panel
+is NIH ($400$ studies $\times$ \{\texttt{clean}, contrast-severe, noise-severe,
+resolution-severe\} in v0, plus $400\times$ two blank contracts), PadChest
+($265$ disease-positive $+235$ negative studies, native and blank) and Open-i
+($300$ studies, report and blank). The cross-modal panel is 900 images sampled at
+patient or lesion level: 300 each from brain MRI, retinal OCT and dermoscopy, six
+cells per image.\par}
+
+\paragraph{Two measurement facts about the relay.} First, a 1{,}024-token budget
+returns \texttt{choices: []} with \texttt{completion\_tokens}${=}1{,}024$: the
+model spends the whole budget on a hidden reasoning trace. The arm uses 8{,}192
+and records \texttt{finish\_reason} per cell; five CXR cells still exhausted that
+budget and are counted as contract failures rather than dropped. Second, the relay
+does not return \texttt{reasoning\_content}, so the output-mode comparison of
+Section~\ref{sec:results-schema} cannot be repeated here; we report the contract
+axis only.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Frontier model on the CXR and cross-modal panels. ``Distinct'' counts
+different status vectors over the dataset's clean/native cells; ``modal'' is the
+share of the most common vector. $\Delta_{\text{null}}$ is
+$D(\text{real},\text{blank})-D(\text{real},\text{real}')$ with a 95\% patient- or
+lesion-clustered bootstrap interval. Dashes: condition not run for that modality.
+Open-i is a free-text report layer without structured status vectors or shift
+cells, so only its $\Delta_{\text{null}}$ is defined.}
+\label{tab:api-null}
+\begin{tabular}{lrrrrrr}
+\toprule
+Dataset & $n$ & Distinct & Modal & P1 contrast & P1 noise & $\Delta_{\text{null}}$ [95\% CI] \\
+\midrule
+NIH        & 400 & 92 & 0.370 & 0.590 & 0.733 & 0.254 [0.212, 0.297] \\
+PadChest   & 500 & \textbf{3} & \textbf{0.996} & --- & --- & \textbf{0.014} [0.004, 0.026] \\
+Dermoscopy & 300 & 94 & 0.117 & 0.417 & 0.540 & 0.155 [0.093, 0.215] \\
+Brain MRI  & 300 & 10 & 0.207 & 0.170 & 0.327 & 0.203 [0.122, 0.284] \\
+Retina OCT & 300 & 16 & 0.307 & 0.187 & 0.207 & 0.390 [0.320, 0.460] \\
+Open-i     & 300 & --- & --- & --- & --- & 0.283 [0.267, 0.298] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three results follow.
+
+\emph{The responsiveness collapse is not a capacity artefact.} For 500 PadChest
+studies the frontier model emits \textbf{three} distinct status vectors, with one
+vector covering 99.6\% of them. On 400 NIH studies it emits 92, and on 300
+dermoscopy images 94. A model with orders of magnitude more capacity than the
+local checkpoints behaves exactly as they do on the cross-hospital layer, and
+behaves differently on the in-domain layer. Responsiveness is a property of the
+dataset--model pair, not of parameter count.
+
+\emph{A positive null separation is necessary but not sufficient.} Every panel
+has $\Delta_{\text{null}}>0$ with an interval excluding zero, which is the
+condition P2 asks for. Yet PadChest's separation is 0.014, against 0.254 on NIH
+and 0.390 on OCT. On PadChest the model's real answers are all but identical to
+each other, so the blank differs from them by only a hair. Reporting
+$\Delta_{\text{null}}$ without the responsiveness check would therefore certify a
+collapsed model as ``image-dependent''. This is the same ordering the local
+matrix produces, now at frontier scale.
+
+\emph{The operating-point reversal travels to a closed model.} On NIH, contrast
+degradation raises recall from 0.170 to 0.208 while also raising the positive-call
+rate on negative studies from 0.116 to 0.163; resolution raises that rate to
+0.204 while recall falls. A report that showed only recall would describe the
+contrast cell as an improvement. The direction and the mechanism match
+Reversal~3 exactly.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Operating point and contract on the frontier model. ``Positive rate''
+is the share of label-negative studies called positive; ``recall'' is the share of
+label-positive studies called positive. PadChest's zero row is a collapsed output,
+not a conservative one: its three distinct vectors are almost all negative.}
+\label{tab:api-op}
+\begin{tabular}{llrrrrr}
+\toprule
+Dataset & Condition & $n_{\text{pos}}$ & $n_{\text{neg}}$ & Positive rate & Recall & Parse \\
+\midrule
+NIH        & clean             & 106 & 294 & 0.116 & 0.170 & 0.998 \\
+NIH        & contrast-severe   & 106 & 294 & 0.163 & 0.208 & 1.000 \\
+NIH        & noise-severe      & 106 & 294 & 0.133 & 0.104 & 1.000 \\
+NIH        & resolution-severe & 106 & 294 & 0.204 & 0.123 & 1.000 \\
+PadChest   & native            & 117 & 383 & 0.000 & 0.000 & 1.000 \\
+Dermoscopy & clean             & 128 & 172 & 0.488 & 0.836 & 1.000 \\
+Dermoscopy & noise-severe      & 128 & 172 & 0.314 & 0.586 & 1.000 \\
+Retina OCT & clean             & 230 &  70 & 0.000 & 0.748 & 1.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{What the cross-modal panel adds.} Responsiveness separates by modality
+rather than by difficulty: 0.59--0.73 on CXR and 0.42--0.54 on dermoscopy, but
+0.17--0.33 on brain MRI and 0.19--0.21 on retinal OCT. Dermoscopy is the
+non-radiology, surface-reflectance modality and it is \emph{not} the least
+responsive; the two grayscale tomographic modalities are. That ordering is the opposite of a ``hard modality'' explanation
+and is consistent with the corpus-prior account: the model is least responsive
+where its training distribution is thinnest, not where the image is hardest.
+The operating point reads the same way from the other side: retinal OCT is the
+only panel with a zero positive-call rate on its 70 normal studies while
+recalling 0.75 of 230 pathological ones, whereas a single contrast step on NIH
+raises the negative-call rate by half again (0.116 to 0.163). A model can be
+conservative on one modality and unstable on another; neither number travels
+without the other.
+
+\paragraph{Limits of this arm.} One closed model, not a family; a probe grid of
+four to six cells per image rather than the 22-cell grid; $2{,}085$ cells had to be
+re-run after the provider's quota reset, and the re-run is recorded in the
+provenance; five CXR cells exhausted an 8{,}192-token budget. None of these affects
+the direction of the three results above, but they bound how far the magnitudes
+generalise.

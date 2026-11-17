@@ -1,0 +1,69 @@
+\section{Durability Across a Remote API}
+\label{sec:remote}
+
+The harness above was validated on local GPU jobs, where the failure modes are the
+process, the disk and the write syscall. A remote model adds failure classes that
+none of those tests reach: the provider can return a well-formed HTTP 200 that
+carries no answer, close TLS connections under concurrency, or refuse service for
+billing reasons while the client is healthy. We ran the same durable contract
+against a closed-weight model through an OpenAI-compatible relay
+(\texttt{deepseek-v4.1-flash}) for 9,400 calls, using the same prompts, parser,
+single-writer queue and provenance fingerprint as the local arm.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\caption{Failure classes observed only on the remote arm. ``Rows'' is the number
+of cells each class touched in the delivered 9,400-call run. Every class was
+detected by the harness and none produced a silently wrong row.}
+\label{tab:remote}
+\begin{tabular}{p{0.20\textwidth}p{0.20\textwidth}p{0.19\textwidth}p{0.19\textwidth}r}
+\toprule
+Class & Observed & Detection & Recovery & Rows \\
+\midrule
+Hidden reasoning exhausts the budget & HTTP 200, \texttt{choices: []},
+\texttt{completion\_tokens}\allowbreak${=}$cap & empty choice list kept as
+\texttt{finish\_reason}\allowbreak\texttt{=}\allowbreak\texttt{empty\_choices},
+not a transport error & raise the cap to
+8{,}192; record residual cells as contract failures & 5 \\
+TLS handshake reset under concurrency & \texttt{EOF occurred in violation of
+protocol}; throughput fell to 1 row/min & transport exception, retried with
+backoff & one keep-alive connection per worker thread; 11--25 rows/min & --- \\
+Provider quota wall & HTTP 402
+\texttt{insufficient\_}\allowbreak\texttt{balance} after 7,315
+successful cells & status code recorded per row & \texttt{retry\_failed.py}
+removes failed rows and the sidecar; rerun after reset & 2{,}085 \\
+Provenance drift across restarts & 149 cells written by an earlier runner
+revision & per-row provenance id & keep the majority id, rerun the minority &
+149 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The invariants extend, but not unchanged.} The local contract's fifth
+invariant (``no silent configuration mixture'') already covers the provenance
+drift. Two further statements are needed for a remote provider.
+
+\begin{enumerate}[leftmargin=1.4em,itemsep=1pt,topsep=2pt]
+\item \textbf{HTTP success is not answer success.} A 200 response with an empty
+choice list is a contract failure and must be recorded as one. Without this rule
+the arm would have reported 1,024-token cells as ``answered with no findings'',
+inflating every denominator.
+\item \textbf{Recovery is provenance-scoped.} A resumed stage may only absorb rows
+written under the current fingerprint. The 149 stale cells were not ``reused with
+a note''; they were rerun, so the delivered file carries exactly one provenance
+id and 9,400 unique keys.
+\end{enumerate}
+
+\paragraph{What the remote run cost.} 9,400 calls, 0 transport errors in the
+delivered file, and one quota interruption. The interruption is the interesting
+one for a benchmark paper: it is not a fault in the scientific design, but it is
+the most likely way a large evaluation silently loses cells. The recovery
+procedure is mechanical and auditable --- the failed rows and their byte offsets
+are removed, the file is backed up with a timestamp, and the rerun refills exactly
+those cells --- which is what makes the loss reportable rather than invisible.
+
+\paragraph{Limits.} One provider and one model. The relay also hides its reasoning
+channel, so the output-mode invariant of \S\ref{sec:evaluation} cannot be checked
+remotely; we report the contract axis only.

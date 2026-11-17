@@ -1,0 +1,67 @@
+\section{Stage inventory}
+\label{app:stages}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Delivered stage inventory (38 entries: 30 completed, 8 contract-exempt). A stage key is \texttt{layer/model/stage}.}
+\label{tab:stages}
+\begin{tabular}{llll}
+\toprule
+Layer & Model & Completed & Contract-exempt \\
+\midrule
+NIH & MedGemma-1.5 & precision, shift, reliance & --- \\
+NIH & MedGemma-4B & precision, shift, reliance, ablation & --- \\
+NIH & InternVL3.5 & shift, reliance & --- \\
+NIH & Qwen3-VL & shift, reliance & --- \\
+NIH & CheXagent & shift, reliance & --- \\
+NIH & Qwen2.5-VL & precision, shift, reliance & --- \\
+PadChest & all six models & shift (6) & --- \\
+PadChest & LLaVA-Med & shift & shift \\
+Open-i & all six models & shift (6) & shift (6) \\
+Open-i & LLaVA-Med & shift & shift \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Prediction schema}
+\label{app:schema}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Fields in every prediction row. Report rows add \texttt{reference\_text} and \texttt{evidence\_method}.}
+\label{tab:schema}
+\begin{tabular}{ll}
+\toprule
+Field & Meaning \\
+\midrule
+\texttt{image\_id} & study identifier; resume key and join key \\
+\texttt{dataset}, \texttt{split} & provenance and split filter \\
+\texttt{condition}, \texttt{severity}, \texttt{param} & experimental cell \\
+\texttt{raw\_output} & unmodified model reply \\
+\texttt{error} & non-empty if generation raised \\
+\texttt{elapsed\_sec} & per-row latency record \\
+\texttt{parsed.parse\_success} & whether the reply parsed \\
+\texttt{parsed.findings} & per-label status, probability, confidence \\
+\texttt{ground\_truth} & label columns from the manifest \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Reproduction commands}
+\label{app:repro}
+
+\begin{flushleft}
+\ttfamily\small
+\# CPU tests (no weights, no GPU)\\
+\verb|python -m pytest -q tests|\\
+\verb|cd program|\\
+\verb|.\.venv-vl\Scripts\Activate.ps1|\\
+\verb|python -m pytest -q tests|\\
+\verb|python scripts\41_test_runner_resume.py|\\
+\verb|python scripts\90_coverage_census.py|\\
+\verb|python scripts\91_manifest_lock.py|\\
+\verb|python scripts\92_make_bench_figures.py|
+\end{flushleft}

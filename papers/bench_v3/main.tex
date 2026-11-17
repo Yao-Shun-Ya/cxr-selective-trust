@@ -1,0 +1,60 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath,amssymb}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{hyperref}
+\hypersetup{hidelinks}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{placeins}
+\usepackage{float}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+\setlength{\tabcolsep}{4pt}
+
+\title{Auditing the Denominator: Coverage Census and\\
+Fault-Tested Durability for Medical Vision--Language Model Benchmarks}
+% Submission mode: for double-blind venues, replace the block below with
+% \author{Anonymous Authors}.
+\author{Koshun Huang\\[2pt]
+\small School of Medical Imaging, North Sichuan Medical College,\\
+\small Nanchong, Sichuan, China\\[1pt]
+\small \texttt{2720356281@qq.com}\quad
+\href{https://orcid.org/0009-0006-1226-8145}{ORCID: 0009-0006-1226-8145}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{sections/00_abstract}
+\end{abstract}
+
+\input{sections/01_introduction}
+\input{sections/02_related}
+\input{sections/03_design}
+\input{sections/04_execution}
+\input{sections/05_artifacts}
+\input{sections/06_audit}
+\input{sections/07_evaluation}
+\input{sections/08_enabled}
+\input{sections/12_remote_api}
+\input{sections/09_checklist}
+\input{sections/10_conclusion}
+
+\FloatBarrier
+\bibliographystyle{unsrtnat}
+\bibliography{refs}
+
+\appendix
+\input{sections/11_appendix}
+
+\end{document}
