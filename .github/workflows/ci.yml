@@ -85,6 +85,7 @@ jobs:
         run: |
           python -m venv program/.venv-vl
           program/.venv-vl/Scripts/python.exe -m pip install --upgrade pip
+          program/.venv-vl/Scripts/python.exe -m pip install torch --index-url https://download.pytorch.org/whl/cpu
           program/.venv-vl/Scripts/python.exe -m pip install pytest numpy pandas scikit-learn pillow pyyaml tqdm
       - name: Authoritative tests
         working-directory: program
