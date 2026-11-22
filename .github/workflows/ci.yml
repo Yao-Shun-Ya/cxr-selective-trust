@@ -85,7 +85,7 @@ jobs:
         run: |
           python -m venv program/.venv-vl
           program/.venv-vl/Scripts/python.exe -m pip install --upgrade pip
-          program/.venv-vl/Scripts/python.exe -m pip install pytest numpy pandas pillow pyyaml
+          program/.venv-vl/Scripts/python.exe -m pip install pytest numpy pandas scikit-learn pillow pyyaml
       - name: Authoritative tests
         working-directory: program
         run: .venv-vl/Scripts/python.exe -m pytest -q tests
