@@ -1,0 +1,22 @@
+{
+  "nih_eval_1732.csv": {
+    "rows": 1732,
+    "bytes": 336065,
+    "sha256": "c1bf0cf34eeff0c800e9f8fddad915eeb8c7a080c6d265a4957f31d6feb2815a"
+  },
+  "nih_eval_1506.csv": {
+    "rows": 1506,
+    "bytes": 291855,
+    "sha256": "3c763cbc0a17031b7b4912bde4a06c48a3d9666d42df4cde78dcc1681edabe53"
+  },
+  "padchest_shift.csv": {
+    "rows": 1500,
+    "bytes": 272787,
+    "sha256": "0acf125eddd9c9cd6a1217026ca11c86829876745d48cd4f05bb4fef0511866d"
+  },
+  "openi_rrg.csv": {
+    "rows": 947,
+    "bytes": 417524,
+    "sha256": "b9a2e90a88fa1375964eeebd8a00e27299461df65021b411a7d8ea9d9ddecabd"
+  }
+}
