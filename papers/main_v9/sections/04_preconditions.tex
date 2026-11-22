@@ -1,0 +1,61 @@
+\section{Four Preconditions}
+\label{sec:preconditions}
+
+Write every reported quantity as $M=f(\text{model},\text{data},\text{intervention},\text{contract},\text{decision rule})$. A metric is \emph{identifiable} only if the design pins every argument on which the target quantity depends. Table~\ref{tab:framework} states, for each precondition, the estimand, the identification condition, the failure mode when it is violated, the audit statistic, and the strongest claim licensed after the audit passes. The subsections below define the statistics; the table is the reusable object.
+
+We use ``identification'' in the weak, audit sense: a statistic is identified for an estimand when changing the measurement design while holding the model fixed does not systematically change its sign, denominator, or interpretation. This is not a necessary-and-sufficient characterization. The thresholds (top-share 0.50, unique 5) are operational heuristics rather than proofs; Section~\ref{sec:sensitivity} sweeps them, and the text states what claim remains licensed when an audit fails. The four conditions are ordered rather than parallel: P4 fixes the output space and its denominator, P1 establishes that the real-image output support is non-degenerate, P2 tests separation in that space, and P3 licenses a robustness claim only at a declared or fixed decision rule.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begingroup\hyphenpenalty=10000
+\caption{The four preconditions as identification conditions. Each row names what is being estimated, what must hold for the reported number to identify it, how the number is misread when the condition fails, the statistic that audits the condition, and the claim that remains licensed.}
+\label{tab:framework}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.135\textwidth}>{\raggedright\arraybackslash}p{0.13\textwidth}>{\raggedright\arraybackslash}p{0.18\textwidth}>{\raggedright\arraybackslash}p{0.17\textwidth}>{\raggedright\arraybackslash}p{0.15\textwidth}>{\raggedright\arraybackslash}p{0.16\textwidth}@{}}
+\toprule
+Precondition & Estimand & Identification condition & Failure mode if violated & Audit statistic & Claim licensed \\
+\midrule
+P1 Responsiveness & Variation in output attributable to the image & Output support on real inputs is non-degenerate & A constant or template output makes every contrast unidentifiable & Unique replies; modal share with Wilson interval; blank-template share & ``No measurable response,'' not ``zero reliance'' \\
+P2 Null model & Evidence-specific deviation under intervention & Same-space separation $\Delta_{\text{null}}$ exceeds zero & Refusal or boilerplate mimics a large contrast & $D(\text{real},\text{blank}) - D(\text{real},\text{real}')$ with $D_{\text{text}}=1-J$, $D_{\text{prob}}=\text{mean}\,|\Delta P|$ & ``Contrast exceeds natural variation,'' not ``evidence extracted'' \\
+P3 Operating point & Change in recovered evidence & Recall is read with positive-prediction rate and precision at a declared decision rule & A moving operating point is read as a robustness gain & $\Delta$recall, $\Delta$positive-prediction rate, $\Delta$precision, case-level transitions & ``Operating point moved''; robustness only if the rule is fixed \\
+P4 Contract coverage & Clinical correctness over covered slots & Contract coverage and output mode are declared and comparable & Denominator or output regime changes across cells & Definite-slot share; status shares; marker and probability completeness & Comparable only within a contract and output regime \\
+\bottomrule
+\end{tabular}
+\endgroup
+\end{table}
+
+\subsection{P1 --- Responsiveness: does the model vary on real images?}
+
+Define the \textbf{output-support size} of a model on a layer as the number of distinct normalized replies over $N$ real images, and the \textbf{top-share} as the frequency of the modal reply, with a Wilson interval. A reliance contrast is interpretable only if the model is not a constant function. We operationalize the check descriptively: $\text{top-share} \ge 0.50$ or $\text{unique} \le 5$ marks output collapse. The rule is declared before analysis and never filters data.
+
+\subsection{P2 --- Null model: what would the contrast be without the intervention?}
+
+For every contrast between real and intervened images, report the same statistic between two \emph{different real} images---the real-vs-real null---in the same metric space. For text, use $D_{\text{text}} = 1-J$; for structured outputs, $D_{\text{prob}} = \text{mean}\,|\Delta P|$ over the eight labels. Both are distances, so the interpretable quantity is their difference, the \textbf{separation}
+\[
+\Delta_{\text{null}} = D(\text{real},\text{blank}) - D(\text{real},\text{real}').
+\]
+\begin{itemize}[leftmargin=1.2em,itemsep=1pt,topsep=2pt]
+\item $\Delta_{\text{null}} > 0$: the intervention is \emph{farther} from the real image than a random real image is (some separation);
+\item $\Delta_{\text{null}} \approx 0$: the intervention is indistinguishable from a random real image (no evidence);
+\item $\Delta_{\text{null}} < 0$: the intervention is \emph{closer} than a random real image (the model answers with its prior).
+\end{itemize}
+A single sign convention for both spaces matters: Jaccard is a similarity while $|\Delta P|$ is a distance, so comparing the raw ``gaps'' of the two spaces would flip the meaning of a positive value.
+
+\subsection{P3 --- Operating point: what happened to the decision threshold?}
+
+Report positive recall together with positive-prediction rate and precision. A recall change without the positive-prediction rate cannot distinguish ``more evidence recovered'' from ``the threshold moved.''
+
+\subsection{P4 --- Contract coverage and output mode}
+
+Report (a) the fraction of label slots with a definite status (positive or negative), separately from uncertain and not-mentioned states; and (b) an output-mode indicator---reasoning-channel rate, probability completeness---whenever two runs are compared across precisions or prompts. A metric computed on 19\% of slots is not comparable to one computed on 99\%.
+
+\subsection{Contract terminology}
+
+Four quantities are kept distinct throughout. \textbf{Schema compliance} asks whether a reply parses into the requested format. \textbf{Contract coverage} asks what fraction of label slots carries a definite status (positive or negative), as opposed to \texttt{uncertain} or \texttt{not\_mentioned}. \textbf{Clinical correctness} asks whether the definite statuses match the reference labels. \textbf{Abstention} asks whether the model explicitly declines (an \texttt{uncertain} status or a refusal sentence). A model can be fully schema-compliant and still cover only 19\% of slots; a model can abstain without violating any schema; and a prose model can be neither compliant nor covered. Conflating these four is the most common source of incomparable numbers, so every metric below names its denominator.
+
+\subsection{The audit}
+
+Table~\ref{tab:audit} (Appendix~\ref{app:cell}) applies P1--P2 to all three layers. The implementations are \url{scripts/78_responsiveness_audit.py} (CPU-only) and \url{scripts/79_export_selective_inputs.py}. The collapse rule is descriptive, never a filter; Section~\ref{sec:sensitivity} sweeps it and shows that the core cross-dataset result holds for modal-share thresholds up to 0.80.
+
+Three facts follow. (i) Collapse is not confined to the out-of-domain layer: Qwen2.5-VL and CheXagent are constant machines in-domain. (ii) The models that are responsive in-domain can collapse out of domain: MedGemma-4B 336$\rightarrow$20, InternVL3.5 313$\rightarrow$2, Qwen3-VL 125$\rightarrow$3; only MedGemma-1.5 holds (250$\rightarrow$329). (iii) A positive text separation is not evidence of grounding: Qwen3-VL's $+0.648$ is produced by a refusal template, and Qwen2.5-VL's $+0.193$ by a second boilerplate. Figure~\ref{fig:resp} visualizes the audit.

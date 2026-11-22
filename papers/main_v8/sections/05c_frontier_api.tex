@@ -1,11 +1,15 @@
-\subsection{A frontier closed-weight model reproduces the reversal, and collapses on the cross-hospital layer}
+\subsection{A frontier open-weight model, served through a relay, reproduces the reversal and collapses on the cross-hospital layer}
 \label{sec:results-frontier}
 
 The local matrix establishes the four reversals for open-weight checkpoints. A
 natural objection is that they are a property of models small enough to fit on one
-GPU. We therefore ran the same measurement stack against a closed-weight frontier
-model through an OpenAI-compatible relay (\texttt{deepseek-v4.1-flash}), without
-changing any part of the protocol that defines the object being measured.
+GPU. We therefore ran the same measurement stack against a frontier-class
+\emph{open-weight} model (DeepSeek-V4.1-Flash), served through an
+OpenAI-compatible relay, without changing any part of the protocol that defines
+the object being measured. The relay is a transport, not a different model class:
+the model is released as open weights, but the relay is not transparent---we
+observe the model id and the served outputs, not the serving stack---so this arm
+characterizes the endpoint rather than a local build of the checkpoint.
 
 {\sloppy
 \paragraph{Protocol.} 9{,}400 calls. Images are produced by the same operators
@@ -72,7 +76,7 @@ $\Delta_{\text{null}}$ without the responsiveness check would therefore certify 
 collapsed model as ``image-dependent''. This is the same ordering the local
 matrix produces, now at frontier scale.
 
-\emph{The operating-point reversal travels to a closed model.} On NIH, contrast
+\emph{The operating-point reversal travels to a relay-served open-weight model.} On NIH, contrast
 degradation raises recall from 0.170 to 0.208 while also raising the positive-call
 rate on negative studies from 0.116 to 0.163; resolution raises that rate to
 0.204 while recall falls. A report that showed only recall would describe the
@@ -117,7 +121,7 @@ raises the negative-call rate by half again (0.116 to 0.163). A model can be
 conservative on one modality and unstable on another; neither number travels
 without the other.
 
-\paragraph{Limits of this arm.} One closed model, not a family; a probe grid of
+\paragraph{Limits of this arm.} One model, accessed through a relay, not a family; a probe grid of
 four to six cells per image rather than the 22-cell grid; $2{,}085$ cells had to be
 re-run after the provider's quota reset, and the re-run is recorded in the
 provenance; five CXR cells exhausted an 8{,}192-token budget. None of these affects

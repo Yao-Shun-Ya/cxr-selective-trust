@@ -6,8 +6,9 @@ process, the disk and the write syscall. A remote model adds failure classes tha
 none of those tests reach: the provider can return a well-formed HTTP 200 that
 carries no answer, close TLS connections under concurrency, or refuse service for
 billing reasons while the client is healthy. We ran the same durable contract
-against a closed-weight model through an OpenAI-compatible relay
-(\texttt{deepseek-v4.1-flash}) for 9,400 calls, using the same prompts, parser,
+against a frontier-scale open-weight model
+(\texttt{deepseek-v4.1-flash})~\citep{deepseek2026v41flash} served through an OpenAI-compatible relay for
+9,400 calls, using the same prompts, parser,
 single-writer queue and provenance fingerprint as the local arm.
 
 \begin{table}[t]

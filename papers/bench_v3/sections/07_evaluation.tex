@@ -22,7 +22,7 @@ InternVL3.5 & 39,532 & 69.1 \\
 CheXagent & 39,532 & 56.9 \\
 LLaVA-Med & 4,894 & 2.8 \\
 \midrule
-Total & \textbf{275,218} & \textbf{501.0} \\
+Total & \textbf{275,218} & \textbf{545.9} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -33,11 +33,11 @@ Table~\ref{tab:cost} runs five writers over the same 2,000-cell workload: the sa
 keys, the same 1.52\,kB payload, the same machine, no GPU. The shipped writer is
 the slowest of the four durable options and the only one that is slower than a
 per-row fsync, because it fsyncs both the prediction file and its sidecar. That
-cost is real: 1.95\,ms per cell against 0.003\,ms for a naive append.
+cost is real: 1.80\,ms per cell against 0.003\,ms for a naive append.
 
 It is also small where it matters. The delivered matrix took about 231 GPU-hours,
-roughly ten days; at 275,218 calls the durability guarantee adds about nine
-minutes. A study that cannot afford nine minutes of fsync cannot afford the GPU
+roughly ten days; at 275,218 calls the durability guarantee adds about eight
+minutes. A study that cannot afford eight minutes of fsync cannot afford the GPU
 stage it is protecting. The honest reading is therefore not ``durability is free''
 but ``durability is cheap relative to the thing it makes repeatable''.
 
@@ -58,17 +58,19 @@ faults. Append latency is per cell; recovery is the time to rebuild the complete
 set from the artefact. SQLite is the only baseline whose per-row storage differs,
 because it stores typed pages rather than text. B2's p50 is an in-memory insert;
 its flush cost appears in the p99. B2 is a micro-batch baseline and is not viable
-at 275k cells (Section~\ref{sec:evaluation}, limitations).}
+at 275k cells (Section~\ref{sec:evaluation}, limitations). A second run under
+load measured 413 cells/s (p50 2.44\,ms); the table reports the idle run, and both
+CSVs are released.}
 \label{tab:cost}
 \begin{tabular}{llrrrrr}
 \toprule
 Writer & Mechanism & Cells/s & p50 (ms) & p99 (ms) & B/row & Recover (s) \\
 \midrule
-B0 & append, no fsync & 200{,}184 & 0.003 & 0.019 & 1{,}522 & 0.013 \\
-B1 & append + fsync per row & 2{,}218 & 0.429 & 0.759 & 1{,}522 & 0.014 \\
-B2 & rewrite whole file, atomic & 15{,}393 & 0.000 & 0.032 & 1{,}522 & 0.013 \\
-B3 & SQLite, WAL, commit per batch & 54{,}797 & 0.004 & 0.052 & 2{,}091 & 0.002 \\
-\textbf{B4} & \textbf{shipped: append + fsync + sidecar} & \textbf{501} & \textbf{1.954} & \textbf{2.726} & \textbf{1{,}521} & \textbf{0.010} \\
+B0 & append, no fsync & 197{,}496 & 0.003 & 0.020 & 1{,}522 & 0.014 \\
+B1 & append + fsync per row & 2{,}266 & 0.424 & 0.608 & 1{,}522 & 0.014 \\
+B2 & rewrite whole file, atomic & 13{,}953 & 0.000 & 0.033 & 1{,}522 & 0.013 \\
+B3 & SQLite, WAL, commit per batch & 54{,}783 & 0.004 & 0.150 & 2{,}091 & 0.002 \\
+\textbf{B4} & \textbf{shipped: append + fsync + sidecar} & \textbf{546} & \textbf{1.800} & \textbf{2.474} & \textbf{1{,}521} & \textbf{0.012} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -83,7 +85,7 @@ that it passed.
 
 Four results matter. (i) A crash loses 10 of 700 cells under naive append (1.4\%)
 and none under any durable writer. (ii) Concurrency separates the field into
-three behaviours: append and append\,+\,fsync silently duplicate keys (505 and
+three behaviours: append and append\,+\,fsync silently duplicate keys (545 and
 700); the atomic-rewrite and sidecar writers refuse loudly; SQLite, which has
 real locking, handles both writers cleanly and ends with zero duplicates. We
 report this as a genuine advantage of B3 over B4, not as a mechanism it lacks.
@@ -110,7 +112,7 @@ Fault injected & B0 & B1 & B2 & B3 & \textbf{B4} \\
 \midrule
 process crash (700 cells) & 10 lost & 0 & 0 & 0 & \textbf{0} \\
 truncated tail & 1 lost & 1 lost & 1 lost & n/a & \textbf{1 lost} \\
-two concurrent writers & 505 dup & 700 dup & refused & \textbf{clean} & refused \\
+two concurrent writers & 545 dup & 700 dup & refused & \textbf{clean} & refused \\
 write failure (ENOSPC) & raised & raised & raised & n/a$\dagger$ & \textbf{raised} \\
 fsync failure & n/a & raised & raised & n/a$\dagger$ & \textbf{raised} \\
 rename failure & n/a & n/a & raised & n/a$\dagger$ & \textbf{raised} \\

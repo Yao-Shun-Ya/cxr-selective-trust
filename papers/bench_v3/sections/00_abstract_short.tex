@@ -1,0 +1,22 @@
+% Short abstract for journal submission (target <= 300 words).
+% The full abstract (00_abstract.tex) is the manuscript version; this file is
+% not compiled into main.tex.
+
+Benchmark papers report scores; they rarely report whether the reported
+denominator can be reconstructed from released artifacts. We make the
+denominator the object of study: a harness for a three-layer chest X-ray VLM
+study (275,218 calls, 38 stage entries, 39 frozen prediction files) is measured
+against four alternatives on the same 2,000-cell workload---naive append,
+per-row fsync, atomic whole-file rewrite, and SQLite WAL. The shipped writer
+costs 1.80\,ms per cell, 4.2$\times$ a per-row fsync and 580$\times$ a naive
+append, but only about eight minutes across the whole study. It loses zero rows
+after a crash where naive append loses 10/700, refuses two concurrent writers
+where naive append and fsync-per-row silently duplicate 545 and 700 keys, and
+loses zero rows to a corrupted or over-advanced sidecar. We replace ``zero error
+rows'' with five falsifiable invariants and release a census that recomputes each
+file's denominator; on 259 prediction files it flags four non-uniform
+denominators and one duplicate-key archive, so the audit can fail. A 9,400-call
+relay arm adds three provider-side failure classes---hidden reasoning exhausting
+the token budget, TLS resets under concurrency, and a billing wall---all detected
+by the same contract. The contribution is not a faster writer but a measured
+price and payoff for durable, auditable benchmark execution.

@@ -1,0 +1,110 @@
+\subsection{Readout and input-geometry controls}
+\label{sec:results-controls}
+
+Two confounds could explain the prompted results without a model-level claim: the
+\emph{readout} (a prompted JSON contract) and the \emph{input geometry} (0.20--15.24\,MP
+across models, Table~\ref{tab:geometry}). The probe below isolates the first; the
+geometry sweep at the end of this section isolates the second.
+
+\subsubsection{A frozen-encoder probe reaches 0.65--0.70 where the prompted readout is at chance}
+\label{sec:results-probe}
+
+If the image encoder carries the label but the prompted contract does not expose it, then
+``the model cannot discriminate'' is the wrong description. We therefore bypass the
+language model entirely: for each of the 1,506 NIH evaluation studies we run only the
+model's vision tower, pool its token states to one vector, and fit a one-vs-rest logistic
+regression per pathology label (standardised features, balanced class weights). Evaluation
+is patient-grouped five-fold cross-validation over the same 1,506 studies, so no patient
+appears in both the training and the test fold. The probe sees no text, no prompt and no
+JSON contract.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Frozen-encoder linear probe vs.\ the prompted structured readout, same 1,506 NIH
+studies and the same seven pathology labels. ``Probe CV'' is patient-grouped five-fold
+macro AUROC; ``Prompted'' is the zero-shot structured-reporting macro AUROC from
+Table~\ref{tab:baseline}. ``Split'' trains on \texttt{source\_val} and tests on
+\texttt{internal\_test}. The probe uses only the vision tower; no language model or prompt
+is involved.}
+\label{tab:probe}
+\begin{tabular}{lrrrrrr}
+\toprule
+Model & Dim & Probe CV & 95\% CI & Prompted & $\Delta$ & Split \\
+\midrule
+MedGemma-1.5-4B & 1,152 & \textbf{0.703} & [0.688, 0.716] & 0.585 & \textbf{+0.118} & 0.684 \\
+InternVL3.5-8B & 1,024 & 0.663 & [0.646, 0.679] & 0.607 & +0.056 & 0.644 \\
+Qwen3-VL-8B & 4,096 & 0.651 & [0.634, 0.665] & 0.546 & +0.106 & 0.617 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three facts follow. First, the representation is \emph{not} at chance: every probe clears
+the prompted model by 0.056--0.118 AUROC, and MedGemma-1.5 reaches 0.703 [0.688, 0.716],
+within 0.030 of the supervised DenseNet-121 (0.733). Second, the probe ordering differs
+from the prompted ordering: MedGemma-1.5 is best under the probe but second under the
+prompt, and the gap is largest for that model (+0.118), which is what a readout loss
+predicts---the model whose prompt suppresses the most signal gains the most when the
+prompt is removed. Third, the pre-declared
+\texttt{source\_val} $\rightarrow$ \texttt{internal\_test} split reproduces the same
+ordering (0.684, 0.644, 0.617), so the result is not an artifact of cross-validation.
+
+The probe does not make these models clinically usable: 0.65--0.70 is below the supervised
+baseline and far below a deployment threshold, and a linear readout is not a fine-tune.
+Its role is diagnostic. It relocates the failure from ``the image encoder cannot see the
+finding'' to ``the prompted structured readout does not expose what the encoder carries'',
+which is the readout half of the paper's measurement thesis. The geometry control below
+asks whether the other half---the input path---changes the cross-model ordering.
+
+\subsubsection{The discrimination ordering survives a fixed input edge; the responsiveness ordering does not}
+\label{sec:results-geometry}
+
+The six-model matrix lets each processor choose its own effective geometry (0.20--15.24\,MP).
+We therefore re-ran two models (InternVL3.5 and Qwen3-VL) at a fixed client-side long edge
+of 512, 1,024 and 2,048 pixels, with four cells (clean, contrast-severe, noise-severe,
+resolution-severe) on the same 400 NIH evaluation studies. This is 9,600 calls; all six
+model--edge stages parse at 1.000 and the realised sent sizes are exactly the requested
+edges (Table~\ref{tab:geometry-sweep}).
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\caption{Controlled input-geometry sweep, 400 NIH evaluation studies per cell. AUROC is
+macro over the seven pathology labels; P1 is the share of images whose status vector
+changes against clean. All cells parse at 1.000. The sent long edge is exact; the model's
+internal processor ceiling is unchanged and still applies.}
+\label{tab:geometry-sweep}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+& & \multicolumn{4}{c}{AUROC} & \multicolumn{3}{c}{P1 change} \\
+\cmidrule(lr){3-6}\cmidrule(lr){7-9}
+Model & Edge & clean & contrast & noise & resolution & contrast & noise & resolution \\
+\midrule
+InternVL3.5 & 512 & 0.606 & 0.611 & 0.578 & 0.526 & 0.285 & 0.625 & 0.750 \\
+            & 1,024 & 0.601 & 0.612 & 0.605 & 0.552 & 0.278 & 0.425 & 0.618 \\
+            & 2,048 & 0.611 & 0.611 & 0.624 & 0.592 & 0.290 & 0.248 & 0.303 \\
+\midrule
+Qwen3-VL    & 512 & 0.520 & 0.524 & 0.506 & 0.506 & 0.188 & 0.293 & 0.210 \\
+            & 1,024 & 0.541 & 0.544 & 0.528 & 0.533 & 0.283 & 0.398 & 0.370 \\
+            & 2,048 & 0.550 & 0.546 & 0.532 & 0.543 & 0.270 & 0.443 & 0.370 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two patterns separate. \emph{Discrimination is stable}: InternVL3.5's clean AUROC is
+0.601--0.611 and its contrast AUROC 0.611--0.612 at every edge; Qwen3-VL's are 0.520--0.550
+and 0.524--0.546. The 0.05--0.09 gap never closes, so fixing the client edge does not explain
+the cross-model AUROC ordering. \emph{Responsiveness is not}: InternVL3.5's noise P1 falls
+from 0.625 at 512 to 0.425 at 1,024 and 0.248 at 2,048, while Qwen3-VL's rises from 0.293 to
+0.398 to 0.443. At 512 InternVL3.5 is the more noise-responsive model (0.625 vs.\ 0.293); at
+2,048 Qwen3-VL is (0.248 vs.\ 0.443). Resolution P1 shows the same reversal (0.750 $\rightarrow$
+0.303 against 0.210 $\rightarrow$ 0.370). A table that reports P1 without the input edge can
+therefore rank the two models in opposite orders.
+
+This is a direct, controlled instance of the paper's measurement thesis, and it is why
+Table~\ref{tab:crossmodal4} reports each model's effective geometry rather than treating P1
+as a model constant. The four reversals are unaffected: each is a within-model comparison at
+a fixed model and a fixed geometry. What the sweep rules out is the stronger reading that
+cross-model P1 values are geometry-free; what it preserves is the cross-modal ordering
+\emph{within} each model (Section~\ref{sec:results-crossmodal}).

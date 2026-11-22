@@ -1,0 +1,245 @@
+\begin{thebibliography}{32}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Liang et~al.(2022)Liang, Bommasani, Lee, Tsipras, Soylu, Yasunaga,
+  et~al.]{liang2022helm}
+Percy Liang, Rishi Bommasani, Tony Lee, Dimitris Tsipras, Dilara Soylu,
+  Michihiro Yasunaga, et~al.
+\newblock Holistic evaluation of language models, 2022.
+\newblock arXiv:2211.09110.
+
+\bibitem[Gao et~al.(2023)Gao, Tow, Abbasi, Biderman, Black, DiPofi,
+  et~al.]{gao2023lm}
+Leo Gao, Jonathan Tow, Baber Abbasi, Stella Biderman, Sid Black, Anthony
+  DiPofi, et~al.
+\newblock A framework for few-shot language model evaluation, 2023.
+\newblock Zenodo, v0.4.0.
+
+\bibitem[Srivastava et~al.(2022)Srivastava, Rastogi, Rao, Shoeb, Abid, Fisch,
+  et~al.]{srivastava2022bigbench}
+Aarohi Srivastava, Abhinav Rastogi, Abhishek Rao, Abu Awal~Md Shoeb, Abubakr
+  Abid, Adam Fisch, et~al.
+\newblock Beyond the imitation game: Quantifying and extrapolating the
+  capabilities of language models, 2022.
+\newblock arXiv:2206.04615.
+
+\bibitem[Gebru et~al.(2021)Gebru, Morgenstern, Vecchione, Vaughan, Wallach,
+  Daum{\'e}~III, and Crawford]{gebru2021datasheets}
+Timnit Gebru, Jamie Morgenstern, Briana Vecchione, Jennifer~Wortman Vaughan,
+  Hanna Wallach, Hal Daum{\'e}~III, and Kate Crawford.
+\newblock Datasheets for datasets.
+\newblock \emph{Communications of the ACM}, 64\penalty0 (12):\penalty0 86--92,
+  2021.
+
+\bibitem[Mitchell et~al.(2019)Mitchell, Wu, Zaldivar, Barnes, Vasserman,
+  Hutchinson, Spitzer, Raji, and Gebru]{mitchell2019model}
+Margaret Mitchell, Simone Wu, Andrew Zaldivar, Parker Barnes, Lucy Vasserman,
+  Ben Hutchinson, Elena Spitzer, Inioluwa~Deborah Raji, and Timnit Gebru.
+\newblock Model cards for model reporting.
+\newblock In \emph{Conference on Fairness, Accountability, and Transparency
+  (FAT*)}, 2019.
+
+\bibitem[Bommasani et~al.(2021)Bommasani, Hudson, Adeli, Altman, Arora, von
+  Arx, et~al.]{bommasani2021foundation}
+Rishi Bommasani, Drew~A. Hudson, Ehsan Adeli, Russ Altman, Simran Arora, Sydney
+  von Arx, et~al.
+\newblock On the opportunities and risks of foundation models, 2021.
+\newblock arXiv:2108.07258.
+
+\bibitem[Cheng et~al.(2025)Cheng, Ong, Wagner, Merle, Ju, Zhang,
+  et~al.]{cheng2025robustness}
+Zijie Cheng, Ariel~Yuhan Ong, Siegfried~K. Wagner, David~A. Merle, Lie Ju,
+  Hanyuan Zhang, et~al.
+\newblock Understanding the robustness of vision-language models to medical
+  image artefacts.
+\newblock \emph{npj Digital Medicine}, 2025.
+\newblock doi:10.1038/s41746-025-02108-w.
+
+\bibitem[Yang et~al.(2026)Yang, Zhong, Collins, Baird, Wang, and
+  Jiao]{yang2026stress}
+Xinye Yang, Zhusi Zhong, Scott Collins, Grayson Baird, Xuyu Wang, and Zhicheng
+  Jiao.
+\newblock Reliability stress tests and decision-time routing for chest {X}-ray
+  vision-language models, 2026.
+\newblock arXiv:2610.02270.
+
+\bibitem[Zafar et~al.(2026)Zafar, Murali, and Vashist]{zafar2026beyond}
+Anas Zafar, Leema~Krishna Murali, and Ashish Vashist.
+\newblock Beyond accuracy: Evaluating visual grounding in multimodal medical
+  reasoning, 2026.
+\newblock arXiv:2603.03437.
+
+\bibitem[Qu et~al.(2026)Qu, Liu, Murrow, Burger, Guo, Vaidya, Rose,
+  Kantarcioglu, Malin, and Yin]{qu2026accuracy}
+Bowen Qu, Weixin Liu, Matthew Murrow, Matthew Burger, Xingyi Guo, Mihir~Sachin
+  Vaidya, Susannah~L. Rose, Murat Kantarcioglu, Bradley~A. Malin, and Zhijun
+  Yin.
+\newblock Accuracy overstates evidence grounding and abstention reliability in
+  mammography vision-language models, 2026.
+\newblock medRxiv, doi:10.64898/2026.09.10.26361944.
+
+\bibitem[Li et~al.(2025)Li, Jiang, Xu, Xia, Jia, Chen, and Shi]{li2025atcxr}
+Xueyang Li, Mingze Jiang, Gelei Xu, Jun Xia, Mengzhao Jia, Danny Chen, and Yiyu
+  Shi.
+\newblock {AT-CXR}: Uncertainty-aware agentic triage for chest {X}-rays, 2025.
+\newblock arXiv:2508.19322.
+
+\bibitem[Fisher(2025)]{fisher2025negative}
+George Fisher.
+\newblock Vision-language foundation models do not transfer to medical imaging
+  classification: A negative result on chest {X}-ray diagnosis, 2025.
+\newblock medRxiv 2025.12.06.25341759.
+
+\bibitem[Hu et~al.(2024)Hu, Li, Lu, Shao, He, Qiao, and Luo]{hu2023omnimedvqa}
+Yutao Hu, Tianbin Li, Quanfeng Lu, Wenqi Shao, Junjun He, Yu~Qiao, and Ping
+  Luo.
+\newblock {OmniMedVQA}: A new large-scale comprehensive evaluation benchmark
+  for medical {LVLM}.
+\newblock In \emph{CVPR}, 2024.
+
+\bibitem[Wang et~al.(2017)Wang, Peng, Lu, Lu, Bagheri, and
+  Summers]{wang2017chestxray8}
+Xiaosong Wang, Yifan Peng, Le~Lu, Zhiyong Lu, Mohammadhadi Bagheri, and
+  Ronald~M. Summers.
+\newblock Chestx-ray8: Hospital-scale chest x-ray database and benchmarks on
+  weakly-supervised classification and localization of common thorax diseases.
+\newblock In \emph{CVPR}, 2017.
+
+\bibitem[Bustos et~al.(2020)Bustos, Pertusa, Salinas, and de~la
+  Iglesia-Vaya]{bustos2020padchest}
+Aurelia Bustos, Antonio Pertusa, Jose-Maria Salinas, and Maria de~la
+  Iglesia-Vaya.
+\newblock Padchest: A large chest x-ray image dataset with multi-label
+  annotated reports.
+\newblock \emph{Medical Image Analysis}, 66:\penalty0 101797, 2020.
+
+\bibitem[Irvin et~al.(2019)Irvin, Rajpurkar, Ko, Yu, Ciurea-Ilcus, Chute,
+  Marklund, Haghgoo, Ball, Shpanskaya, et~al.]{irvin2019chexpert}
+Jeremy Irvin, Pranav Rajpurkar, Michael Ko, Yifan Yu, Silviana Ciurea-Ilcus,
+  Chris Chute, Henrik Marklund, Behzad Haghgoo, Robyn Ball, Katie Shpanskaya,
+  et~al.
+\newblock {CheXpert}: A large chest radiograph dataset with uncertainty labels
+  and expert comparison.
+\newblock \emph{Proceedings of the AAAI Conference on Artificial Intelligence},
+  2019.
+
+\bibitem[Johnson et~al.(2019)Johnson, Pollard, Berkowitz, Greenbaum, Lungren,
+  Deng, Mark, and Horng]{johnson2019mimic}
+Alistair E.~W. Johnson, Tom~J. Pollard, Seth~J. Berkowitz, Nathaniel~R.
+  Greenbaum, Matthew~P. Lungren, Chih-ying Deng, Roger~G. Mark, and Steven
+  Horng.
+\newblock {MIMIC-CXR}: A large publicly available database of labeled chest
+  radiographs.
+\newblock \emph{Scientific Data}, 2019.
+
+\bibitem[Rafferty et~al.(2026)Rafferty, Ramaesh, and
+  Rajan]{rafferty2026limitations}
+Amy Rafferty, Rishi Ramaesh, and Ajitha Rajan.
+\newblock Limitations of public chest radiography datasets for artificial
+  intelligence: Label quality, domain shift, bias and evaluation challenges.
+\newblock \emph{Philosophical Transactions of the Royal Society A}, 2026.
+
+\bibitem[Chen et~al.(2024)Chen, Varma, Delbrouck, Paschali, Blankemeier,
+  Van~Veen, et~al.]{chen2024chexagent}
+Zhihong Chen, Maya Varma, Jean-Benoit Delbrouck, Magdalini Paschali, Louis
+  Blankemeier, Dave Van~Veen, et~al.
+\newblock A vision-language foundation model to enhance efficiency of chest
+  x-ray interpretation, 2024.
+\newblock arXiv:2401.12208.
+
+\bibitem[Sellergren et~al.(2025)]{sellergren2025medgemma}
+Andrew Sellergren et~al.
+\newblock Medgemma technical report, 2025.
+\newblock arXiv:2507.05201.
+
+\bibitem[Duan et~al.(2024)Duan, Fang, Yang, Zhao, Qiao, Li, Chen, Chen, Liu,
+  et~al.]{duan2024vlmevalkit}
+Haodong Duan, Xinyu Fang, Junming Yang, Xiangyu Zhao, Yuxuan Qiao, Mo~Li, Zhe
+  Chen, Lin Chen, Yuan Liu, et~al.
+\newblock {VLMEvalKit}: An open-source toolkit for evaluating large
+  multi-modality models.
+\newblock In \emph{Proceedings of the ACM International Conference on
+  Multimedia}, 2024.
+\newblock \doi{10.1145/3664647.3685520}.
+\newblock arXiv:2407.11691.
+
+\bibitem[Feldman(1979)]{feldman1979make}
+Stuart~I. Feldman.
+\newblock Make --- a program for maintaining computer programs.
+\newblock \emph{Software: Practice and Experience}, 9\penalty0 (4):\penalty0
+  255--265, 1979.
+
+\bibitem[M{\"o}lder et~al.(2021)M{\"o}lder, Jablonski, Letcher, Hall,
+  Tomkins-Tinch, Sochat, et~al.]{molder2021snakemake}
+Felix M{\"o}lder, Kim~Philipp Jablonski, Brice Letcher, Michael~B. Hall,
+  Christopher~H. Tomkins-Tinch, Vanessa Sochat, et~al.
+\newblock Sustainable data analysis with {Snakemake}.
+\newblock \emph{F1000Research}, 10:\penalty0 33, 2021.
+\newblock doi:10.12688/f1000research.29032.2.
+
+\bibitem[{Iterative}(2024)]{dvc2024}
+{Iterative}.
+\newblock {DVC}: Data version control.
+\newblock \url{https://dvc.org}, 2024.
+\newblock Accessed 2026-11-14.
+
+\bibitem[{UK AI Safety Institute}(2024)]{inspect2024}
+{UK AI Safety Institute}.
+\newblock {Inspect AI}: A framework for large language model evaluations.
+\newblock \url{https://github.com/UKGovernmentBEIS/inspect_ai}, 2024.
+\newblock Accessed 2026-11-14.
+
+\bibitem[{SQLite Consortium}(2024)]{sqlitewal2024}
+{SQLite Consortium}.
+\newblock Write-ahead logging.
+\newblock \url{https://www.sqlite.org/wal.html}, 2024.
+\newblock Accessed 2026-11-14.
+
+\bibitem[Hsueh et~al.(1997)Hsueh, Tsai, and Iyer]{hsueh1997fault}
+Mei-Chen Hsueh, Timothy~K. Tsai, and Ravishankar~K. Iyer.
+\newblock Fault injection techniques and tools.
+\newblock \emph{Computer}, 30\penalty0 (4):\penalty0 75--82, 1997.
+
+\bibitem[Akhtar et~al.(2024)Akhtar, Benjelloun, Conforti, Gijsbers,
+  Giner-Miguelez, Jain, et~al.]{akhtar2024croissant}
+Mubashara Akhtar, Omar Benjelloun, Costanza Conforti, Pieter Gijsbers, Joan
+  Giner-Miguelez, Nitisha Jain, et~al.
+\newblock Croissant: A metadata format for {ML}-ready datasets.
+\newblock \emph{arXiv preprint arXiv:2403.19546}, 2024.
+
+\bibitem[Mohan et~al.(1992)Mohan, Haderle, Lindsay, Pirahesh, and
+  Schwarz]{mohan1992aries}
+C.~Mohan, D.~Haderle, B.~Lindsay, H.~Pirahesh, and P.~Schwarz.
+\newblock {ARIES}: A transaction recovery method supporting fine-granularity
+  locking and partial updates using write-ahead logging.
+\newblock \emph{ACM Transactions on Database Systems}, 17\penalty0
+  (1):\penalty0 94--162, 1992.
+
+\bibitem[Sculley et~al.(2015)Sculley, Holt, Golovin, Davydov, Phillips, Ebner,
+  Chaudhary, Young, Crespo, and Dennison]{sculley2015hidden}
+D.~Sculley, Gary Holt, Daniel Golovin, Eugene Davydov, Todd Phillips, Dietmar
+  Ebner, Vinay Chaudhary, Michael Young, Jean-Fran{\c c}ois Crespo, and Dan
+  Dennison.
+\newblock Hidden technical debt in machine learning systems.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, 2015.
+
+\bibitem[Breck et~al.(2017)Breck, Cai, Nielsen, Salib, and
+  Sculley]{breck2017mltest}
+Eric Breck, Shanqing Cai, Eric Nielsen, Michael Salib, and D.~Sculley.
+\newblock The {ML} test score: A rubric for {ML} production readiness and
+  technical debt reduction.
+\newblock In \emph{IEEE International Conference on Big Data}, 2017.
+
+\bibitem[{DeepSeek-AI}(2026)]{deepseek2026v41flash}
+{DeepSeek-AI}.
+\newblock {DeepSeek-V4.1-Flash}: Model card and technical report.
+\newblock \url{https://www.deepseek.com/news/deepseek-v4-1-flash/}, 2026.
+\newblock Open weights, MIT license; 552B total parameters, 8B prefill and 16B
+  decode active parameters.
+
+\end{thebibliography}

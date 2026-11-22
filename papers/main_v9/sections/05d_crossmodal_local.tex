@@ -1,0 +1,155 @@
+\subsection{The cross-modal panel across four open-weight models}
+\label{sec:results-crossmodal}
+
+Section~\ref{sec:results-frontier} measured one frontier checkpoint through a relay. One
+model, however large, cannot separate the mechanism from a single serving endpoint. We
+therefore ran the same six cells on the same three non-CXR modalities for the three local
+checkpoints of the main matrix: 1,788 images (600 brain MRI, 600 retinal OCT, 588
+dermoscopy), five cells under the v0 contract plus one mid-gray blank under the v1
+contract, 32,184 calls. The three cohorts are public, de-identified releases
+\citep{cheng2017braintumor,kermany2018identifying,tschandl2018ham10000}; Appendix~\ref{app:crossmodal-data}
+gives their source, licence, label mapping, sampling rule and split unit. Images enter at
+stored resolution; prompts, label sets, operators
+and parser are shared with the CXR arm. The protocol differs from the relay arm in two
+ways: the absence of the 1,024-pixel client downscale, and the token budget (1,024
+locally; 8,192 on the relay, where hidden reasoning otherwise consumes the whole budget).
+
+146 of the 2,940 dermoscopy cells (5.0\%) exhausted the 1,024-token budget inside
+MedGemma-1.5's \texttt{<unused94>thought} channel. A separate repair arm re-ran exactly
+those cells at 2,048 tokens (141 recovered) and the remaining five at 4,096 (all five
+recovered), for 151 calls and 100\% parse. The repair is reported as a coverage
+sensitivity and is not merged into the primary file; Table~\ref{tab:crossmodal4} uses the
+frozen 1,024 protocol and reports the parse and completeness rates of every cell. At the
+repaired budget, MedGemma-1.5's dermoscopy clean set moves from 95 to 114 distinct vectors
+and its label completeness from 0.678 to 0.784, while P1 contrast moves only from 0.549 to
+0.563 and P1 noise is unchanged---the primary table is conservative on this axis, not
+flattering.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Cross-modal panel across four open-weight checkpoints: three run locally, one
+served through an OpenAI-compatible relay. ``Distinct'' is the number of different status
+vectors on clean images and ``modal'' the share of the most common one. P1$_{\text{c}}$
+and P1$_{\text{n}}$ are the share of images whose status vector changes under
+contrast-severe and noise-severe relative to clean. $\Delta_{\text{null}}$ is
+$D(\text{real},\text{blank})-D(\text{real},\text{real}')$ for the mid-gray v0 blank, with
+a 95\% patient-, image- or lesion-clustered bootstrap interval. ``Parse'' and ``Compl.''
+are the share of clean cells that parse and the mean share of contract labels named. The
+relay rows use 300 images per modality; the local rows use the full manifests. The relay
+rows repeat the corresponding rows of Table~\ref{tab:api-null} and are included here for
+the four-model comparison. ``Support'' groups Distinct and Modal; ``Sensitivity''
+groups P1$_{\text{c}}$ and P1$_{\text{n}}$. For every model the dermoscopy row has the largest Distinct,
+P1$_{\text{c}}$ and P1$_{\text{n}}$; $^{\dagger}$ marks a nominal 95\% interval whose cell
+does not survive a Bonferroni correction over the 12 $\Delta_{\text{null}}$ estimates.}
+\label{tab:crossmodal4}
+\begin{tabular}{l l r r r r r l r r}
+\toprule
+& & & \multicolumn{2}{c}{Support} & \multicolumn{2}{c}{Sensitivity} & & & \\
+\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Dataset & Model & $n$ & Distinct & Modal & P1$_{\text{c}}$ & P1$_{\text{n}}$ & $\Delta_{\text{null}}$ [95\% CI] & Parse & Compl. \\
+\midrule
+Dermoscopy & MedGemma-1.5-4B & 588 & 95 & 0.111 & 0.549 & 0.707 & 0.291 [0.256, 0.327] & 0.889 & 0.678 \\
+           & InternVL3.5-8B & 588 & 28 & 0.284 & 0.289 & 0.466 & 0.421 [0.381, 0.461] & 1.000 & 1.000 \\
+           & Qwen3-VL-8B & 588 & 12 & 0.488 & 0.184 & 0.355 & 0.504 [0.464, 0.542] & 1.000 & 0.187 \\
+           & DeepSeek-V4.1-Flash (relay) & 300 & 94 & 0.117 & 0.417 & 0.540 & 0.155 [0.093, 0.215] & 1.000 & 1.000 \\
+\midrule
+Brain MRI  & MedGemma-1.5-4B & 600 & 9 & 0.445 & 0.097 & 0.272 & 0.209 [0.136, 0.282] & 1.000 & 1.000 \\
+           & InternVL3.5-8B & 600 & 4 & 0.470 & 0.083 & 0.203 & 0.140 [0.068, 0.215] & 1.000 & 1.000 \\
+           & Qwen3-VL-8B & 600 & 10 & 0.665 & 0.057 & 0.227 & $-0.059$ [$-0.112$, $-0.003$]$^{\dagger}$ & 1.000 & 1.000 \\
+           & DeepSeek-V4.1-Flash (relay) & 300 & 10 & 0.207 & 0.170 & 0.327 & 0.203 [0.122, 0.284] & 1.000 & 1.000 \\
+\midrule
+Retina OCT & MedGemma-1.5-4B & 600 & \textbf{3} & \textbf{0.928} & 0.087 & 0.087 & $-0.058$ [$-0.080$, $-0.038$] & 1.000 & 0.984 \\
+           & InternVL3.5-8B & 600 & 6 & 0.353 & 0.103 & 0.108 & 0.474 [0.428, 0.519] & 1.000 & 1.000 \\
+           & Qwen3-VL-8B & 600 & 8 & 0.462 & 0.128 & 0.335 & 0.057 [0.005, 0.105]$^{\dagger}$ & 1.000 & 0.859 \\
+           & DeepSeek-V4.1-Flash (relay) & 300 & 16 & 0.307 & 0.187 & 0.207 & 0.390 [0.320, 0.460] & 1.000 & 1.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The modality ordering is model-invariant.} Dermoscopy is the most responsive of
+the three modalities for all four models: P1 contrast is 0.184--0.549 and P1 noise
+0.355--0.707, against 0.057--0.170 and 0.087--0.335 on brain MRI and retinal OCT. The
+margin over retinal OCT is small for Qwen3-VL (0.184 vs.\ 0.128 and 0.355 vs.\ 0.335),
+which is the model whose dermoscopy replies name only 19\% of the contract's labels, but
+the ordering itself does not flip in any model--modality pair. This is a within-model
+comparison at each model's native geometry. The controlled sweep in
+Section~\ref{sec:results-geometry} shows that cross-model P1 rankings can reverse with the
+input edge; the P1 columns of Table~\ref{tab:crossmodal4} are native-geometry values, not
+geometry-controlled rankings. Distinct status vectors
+follow the same pattern: 12--95 on dermoscopy, 4--10 on brain MRI and 3--16 on retinal OCT.
+The extreme is MedGemma-1.5 on OCT, which emits \textbf{three} distinct vectors for 600
+images with 92.8\% of them identical---the same collapse the relay model shows on PadChest
+(three vectors, 99.6\%). Unresponsiveness of this size is therefore not a capacity or a
+serving artefact; it tracks the modality.
+
+\paragraph{A positive null separation is not guaranteed.} Every dermoscopy cell has a
+positive $\Delta_{\text{null}}$ (0.155--0.504), but the sign is model-dependent elsewhere:
+Qwen3-VL on brain MRI gives $-0.059$ [$-0.112$, $-0.003$] and MedGemma-1.5 on retinal OCT
+gives $-0.058$ [$-0.080$, $-0.038$]. The phase-scrambled blank on the same OCT cells gives
+$+0.003$ [$-0.028$, $0.032$], i.e.\ indistinguishable from zero. The 12 $\Delta_{\text{null}}$
+estimates in Table~\ref{tab:crossmodal4} form one family, so we also apply a Bonferroni
+correction ($\alpha=0.05/12=0.0042$). Under it, the Qwen3-VL MRI interval becomes
+[$-0.137$, $+0.021$] and the Qwen3-VL OCT interval becomes [$-0.013$, $+0.131$]: both
+include zero. The MedGemma-1.5 OCT interval remains negative, [$-0.090$, $-0.027$].
+P2 therefore fails outright in one model--modality cell after correction, and nominally
+in a second; a positive separation on one blank kind does not certify the other. The relay
+model is positive on all three modalities (0.155--0.390), which shows that the sign is a
+property of the model--modality--blank triple, not of the modality alone.
+
+\paragraph{Contract coverage travels with responsiveness.} P1 alone would rank
+Qwen3-VL as the least responsive model on dermoscopy (0.184), but its replies name only
+18.7\% of the labels, so the status vector is mostly \texttt{not\_mentioned} and the
+statistic is a lower bound from a sparse contract rather than a like-for-like comparison
+with InternVL3.5's 0.289 at completeness 1.000. MedGemma-1.5 sits at 0.678 completeness
+because 11.1\% of its clean cells and 12.4\% of its contrast cells are truncated. The
+reportable unit is the pair (P1, completeness); reported alone, P1 can make a sparse
+responder look unresponsive and a collapsed responder look responsive.
+
+\paragraph{The operating point moves in opposite directions across models.}
+Table~\ref{tab:crossmodal-op4} holds the corruption fixed and varies the model. Under
+noise-severe on dermoscopy, the positive-call rate on label-negative lesions rises by
+13.4\,pp for MedGemma-1.5 (0.536 $\rightarrow$ 0.670) but falls by 18.8\,pp for
+InternVL3.5 (0.630 $\rightarrow$ 0.442), 8.8\,pp for Qwen3-VL (0.500 $\rightarrow$ 0.412)
+and 17.4\,pp for the relay model (0.488 $\rightarrow$ 0.314); recall moves in the same
+direction (+0.8, $-25.5$, $-6.2$ and $-25.0$\,pp). A recall-only table would describe the
+first model as robust and the other three as degraded, although all four changed their
+operating point. On retinal OCT the panel is conservative or collapsed: InternVL3.5 never
+calls a negative positive (0.000) and keeps recall 0.918, while MedGemma-1.5 calls 8.7\%
+positive with recall 0.067---two opposite failure forms that a single accuracy number
+cannot distinguish.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Operating point on the two modalities with a clinical negative class. ``Positive
+rate'' is the share of label-negative images called positive; ``recall'' is the share of
+label-positive images called positive. Clean and noise-severe cells only; the negative
+class is the complement of the three positive labels of each modality.}
+\label{tab:crossmodal-op4}
+\begin{tabular}{l l r r r r r}
+\toprule
+Dataset & Model & $n_{\text{neg}}$ & Pos.\ rate clean & Pos.\ rate noise & Recall clean & Recall noise \\
+\midrule
+Dermoscopy & MedGemma-1.5-4B & 330 & 0.536 & 0.670 & 0.810 & 0.818 \\
+           & InternVL3.5-8B & 330 & 0.630 & 0.442 & 0.891 & 0.636 \\
+           & Qwen3-VL-8B & 330 & 0.500 & 0.412 & 0.713 & 0.651 \\
+           & DeepSeek-V4.1-Flash (relay) & 172 & 0.488 & 0.314 & 0.836 & 0.586 \\
+\midrule
+Retina OCT & MedGemma-1.5-4B & 150 & 0.087 & 0.067 & 0.067 & 0.029 \\
+           & InternVL3.5-8B & 150 & 0.000 & 0.000 & 0.918 & 0.902 \\
+           & Qwen3-VL-8B & 150 & 0.013 & 0.000 & 0.480 & 0.224 \\
+           & DeepSeek-V4.1-Flash (relay) & 70 & 0.000 & 0.000 & 0.748 & 0.739 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Limits of this panel.} Three local checkpoints and one relay endpoint, six cells
+per image rather than the 22-cell grid: no resolution, blur, JPEG or brightness step, and a
+single synthetic seed. OCT carries no patient identifier, so its intervals resample images
+rather than patients; dermoscopy is resampled at the lesion level and MRI at the patient
+level. No human reader is included. These limits bound the magnitudes, not the ordering:
+the modality ordering replicates in all four models, and the MedGemma-1.5 OCT separation
+is the only negative one that survives the 12-test correction; the Qwen3-VL MRI
+separation is nominal.

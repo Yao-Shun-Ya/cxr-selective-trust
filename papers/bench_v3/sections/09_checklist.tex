@@ -16,7 +16,7 @@ Table~\ref{tab:checklist} is the checklist we would ask a medical VLM benchmark 
 Item & This harness \\
 \midrule
 Call budget by layer and model & Exact JSONL row counts (Table~\ref{tab:models_calls}); no hours-based estimates. \\
-Stage inventory, exemptions, and config guard & 38 entries: 30 completed, 8 contract-exempt; manifest+prompt fingerprint. \\
+Stage inventory, exemptions, and config guard & 38 entries: 30 completed, 8 contract-exempt; manifest+prompt fingerprint (post-hoc in the delivered state, run-time in the cross-modal and relay arms). \\
 Resume semantics and tests & Two-level resume; 40/40 crash/resume checks; torn-tail and no-op tests. \\
 Manifest contract & Required columns, exact label strings, split-pure scored set, SHA-256 lock. \\
 Prediction schema & One JSON schema across six runners; raw output and parse errors retained. \\
@@ -33,7 +33,7 @@ Dependency and environment lock & Three venv recipes plus frozen \texttt{pip fre
 
 \textbf{Single machine, single GPU.} The delivered run used one RTX 4080 SUPER (32\,GB) under Windows WDDM. The durable-writer design is portable, but the throughput numbers and the WDDM oversubscription failure mode are specific to this environment.
 
-\textbf{Stage keys are coarse; the fingerprint is run-level.} Stage keys remain \texttt{layer/model/stage}. A run-level fingerprint hashes the manifests and prompt/schema modules and refuses resume on a mismatch, so a changed configuration cannot silently reuse completed stages. It is not a per-stage content hash: changing a configuration after the fingerprint check still requires \texttt{-Reset}, and the harness says so.
+\textbf{Stage keys are coarse; the fingerprint is run-level.} Stage keys remain \texttt{layer/model/stage}. A run-level fingerprint hashes the manifests and prompt/schema modules and refuses resume on a mismatch, so a changed configuration cannot silently reuse completed stages. The delivered main-matrix state predates the guard and carries a post-hoc recomputation, flagged in the file; the cross-modal and relay arms write it at run time. It is not a per-stage content hash: changing a configuration after the fingerprint check still requires \texttt{-Reset}, and the harness says so.
 
 \textbf{No CI in the original run.} The CPU tests and crash/resume suite are now part of a CI workflow, but the 275,218-call matrix was produced before that workflow existed. The frozen artifacts are checksummed; the original run's environment is reconstructed from lock files rather than replayed by CI.
 

@@ -1,0 +1,45 @@
+\section*{Conclusion}
+\label{sec:conclusion}
+
+The field has learned to report robustness, reliance, and transfer as model properties. Our data say they are properties of the model--measurement system. Four cheap checks---responsiveness, a same-space null, the operating point, and contract coverage---reverse the headline conclusion in each of the three layers we studied. Two findings survive the checks: degradation has two separable descriptive axes, and the label-level hierarchy of sensitivity is model-invariant on NIH in raw ranks, though partly confounded by prevalence and still in need of external replication. Confirmatory experiments sharpen both findings rather than merely repeating them. A supervised baseline at macro AUROC 0.733 shows that chance-level prompted discrimination is not a task artefact, and a frozen-encoder probe reaches 0.651--0.703, so the representation carries the label and the prompted readout is where it is lost; a controlled geometry sweep shows that a robustness ranking can reverse with the client-side input edge while clean discrimination does not; the same CNN reproduces the contrast-induced operating-point movement under a fixed rule, so that reversal is not specific to vision-language models; the schema sweep and paraphrase control show that the contract and the wording jointly decide what a model says about an image with no evidence in it; and a second reasoning model reproduces the operating-point mechanism while relocating the silent quadrant: noise is invisible to MedGemma-1.5's marker channel and plainly visible to a channel that watches whether reasoning terminates. Silent failure therefore belongs to the monitor, not to the corruption---which is the practical form of the paper's thesis. The selective-trust framework we set out to validate does not survive: its components barely change error ranking and yield no usable coverage at a 5\% risk budget (at most 9.3\% of findings).
+
+The constructive claim is modest and, we think, more useful than a leaderboard: report the denominator before the number. Table~\ref{tab:checklist} turns the four preconditions into a checklist that any benchmark can apply to an existing prediction file.
+
+\begin{table}[h]
+\centering
+\small
+\caption{A minimal reporting checklist for image-reliance, robustness, and transfer claims. Each row can be evaluated from frozen predictions without re-running a model.}
+\label{tab:checklist}
+\begin{tabular}{p{0.17\textwidth}p{0.34\textwidth}p{0.34\textwidth}}
+\toprule
+Precondition & Report & Fail if \\
+\midrule
+P1 Responsiveness & Unique normalized replies and modal share on real inputs, with interval; blank-template share & Modal share $\ge 0.50$ or $\le 5$ unique replies: no measurable response, not ``zero reliance'' \\
+P2 Null model & Same-space separation $\Delta_{\text{null}}$ against a real-vs-real null; name the metric and its polarity & $\Delta_{\text{null}} \approx 0$: the contrast is natural variation or boilerplate \\
+P3 Operating point & Recall \emph{with} positive-prediction rate, precision, and case-level transitions at a declared rule & Recall changes while the positive rate is unreported: threshold movement is indistinguishable from robustness \\
+P4 Contract coverage & Definite-slot share, status distribution, output mode (reasoning marker, probability completeness) & Denominator or output regime differs across compared cells: the numbers are not on one scale \\
+\midrule
+Reasoning add-on & Termination rate at a declared token budget, and the budget curve & Coverage differs across cells: report conditional metrics paired on commonly answered studies \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{Code and data availability}
+
+Code, manifests, configuration locks and analysis scripts are available at
+\url{https://github.com/Yao-Shun-Ya/cxr-selective-trust}. The frozen prediction files
+(0.49\,GiB for the CXR matrix, 47.4\,MiB for the cross-modal panel, and the 9,400-row relay
+file) and the derived CSVs are archived separately from the code tree; they are available
+from the corresponding author and will be deposited with a persistent DOI for the
+camera-ready version. No image or model weight is redistributed. Dataset licences remain
+those of the original releases (Appendix~\ref{app:crossmodal-data}).
+
+\section*{Ethics, funding and competing interests}
+
+All datasets are public, de-identified research releases; no new human-subject data were
+collected and no IRB approval was required. This work received no specific funding. The
+author declares no competing interests.
+
+\section*{Reproducibility}
+
+All artifacts needed to reproduce every number are enumerated in Appendix~\ref{app:artifacts} and released as described under Code and data availability. The responsiveness audit and the selective-input adapter are CPU-only scripts; every figure is generated from the frozen prediction files rather than from transcribed numbers. The primary run state (38 stage entries: 30 completed, of which 8 are flagged contract-exempt for structured-contract metrics---six Open-i stages and two LLaVA stages---while Open-i prose metrics are still scored) is recorded in a resumable state file, and the preprocessing contract---including the per-model effective input geometry---is documented separately. The all-inclusive delivered-cell count is 326,830: 270,324 for the six-model matrix, 5,294 for LLaVA-Med (3,000 PadChest, 1,894 Open-i, 400 NIH subset), 9,477 for the second reasoning model, 9,400 for the relay arm, 32,184 for the cross-modal panel, and 151 budget-repair calls. Including the three full budgets of the second reasoning model (2,560, 3,584 and 5,120 tokens), its 8,192-token sample and 76 smoke calls, and the relay's 2,085 quota rejections and 149 stale re-runs, the known request total is 351,329 (Table~\ref{tab:call-accounting}). Three model-specific environments were used: \texttt{.venv-vl} (Python 3.10, torch 2.5.1+cu121, transformers 4.51.3) for MedGemma, Qwen2.5-VL and InternVL; \texttt{.venv-chexagent} (torch 2.1.0) for CheXagent; and \texttt{.venv-modern} (torch 2.14.1+cu126, transformers 5.18.0) for Qwen3-VL. Frozen dependency locks are in \texttt{program/env/lock-*.txt}. Scripts 75--101 produce the CSV artifacts; figures are generated by script 80; main-text tables are checked against those CSVs by script 104. The 41-stage coverage census reports 284,695 delivered calls: the 270,324-call six-model matrix, 9,477 calls for the second reasoning model (9,401 usable cells plus 76 smoke calls), and 4,894 LLaVA-Med calls on PadChest and Open-i; the 400-study LLaVA-Med NIH subset is outside the 41 delivered stages, so the difference from the six-model-plus-LLaVA total (275,618) is exactly 9,077 calls. A split-pure 1,506-row evaluation manifest (with SHA-256 in a manifest lock file) is included so the scored set and its denominator are auditable. A CPU-only crash/resume test (40 checks, stubbed model) and the \texttt{cxr\_trust} unit tests run without a GPU. The cross-modal arm and the frontier probe follow the same contract. Scripts 120--125 build deterministic patient- or lesion-level manifests with SHA-256 locks and run a six-cell probe of the 22-cell grid on three further modalities; 146 dermoscopy cells that exhausted a 1,024-token budget were re-run at 2,048 and the remaining five at 4,096 in a separate directory, and the repair is not merged into the primary files. \texttt{program/scripts/api\_probe/} records 9,400 frontier-model calls through the same prompts and parser with a single-writer durable log, adaptive concurrency, and a provenance fingerprint over the model, manifest, prompt set, image geometry and token budget. The 2,085 cells that hit a provider quota wall were removed with \texttt{retry\_failed.py} and re-run, so the delivered file carries a single provenance id. Dataset licenses remain those of the original releases (NIH ChestX-ray14, PadChest, Open-i, plus the MRI, OCT and dermoscopy releases), and model checkpoints are used under their upstream licenses.

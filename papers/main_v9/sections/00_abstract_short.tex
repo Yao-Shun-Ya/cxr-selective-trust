@@ -1,0 +1,29 @@
+% Short abstract for journal submission (target <= 300 words).
+% The full abstract (00_abstract.tex) is the manuscript version; this file is
+% not compiled into main.tex.
+
+Medical vision--language models (VLMs) are summarized by three numbers---robustness
+to image degradation, reliance on the image, and transfer across datasets---each
+reported as a property of the model. We show that each is a property of the
+model--measurement system, and that four unstated preconditions decide whether it is
+identifiable: the model must produce variable outputs on real images
+(\emph{responsiveness}), the counterfactual must be compared with a same-space null
+(\emph{null model}), the operating point must accompany recall (\emph{operating
+point}), and the answer contract and output mode must be declared (\emph{contract
+coverage}). Across six open-weight VLMs, 270,324 calls, and three chest X-ray layers,
+omitting each precondition reverses the conclusion: five models appear image-blind on
+PadChest because they emit 1--20 distinct answers for 1,500 images; Qwen3-VL's
+apparently strong Open-i grounding is a single refusal string; contrast degradation
+raises recall only by moving the operating point; and quantization appears to suppress
+reliance only because the model changes output regime. Two results survive: degradation
+has separable noticeability and damage axes, and the label-level sensitivity ordering
+is model-invariant in raw ranks on NIH but partly confounded by prevalence. A
+selective-trust policy fails, covering at most 9.3\% of findings at a 5\% risk budget.
+A frozen-encoder linear probe reaches 0.651--0.703 while the prompted readouts sit at
+0.50--0.63, locating the loss in the prompted readout rather than the image
+representation. Four open-weight models, including a frontier checkpoint served through a relay,
+reproduce the cross-modal ordering: dermoscopy is the most responsive of brain MRI,
+retinal OCT and dermoscopy for every model, and the null separation falls below zero
+for MedGemma-1.5 on OCT after a 12-test correction. The study delivers 326,830 unique
+cells (351,329 requests). We release the four checks as a CPU-only audit and argue
+that reliance, robustness and transfer be reported with their denominators.

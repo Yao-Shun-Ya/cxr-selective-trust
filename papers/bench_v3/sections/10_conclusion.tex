@@ -3,6 +3,13 @@
 
 A benchmark number is only as trustworthy as the harness that produced it --- and, more specifically, as reconstructible as its denominator. We presented a harness for a three-layer medical VLM study (38 stages, 275,218 calls, 39 frozen prediction files) and, unlike the usual self-report, measured it against four alternatives on the same workload.
 
-Two numbers summarise the result. The durability guarantee costs 1.95\,ms per cell, about nine minutes across the whole study, and it buys zero lost rows after a crash where naive append loses 1.4\%, and loud refusal where two unsupervised writers would otherwise produce 500 to 699 duplicate keys. Neither number is dramatic on its own; together they turn ``durable'' from an adjective into a trade with a price and a payoff.
+Two numbers summarise the result. The durability guarantee costs 1.80\,ms per cell, about eight minutes across the whole study, and it buys zero lost rows after a crash where naive append loses 1.4\%, and loud refusal where two unsupervised writers would otherwise produce 500 to 699 duplicate keys. Neither number is dramatic on its own; together they turn ``durable'' from an adjective into a trade with a price and a payoff.
 
 We also replaced the unfalsifiable claim of zero error rows with five invariants that a hostile tester can break, and released a census that recomputes a file's denominator from the file itself. Applied to 259 prediction files it returns a non-trivial answer: four non-uniform denominators and one file with duplicate keys. An audit that cannot fail is not an audit. We hope the checklist in Table~\ref{tab:checklist} travels: silent collapse, duplicate rows after resume, schema compliance mistaken for coverage, and unmeasured batch collapse are generic to large medical VLM evaluations, not specific to chest X-rays.
+
+\section*{Code and data availability}
+
+Code, harness, manifests and the 39 frozen prediction files (0.489\,GiB) are available at
+\url{https://github.com/Yao-Shun-Ya/cxr-selective-trust}. The artifact bundle is deposited
+with a persistent DOI for the camera-ready version. No image or model weight is
+redistributed; dataset licences remain those of the original releases.

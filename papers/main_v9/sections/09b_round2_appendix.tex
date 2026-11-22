@@ -1,0 +1,130 @@
+\section{Confirmatory-experiment tables}
+\label{app:round2}
+
+\subsection*{Schema sweep on a second medical model}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Schema sweep, MedGemma-1.5 ($n=1{,}506$ per cell, 15,060 calls). ``Blank recall'' pools the seven pathology labels on a uniform gray image; ``violation'' is the share of replies missing a stated status or a probability for at least one label.}
+\label{tab:r2schema}
+\begin{tabular}{lrrrrr}
+\toprule
+Schema & Real recall & Blank recall & Blank \texttt{no\_finding} pos. & Blank violation & Real violation \\
+\midrule
+v0 simple & 0.551 & \textbf{0.000} & 1.000 & 0.000 & 0.059 \\
+v1 per-label binary & 0.493 & \textbf{0.000} & 1.000 & 0.000 & 0.221 \\
+v2 few-shot & 0.550 & \textbf{0.000} & 0.001 & 0.999 & 0.250 \\
+v3 report-first & 0.552 & \textbf{0.000} & 1.000 & 0.000 & 0.152 \\
+v4 normality pressure & \textbf{0.614} & \textbf{0.000} & 0.000 & 1.000 & 0.531 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Paraphrase agreement with the v0 baseline}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Paraphrase control ($n=1{,}506$ per cell). MedGemma-4B: six cells, 6,024 calls. Qwen3-VL: four cells on the same studies. Agreement and Cohen's $\kappa$ are computed per label against the v0 baseline of the same model, then averaged over the eight labels. Blank-image $\kappa$ is undefined when both runs emit a single status.}
+\label{tab:r2para}
+\begin{tabular}{llrrr}
+\toprule
+Model & Image / paraphrase & Agreement & $\kappa$ & \texttt{no\_finding} agreement \\
+\midrule
+MedGemma-4B & real / p1 short & 0.909 & 0.624 & 0.999 \\
+ & real / p2 second reader & 0.914 & 0.642 & 0.946 \\
+ & blank / p1 short & 0.875 & 0.000 & \textbf{0.000} \\
+ & blank / p2 second reader & 1.000 & 0.000 & \textbf{1.000} \\
+\midrule
+Qwen3-VL & real / p1 short & 0.931 & 0.723 & 0.926 \\
+ & real / p2 second reader & 0.903 & 0.701 & 0.909 \\
+ & blank / p1 short & 1.000 & --- & \textbf{1.000} \\
+ & blank / p2 second reader & 1.000 & --- & \textbf{1.000} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Termination budget of the second reasoning model}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Budget escalation for Qwen3-VL-8B-Thinking (10,542 cells). Rows 1--3 are full runs; row 4 merges a 40-cell random sample of the cells that still failed. ``Median length'' is of the replies that still had no usable answer at that budget; it rises with the cap, i.e.\ those replies fill whatever budget they are given. Counts are cells, not model calls.}
+\label{tab:r2budget}
+\begin{tabular}{lrrrr}
+\toprule
+Budget (tokens) & Usable cells & Coverage & Still failing & Median length (k chars) \\
+\midrule
+2,560 & 6,067 & 57.6\% & 4,475 & 9.8 \\
+3,584 & 8,738 & 82.9\% & 1,804 & 13.5 \\
+5,120 & 9,381 & 89.0\% & 1,161 & 19.3 \\
+5,120 + 8,192 sample & 9,401 & 89.2\% & 1,141 & 28.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Reconciling the archive with the residual}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Composition of the failure archive. Rows are \emph{attempts}, so a cell retried at a larger budget appears once per budget; the cell-level residual after the final filter is 1,141, not the archive row count.}
+\label{tab:r2recon}
+\begin{tabular}{llrr}
+\toprule
+Pass label & Budget (tokens) & Archive rows & Distinct cells \\
+\midrule
+\texttt{pre\_5120} & 2,560 / 3,584 & 3,085 & 2,491 \\
+\texttt{post\_5120} & 5,120 & 1,161 & 1,161 \\
+\texttt{cap8192} & 8,192 & 37 & 20 \\
+\midrule
+Total & --- & \textbf{4,283} & 2,761 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The distinction matters for reporting: ``1,141 cells never terminate at 5,120'' is a cell-level statement, while ``4,283 archived failures'' counts attempts across four budgets. A reader who equates the two would over-state the residual by 3.8$\times$.
+
+\subsection*{Paired operating point (coverage-controlled)}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Positive-call rate of Qwen3-VL-8B-Thinking on the paired subset: studies that produced a usable answer in both the clean cell and the severe cell. The paired and unpaired moves agree, so the operating-point shift is not produced by differential coverage.}
+\label{tab:r2posrate}
+\begin{tabular}{lrrrr}
+\toprule
+Cell & $n$ paired & Clean & Severe & $\Delta$ \\
+\midrule
+blur & 1,302 & 0.249 & 0.192 & $-5.7$\,\pp{} \\
+brightness & 1,178 & 0.255 & 0.215 & $-4.0$\,\pp{} \\
+contrast & 1,299 & 0.254 & 0.278 & $+2.4$\,\pp{} \\
+JPEG & 1,290 & 0.254 & 0.243 & $-1.0$\,\pp{} \\
+noise & 1,238 & 0.249 & 0.172 & $-7.7$\,\pp{} \\
+resolution & 1,132 & 0.250 & 0.128 & $\mathbf{-12.2}$\,\pp{} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Per-label damage in the second reasoning model}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Clean $\rightarrow$ pooled-severe recall change per label for Qwen3-VL-8B-Thinking, paired on the 1,394 studies (695 patients) answered in both the clean and all six severe cells; per-cell paired $n$ ranges from 1,130 (resolution) to 1,297 (blur), and the per-cell estimates are in Table~\ref{tab:r2think}. Intervals are patient-cluster bootstrap (1,000 resamples, 95\%); $q$ is Benjamini--Hochberg across the seven labels.}
+\label{tab:r2label}
+\begin{tabular}{lrrrrr}
+\toprule
+Label & Clean & Severe & $\Delta$ & 95\% CI & $q$ \\
+\midrule
+atelectasis & 0.089 & 0.067 & $-2.2$\,\pp{} & $[-4.4,-0.2]$ & 0.053 \\
+cardiomegaly & 0.592 & 0.532 & $-6.0$\,\pp{} & $[-9.9,-1.9]$ & 0.014 \\
+consolidation & 0.314 & 0.288 & $-2.6$\,\pp{} & $[-6.5,+1.1]$ & 0.166 \\
+edema & 0.117 & 0.075 & $-4.2$\,\pp{} & $[-8.5,-0.2]$ & 0.053 \\
+pleural effusion & 0.482 & 0.394 & $\mathbf{-8.8}$\,\pp{} & $[-11.9,-5.8]$ & $<0.001$ \\
+pneumonia & 0.451 & 0.341 & $\mathbf{-11.0}$\,\pp{} & $[-16.4,-5.5]$ & $<0.001$ \\
+pneumothorax & 0.003 & 0.001 & $-0.1$\,\pp{} & $[-0.8,+0.3]$ & 0.820 \\
+\bottomrule
+\end{tabular}
+\end{table}
