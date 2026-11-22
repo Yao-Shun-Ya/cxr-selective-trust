@@ -14,5 +14,7 @@ data/manifests/*
 !data/manifests/MANIFEST_SHA256.json
 outputs/
 素材/
-models/
+# Only the weight directory at the program root is ignored. The source package
+# program/src/cxr_trust/models/ must stay tracked: the runners import it.
+/models/
 .env
