@@ -38,6 +38,42 @@ jobs:
           print("manifest contract OK")
           PY
 
+  audit-cli:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install the audit CLI
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e "audit[dev]" pyyaml
+          python -m pip check
+      - name: Audit CLI tests
+        run: python -m pytest -q audit/tests
+      - name: Synthetic demo (no data, no network)
+        run: python -m cxr_audit demo > /dev/null
+      - name: Citation and metadata records
+        run: |
+          python - <<'PY'
+          import json, pathlib, yaml
+          root = pathlib.Path(".")
+          cff = yaml.safe_load((root / "CITATION.cff").read_text(encoding="utf-8"))
+          assert cff["cff-version"] == "1.2.0", cff["cff-version"]
+          assert cff["type"] == "software"
+          assert cff["preferred-citation"]["title"].startswith("Responsiveness Before Reliance")
+          zen = json.loads((root / ".zenodo.json").read_text(encoding="utf-8"))
+          assert zen["upload_type"] == "software"
+          assert zen["license"] == "MIT"
+          assert zen["creators"][0]["orcid"] == "0009-0006-1226-8145"
+          json.loads((root / "program/data/manifests/MANIFEST_SHA256.json").read_text(encoding="utf-8"))
+          print("citation metadata OK")
+          PY
+
   resume:
     runs-on: windows-latest
     steps:
