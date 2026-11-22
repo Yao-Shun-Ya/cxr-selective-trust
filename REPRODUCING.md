@@ -88,13 +88,48 @@ exact commands, and `configs/models.lock.yaml` records them under `conversion:`.
 
 ## 4. CPU-only checks (no weights, no GPU)
 
+### 4.1 Audit CLI (Python >= 3.10, independent of the program venvs)
+
+The installable companion tool in `audit/` recomputes denominators, response
+collapse and selective-prediction coverage from prediction files. It needs only
+numpy, pandas and scikit-learn:
+
+```powershell
+python -m venv .venv-audit
+.\.venv-audit\Scripts\python.exe -m pip install -e "audit[dev]"
+.\.venv-audit\Scripts\python.exe -m pytest -q audit/tests      # 4 passed
+.\.venv-audit\Scripts\python.exe -m cxr_audit demo             # synthetic, no data
+```
+
+`make audit-install`, `make audit-cli-test` and `make audit-demo` wrap the same
+commands; CI runs them on Python 3.10 and 3.12. With the frozen outputs present,
+the manuscript numbers can be replayed directly (derm panel, MedGemma-1.5-4B):
+
+```powershell
+.\.venv-audit\Scripts\python.exe -m cxr_audit census `
+  program\outputs\crossmodal\derm\v0\medgemma_15_4b_it\shift_predictions.jsonl
+# rows 2940, unique_keys 2940, duplicates 0, parse_rate 0.95034
+
+.\.venv-audit\Scripts\python.exe -m cxr_audit responsiveness `
+  program\outputs\crossmodal\derm\v0\medgemma_15_4b_it\shift_predictions.jsonl `
+  --labels actinic_keratosis,basal_cell_carcinoma,benign_keratosis,dermatofibroma,melanoma,melanocytic_nevus,vascular_lesion `
+  --clean clean --shift contrast --severity severe
+# distinct_clean_vectors 95, modal_share 0.1105, P1 change 0.5493
+
+.\.venv-audit\Scripts\python.exe -m cxr_audit selective `
+  program\outputs\selective_v2\medgemma_15_4b_it\risk_items_finding.csv
+# confidence AUROC 0.7366, coverage@5% 0.0926; entropy/margin 0.6019, 0.0001
+```
+
+### 4.2 Repository tests
+
 ```powershell
 # legacy parser tests (repository root)
 python -m pytest tests -q                       # 6 passed
 
 # authoritative cxr_trust package (parser, metrics, durable writer)
 cd program
-.\.venv-vl\Scripts\python.exe -m pytest tests -q          # 5 passed
+.\.venv-vl\Scripts\python.exe -m pytest tests -q          # 10 passed
 
 # the durable-JSONL and resume harness self-tests (no model loaded)
 .\.venv-vl\Scripts\python.exe scripts\41_test_durable.py         # 37 passed
@@ -104,7 +139,7 @@ cd program
 # coverage census, manifest lock, and final artifact audit
 .\.venv-vl\Scripts\python.exe scripts\90_coverage_census.py
 .\.venv-vl\Scripts\python.exe scripts\91_manifest_lock.py
-.\.venv-vl\Scripts\python.exe scripts\93_artifact_audit.py       # 16 checks
+.\.venv-vl\Scripts\python.exe scripts\93_artifact_audit.py       # 26 checks
 ```
 
 `make test` / `make test-cxr` / `make test-resume` run the same commands.
@@ -170,13 +205,16 @@ scored). It contains 275,218 model calls in 39 frozen prediction files
 (internal_test 1,054 + source_val 452); the 226 internal_train donor rows are
 never read by the evaluation path. Round 2 adds 31,626 cells in two further
 stages (second reasoning model + a marker probe), for 284,695 calls in the
-41-stage coverage census. These are the numbers in `papers/main_v6/main.pdf`
-and `papers/main_v6_zh/main.pdf`.
+41-stage coverage census. v9 adds a 32,184-call six-cell cross-modal panel
+(3 local models x 1,788 images) and a 9,400-call relay arm; the delivered-cell
+total is 326,830 and the known request total is 351,329 (Table 20 in the
+manuscript). These are the numbers in `papers/main_v9/main.pdf` (the Chinese
+mirror has not been regenerated for v9).
 
-What is still not done: no cross-family schema sweep (the replication is a
-second MedGemma checkpoint), no human-validated Open-i labeller, no fourth
-dataset, and no true fixed-threshold rerun. Those are stated as limitations,
-not simulated. See `docs/42_academic_integrity_and_writing_standards.md`.
+What is still not done: no human-validated Open-i labeller, no 22-cell
+cross-modal dose-response (the six-cell probe is released), and no clinical
+outcome. Those are stated as limitations, not simulated. See
+`docs/42_academic_integrity_and_writing_standards.md`.
 
 ## 7. Hardware caveat
 

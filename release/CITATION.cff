@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this code, the frozen predictions or the derived tables, please cite the manuscript."
+title: "Responsiveness Before Reliance: Four Reversals in Measuring Medical Vision-Language Models"
+authors:
+  - family-names: Huang
+    given-names: Koshun
+    affiliation: "School of Medical Imaging, North Sichuan Medical College, Nanchong, Sichuan, China"
+    orcid: "https://orcid.org/0009-0006-1226-8145"
+year: 2026
+version: "9"
+license: MIT
+repository-artifact: "https://github.com/Yao-Shun-Ya/cxr-selective-trust"
+notes: >
+  The MIT license covers code, configuration, manifests and derived tables.
+  Images and model weights are not redistributed and remain under their
+  original licenses; see NOTICE and Appendix G of the manuscript.

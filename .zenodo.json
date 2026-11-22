@@ -1,0 +1,33 @@
+{
+  "title": "cxr-selective-trust: reproducibility audit tooling and frozen-prediction artifacts for medical vision-language model evaluation",
+  "description": "<p>Audit tooling and frozen-prediction artifacts for measuring medical vision-language models (VLMs). The repository contains two manuscripts, the protocols and configs that produced them, and <code>cxr-audit</code>, a CPU-only command-line tool that recomputes the denominator of a prediction file (rows, unique keys, duplicate rows/groups, parse rate), measures response collapse and P1 change on shifted inputs, and compares selective-prediction signals (status-aware confidence, Bernoulli entropy, probability margin) by AUROC and coverage at fixed risk budgets.</p><p>No model weights, medical images or patient data are redistributed. Code, manifests and derived tables are MIT-licensed; the original dataset and model licences continue to apply. The manuscripts are &ldquo;Responsiveness Before Reliance: Four Reversals in Measuring Medical Vision-Language Models&rdquo; and &ldquo;Auditing the Denominator: Coverage Census and Fault-Tested Durability for Medical VLM Benchmarks&rdquo;.</p>",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "MIT",
+  "version": "9",
+  "publication_date": "2026-11-22",
+  "language": "eng",
+  "creators": [
+    {
+      "name": "Huang, Koshun",
+      "orcid": "0009-0006-1226-8145",
+      "affiliation": "School of Medical Imaging, North Sichuan Medical College, Nanchong, Sichuan, China"
+    }
+  ],
+  "keywords": [
+    "medical vision-language models",
+    "reproducibility",
+    "selective prediction",
+    "benchmark auditing",
+    "chest radiography",
+    "measurement validity"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/Yao-Shun-Ya/cxr-selective-trust",
+      "relation": "isVersionOf",
+      "resource_type": "software"
+    }
+  ],
+  "notes": "Model weights (about 164 GB) and medical images are not included. The frozen predictions and derived tables are released for research use under the licences of the source datasets."
+}

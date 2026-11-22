@@ -2,11 +2,47 @@
 
 **Responsiveness Before Reliance: Four Reversals in Measuring Medical Vision–Language Models**
 
+[![CPU CI](https://github.com/Yao-Shun-Ya/cxr-selective-trust/actions/workflows/ci.yml/badge.svg)](https://github.com/Yao-Shun-Ya/cxr-selective-trust/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](audit/pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Manuscript v9](https://img.shields.io/badge/manuscript-v9-6f42c1.svg)](papers/main_v9/main.pdf)
+[![Bench v3](https://img.shields.io/badge/bench-18%20pp-6f42c1.svg)](papers/bench_v3/main.pdf)
+
 本仓库是一个可审计的医学 VLM 评测工程：两篇论文、一套冻结预测产物、一个跨模态扩展臂、
-一个闭源大模型探针，以及把它们固定在可复现状态下的故障注入测试。
+一个经中转访问的开放权重前沿模型探针，以及把它们固定在可复现状态下的故障注入测试。
 
 > 版本化的是源码、协议、配置与论文源文件。权重、数据、预测产物、虚拟环境与内部工作笔记
 > 不入库（见 `.gitignore` 的分节说明与下文第 4 节）。
+
+---
+
+## 0. 快速开始：CPU 审计（无需权重、数据或网络）
+
+仓库自带可安装的审计工具 `cxr-trust-audit`，把论文中的**分母审计、响应性检查、选择性基线**
+做成一个 CLI：
+
+```powershell
+python -m venv .venv-audit
+.\.venv-audit\Scripts\python.exe -m pip install -e "audit[dev]"
+.\.venv-audit\Scripts\python.exe -m cxr_audit demo            # 合成数据端到端演示
+.\.venv-audit\Scripts\python.exe -m pytest -q audit/tests     # 4 passed
+```
+
+或直接从 GitHub 安装：
+
+```bash
+pip install "git+https://github.com/Yao-Shun-Ya/cxr-selective-trust.git#subdirectory=audit"
+```
+
+```bash
+cxr-audit census         predictions.jsonl --key-fields image_id,condition,severity
+cxr-audit responsiveness predictions.jsonl --clean clean --shift contrast --severity severe
+cxr-audit selective      risk_items_finding.csv
+```
+
+三条命令分别回答：这份预测文件的分母是否自洽；模型在 clean 输入上是否真的响应图像；
+换一种置信度定义能否在固定风险预算下选出更多正确判读。输入契约、输出字段与论文产物的
+回放数值见 [`audit/README.md`](audit/README.md)。
 
 ---
 
@@ -14,12 +50,15 @@
 
 | 项目 | 状态 |
 |---|---|
-| 主论文 | **v7 已投 arXiv**（`papers/main_v7/`，39 页，44 条参考文献）；中文镜像 `papers/main_v7_zh/`（44 页）；**v8 增加前沿闭源模型臂**（`papers/main_v8/`，42 页） |
-| 工程副论文 | **bench_v2 已投 arXiv**（`papers/bench_v2/`，16 页）；**bench_v3 增加远程 API 失效一节**（`papers/bench_v3/`，17 页，含 9,400 次远程调用的四类失效记录） |
+| 主论文 | **v7 已投 arXiv**（`papers/main_v7/`，39 页，44 条参考文献）；中文镜像 `papers/main_v7_zh/`（44 页）；`main_v8/`（42 页）增加开放权重前沿模型臂；**`main_v9/`（50 页）增加四模型跨模态面板、readout probe、几何对照与选择性基线，总调用 326,830（请求 351,329）** |
+| 工程副论文 | **bench_v2 已投 arXiv**（`papers/bench_v2/`，16 页）；**bench_v3 增加远程 API 失效一节**（`papers/bench_v3/`，18 页，含 9,400 次远程调用的四类失效记录；timing 已按空闲重跑对账） |
 | CXR 主矩阵 | **已完成**：6 模型 × 3 层，275,218 次调用，39 个冻结预测文件（0.49 GiB），0 丢失行 |
-| 跨模态本地臂 | **未运行**：三模态清单与 22-cell 网格已冻结（314,688 次调用），作为 v9 增量 |
+| 跨模态本地臂 | **6 格面板已完成**：3 模型 × 1,788 图 × 6 格 = 32,184 次，另 151 次预算补跑（146 格 @2,048 + 5 格 @4,096，最终 100% 解析）；22 格全网格（314,688 次）留作第三篇 |
 | 跨模态 API 臂 | **已完成**：`deepseek-v4.1-flash`，9,400 次调用，0 传输错误、单一 provenance；含 2,085 次配额墙重跑（另有 2,700 次 lite 档未用） |
-| 人评 | 未开始；v8 之后的外部增量 |
+| Readout probe | **已完成**：3 模型 × 1,506 NIH，冻结 vision tower + logistic regression；macro AUROC 0.703 / 0.663 / 0.651，prompted 为 0.585 / 0.607 / 0.546 |
+| 几何 sweep | **已完成**：2 模型 × 3 长边 × 4 条件 × 400 图 = 9,600 次；AUROC 排序稳定（InternVL 0.601–0.611 vs Qwen3 0.520–0.550），P1 排序随长边翻转（噪声 512: 0.625 vs 0.293；2048: 0.248 vs 0.443）；结果在 `outputs/analysis_geometry/geometry_summary.csv` |
+| CPU 审计 CLI | **`cxr-trust-audit` 0.1.0**：`census` / `responsiveness` / `selective` / `demo`，4 项无数据测试，CI 覆盖 Python 3.10 与 3.12 |
+| 人评 | 未开始；v9 之后的外部增量 |
 
 ---
 
@@ -51,6 +90,10 @@ benchmark 论文通常只报分数，不报分母。副论文把分母本身作�
 
 ```text
 Paper/
+├── audit/
+│   ├── cxr_audit/            # CPU-only 审计 CLI：census / responsiveness /
+│   │                         # selective / demo（cxr-trust-audit 0.1.0）
+│   └── tests/                # 4 项无数据测试（合成 fixture）
 ├── program/
 │   ├── src/cxr_trust/
 │   │   ├── inference/        # prompts, prompts_crossmodal, prompts_report,
@@ -65,14 +108,17 @@ Paper/
 │   │   ├── 123_harness_experiments.py   # 五写入器 + 十故障矩阵
 │   │   ├── 124_artifact_census.py       # 分母审计
 │   │   ├── 125_validate_crossmodal.py   # 跨模态预检
-│   │   └── api_probe/                   # 闭源 API 臂（01–04 + common）
+│   │   └── api_probe/                   # 开放权重模型 API 臂（01–04 + common）
 │   └── tests/                # 解析器 / 指标 / durable / 算子像素摘要
 ├── papers/
 │   ├── main_v7/  main_v7_zh/            # 主论文（英/中）
-│   └── bench_v2/                        # 副论文
+│   ├── main_v8/  main_v9/               # 前沿模型臂 / 四模型跨模态面板
+│   └── bench_v2/  bench_v3/             # 工程副论文
 ├── docs/                     # 方法与协议文档（15 篇入库）
 ├── configs/                  # 模型锁文件与数据配置
-└── data/                     # 数据集（不入库）
+├── data/                     # 数据集（不入库）
+├── CITATION.cff              # 软件引用 + preferred-citation 指向主论文
+└── .zenodo.json              # Zenodo software deposit 元数据
 ```
 
 **三个固定点**（改动会破坏可复现性，须同时更新测试）：
@@ -90,6 +136,8 @@ Paper/
 | 资产 | 是否入库 | 获取方式 |
 |---|---|---|
 | 代码、协议、配置、论文源文件 | ✅ | `git clone` |
+| CPU 审计 CLI（`cxr-audit`） | ✅ | `pip install -e "audit[dev]"`，或从 GitHub 子目录安装 |
+| 评测清单（7 份 CSV + `MANIFEST_SHA256.json`） | ✅ | `program/data/manifests/`，CI 校验字节数与 SHA-256 |
 | 模型权重（约 142 GB） | ❌ | `configs/models.lock.yaml` 固定 repo id + revision |
 | 数据集（NIH / PadChest / Open-i / MRI / OCT / HAM10000） | ❌ | 各自官方渠道；清单契约见 `docs/49` |
 | 预测产物与冻结分析表 | ❌ | 由脚本重跑生成；`outputs/` 不入库 |
@@ -109,6 +157,8 @@ cd D:\Paper\program
 ```
 
 覆盖解析器、指标、`DurableJsonl` 的续跑与撕裂尾部、以及**算子像素摘要**（10 项）。
+审计 CLI 另有 4 项独立测试（见第 0 节）；`make audit-cli-test` 与 `make audit-demo`
+是同一组命令。
 
 ### 5.2 CXR 主矩阵
 
@@ -130,16 +180,31 @@ python scripts\93_artifact_audit.py             # 26/26
 python scripts\117_paper_audit.py               # 39 张表跨语言零差异
 ```
 
-### 5.4 跨模态本地臂（v9，尚未运行）
+### 5.4 跨模态本地臂（v9，6 格面板已完成）
 
 ```powershell
 python scripts\120_prepare_crossmodal.py --modality all
-python scripts\125_validate_crossmodal.py        # 覆盖式预检：4 模型 × 3 模态
-powershell -File scripts\run_crossmodal_queue.ps1
+python scripts\125_validate_crossmodal.py        # 覆盖式预检
+powershell -File scripts\run_crossmodal_6cell_queue.ps1   # 32,184 次
 python scripts\122_analyze_crossmodal.py
+# 预算补跑（146 格 @2,048 + 5 格 @4,096，独立目录）
+python scripts\121_crossmodal_benchmark.py --model medgemma_15_4b_it --modality derm --schema v0 `
+  --manifest data\manifests\retry_derm_v0_clean.csv --cells clean `
+  --output-dir outputs\crossmodal_retry\derm\v0\medgemma_15_4b_it\clean --max-new-tokens 2048
+# 22 格全网格（314,688 次）尚未运行，留作第三篇
 ```
 
-### 5.5 闭源 API 臂
+几何 sweep 与 frozen-encoder probe：
+
+```powershell
+powershell -File scripts\run_geometry_sweep.ps1      # 9,600 次，2 模型 × 3 长边
+python scripts\127_extract_probe_features.py --model medgemma_15_4b_it
+python scripts\127_extract_probe_features.py --model qwen3_vl_8b_instruct
+python scripts\127_extract_probe_features.py --model internvl3_5_8b
+python scripts\128_analyze_probe.py
+```
+
+### 5.5 开放权重前沿模型 API 臂（经中转）
 
 ```powershell
 cd D:\Paper\program\scripts\api_probe
@@ -218,3 +283,33 @@ InternVL3.5-8B；LLaVA-Med 作为被测量的排除项单独记录。
 8. 任何一个数字都必须能回到冻结产物，且能由第三方重算。
 9. 图表由脚本从冻结 CSV 重生成，不允许手改数据点。
 10. 负性结果与失败模式必须报告，不得只保留显著项。
+
+---
+
+## 9. 引用
+
+GitHub 会从 [`CITATION.cff`](CITATION.cff) 生成 “Cite this repository” 条目；
+`preferred-citation` 指向主论文，因此默认引用的是论文而不是代码。归档版本发布后，
+Zenodo DOI 会写入 `CITATION.cff`、`.zenodo.json`、本文件和论文的 code-and-data
+availability 段。
+
+```bibtex
+@article{huang2026responsiveness,
+  author = {Huang, Koshun},
+  title  = {Responsiveness Before Reliance: Four Reversals in Measuring
+            Medical Vision-Language Models},
+  year   = {2026},
+  note   = {Manuscript under review},
+  url    = {https://github.com/Yao-Shun-Ya/cxr-selective-trust}
+}
+
+@software{huang2026cxrtrust,
+  author  = {Huang, Koshun},
+  title   = {cxr-selective-trust: reproducibility audit tooling for medical
+             vision-language model evaluation},
+  year    = {2026},
+  version = {9},
+  url     = {https://github.com/Yao-Shun-Ya/cxr-selective-trust},
+  note    = {Computer software}
+}
+```

@@ -29,7 +29,17 @@
 /data/
 /data/**
 !/data/README.md
-/program/data/
+/program/data/*
+!/program/data/manifests/
+/program/data/manifests/*
+!/program/data/manifests/nih_eval_1506.csv
+!/program/data/manifests/nih_eval_1732.csv
+!/program/data/manifests/padchest_shift.csv
+!/program/data/manifests/openi_rrg.csv
+!/program/data/manifests/crossmodal_mri.csv
+!/program/data/manifests/crossmodal_oct.csv
+!/program/data/manifests/crossmodal_derm.csv
+!/program/data/manifests/MANIFEST_SHA256.json
 /program/素材/
 /素材/
 *.dcm
@@ -77,6 +87,12 @@ outputs/
 .mypy_cache/
 .ruff_cache/
 
+# ---------- 3b. Python packaging residue (audit CLI) ----------
+/audit/build/
+/audit/dist/
+/audit/*.egg-info/
+/audit/**/*.egg-info/
+
 # ---------- 4. Virtual environments ----------
 .venv*/
 venv/
@@ -98,6 +114,15 @@ env/
 /CONTINUE_HERE.md
 /program/第一次跑.md
 /program/scratch_*.py
+/.workbuddy/
+# one-off literature-search dumps and parsers (not evidence; keep the repo clean)
+/tmp_*
+/_oa_*
+/_abs_parser.py
+/_search_parser.py
+/_arxiv_test*.xml
+/_bing*.html
+/_ddg*.html
 /docs/**
 # keep only protocol / method / governance documents
 # (docs/README.md indexes all 51 notes including the unversioned ones,
@@ -181,3 +206,10 @@ Thumbs.db
 # Superseded benchmark manuscript generations.
 /papers/bench_v1/
 /papers/bench_v1_1/
+# A duplicate build of the v9 PDF (main.pdf is the tracked one).
+/papers/main_v9/v9.pdf
+
+# ---------- 12. Artifact archives (published out of band) ----------
+# The zip is uploaded to Zenodo; its checksums and README are versioned so the
+# archive can be verified without storing 67 MiB in git history.
+/release/*.zip

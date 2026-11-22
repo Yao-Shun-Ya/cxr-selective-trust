@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: "If you use this software, the frozen predictions or the derived tables, please cite the manuscript below."
+title: "cxr-selective-trust: reproducibility audit tooling for medical vision-language model evaluation"
+type: software
+authors:
+  - family-names: Huang
+    given-names: Koshun
+    orcid: "https://orcid.org/0009-0006-1226-8145"
+    affiliation: "School of Medical Imaging, North Sichuan Medical College, Nanchong, Sichuan, China"
+version: "9"
+date-released: "2026-11-22"
+license: MIT
+repository-code: "https://github.com/Yao-Shun-Ya/cxr-selective-trust"
+url: "https://github.com/Yao-Shun-Ya/cxr-selective-trust"
+keywords:
+  - medical vision-language models
+  - reproducibility
+  - selective prediction
+  - benchmark auditing
+  - chest radiography
+  - measurement validity
+abstract: >-
+  Audit tooling and frozen-prediction artifacts for measuring medical
+  vision-language models: a CPU-only command-line audit of prediction-file
+  denominators, response collapse under image shifts, and selective-prediction
+  baselines, together with the source of two manuscripts and the protocols that
+  produced them.
+preferred-citation:
+  type: article
+  title: "Responsiveness Before Reliance: Four Reversals in Measuring Medical Vision-Language Models"
+  authors:
+    - family-names: Huang
+      given-names: Koshun
+      orcid: "https://orcid.org/0009-0006-1226-8145"
+      affiliation: "School of Medical Imaging, North Sichuan Medical College, Nanchong, Sichuan, China"
+  year: 2026
+  url: "https://github.com/Yao-Shun-Ya/cxr-selective-trust"
+  notes: >-
+    Manuscript under review. The arXiv identifier and the Zenodo DOI of the
+    artifact record will be added here and in the README after announcement.
