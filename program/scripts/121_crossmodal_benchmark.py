@@ -75,6 +75,51 @@ def _provenance(path: Path, prompt: str, labels: list[str],
     return prov, prov_id
 
 
+def _parse_cells(tokens: list[str]) -> list[tuple[str, str, float | None]]:
+    """Parse an explicit cell list into ``(condition, severity, param)``.
+
+    Tokens are ``clean``, a blank kind (``blank_gray``, ``blank_phase``,
+    ``blank_shuffle``), or ``<shift>:<severity>`` (e.g. ``contrast:severe``).
+    A reduced grid is a subset of the full grid, so every key produced here is
+    also produced by the full run and the two can share one prediction file.
+    """
+    cells = []
+    for token in tokens:
+        if token == "clean" or token in BLANK_KINDS:
+            cells.append((token, "none", None))
+        elif ":" in token:
+            shift, severity = token.split(":", 1)
+            if shift not in DEFAULT_SEVERITIES or severity not in DEFAULT_SEVERITIES[shift]:
+                raise SystemExit(
+                    f"unknown cell {token!r}; expected clean, a blank kind "
+                    f"({', '.join(BLANK_KINDS)}), or <shift>:<severity> with "
+                    f"shift in {sorted(DEFAULT_SEVERITIES)} and severity in "
+                    f"{sorted(DEFAULT_SEVERITIES.get(shift, {}))}")
+            cells.append((shift, severity, DEFAULT_SEVERITIES[shift][severity]))
+        else:
+            raise SystemExit(
+                f"unknown cell {token!r}; expected clean, a blank kind "
+                f"({', '.join(BLANK_KINDS)}), or <shift>:<severity>")
+    return cells
+
+
+def _build_jobs(manifest, cells, shifts, severities, blanks) -> list[tuple]:
+    """Expand the manifest into ``(row, condition, severity, param)`` cells."""
+    jobs = []
+    for _, row in manifest.iterrows():
+        if cells is not None:
+            for condition, severity, param in cells:
+                jobs.append((row, condition, severity, param))
+            continue
+        jobs.append((row, "clean", "none", None))
+        for shift in shifts:
+            for severity in severities:
+                jobs.append((row, shift, severity, DEFAULT_SEVERITIES[shift][severity]))
+        for kind in blanks:
+            jobs.append((row, kind, "none", None))
+    return jobs
+
+
 def _guard_provenance(out_dir: Path, prov: dict) -> None:
     """Refuse to resume a stage produced under a different configuration.
 
@@ -110,6 +155,12 @@ def main() -> int:
     ap.add_argument("--shifts", nargs="+", default=list(DEFAULT_SEVERITIES))
     ap.add_argument("--severities", nargs="+", default=["mild", "moderate", "severe"])
     ap.add_argument("--no-blanks", action="store_true")
+    ap.add_argument("--cells", nargs="+", default=None,
+                    help="explicit reduced grid: 'clean', a blank kind, or "
+                         "<shift>:<severity>; default = every shift x severity "
+                         "plus every blank kind")
+    ap.add_argument("--plan-only", action="store_true",
+                    help="expand and count the grid, then exit without loading a model")
     ap.add_argument("--load-in-4bit", action="store_true")
     ap.add_argument("--vram-budget-gb", type=float, default=None,
                     help="hard GPU budget; the loader fails instead of paging "
@@ -137,6 +188,13 @@ def main() -> int:
     _guard_provenance(out_dir, prov)
     print(f"provenance {prov_id}", flush=True)
 
+    redgrid = _parse_cells(args.cells) if args.cells else None
+    blanks = [] if args.no_blanks else list(BLANK_KINDS)
+    jobs = _build_jobs(manifest, redgrid, args.shifts, args.severities, blanks)
+    print(f"grid: {len(jobs)} cells for {len(manifest)} images", flush=True)
+    if args.plan_only:
+        return 0
+
     import torch
     torch.manual_seed(0)
     kwargs = {}
@@ -153,16 +211,6 @@ def main() -> int:
     import torch as _t
     if _t.cuda.is_available():
         print(f"[vram] after_load_alloc={_t.cuda.memory_allocated()/2**30:.1f}GiB", flush=True)
-
-    blanks = [] if args.no_blanks else list(BLANK_KINDS)
-    jobs = []
-    for _, row in manifest.iterrows():
-        jobs.append((row, "clean", "none", None))
-        for shift in args.shifts:
-            for severity in args.severities:
-                jobs.append((row, shift, severity, DEFAULT_SEVERITIES[shift][severity]))
-        for kind in blanks:
-            jobs.append((row, kind, "none", None))
 
     images_root = Path(args.images_root)
     cluster_level = CLUSTER_LEVEL[args.modality]
@@ -229,6 +277,9 @@ def main() -> int:
                     norm = {str(k).strip().lower().replace(" ", "_")
                             for k in findings_obj}
                     present = sum(1 for lab in labels if lab in norm)
+                split_unit = row.get("split_unit")
+                if pd.isna(split_unit) or not str(split_unit).strip():
+                    split_unit = row["image_id"]
                 rows.append({
                     "image_id": str(row["image_id"]),
                     "model": args.model,
@@ -237,7 +288,7 @@ def main() -> int:
                     "condition": condition,
                     "severity": severity,
                     "param": param,
-                    "cluster_id": str(row.get("split_unit") or row["image_id"]),
+                    "cluster_id": str(split_unit),
                     "cluster_level": cluster_level,
                     "provenance": prov_id,
                     "labels_present": present,

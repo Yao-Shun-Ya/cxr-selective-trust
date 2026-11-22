@@ -19,9 +19,12 @@ import json
 import logging
 import os
 import random
+import http.client
 import re
+import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -224,39 +227,63 @@ class Retryable(Exception):
     pass
 
 
-def _post_sync(url: str, headers: dict, payload: dict,
-               timeout: float) -> tuple[int, bytes]:
-    """Blocking POST via the standard library.
+_URL = urllib.parse.urlsplit(BASE_URL)
+_TLS = threading.local()
 
-    httpx/httpcore completes its TLS handshake with this relay by sending an
-    ALPN offer the gateway answers with a bare EOF (``EOF occurred in violation
-    of protocol``), while both curl and urllib negotiate fine. Since urllib is
-    stdlib and this arm is I/O-bound rather than CPU-bound, running it in a
-    thread is the smaller risk than carrying a client that cannot connect.
+
+def _connection(timeout: float) -> http.client.HTTPSConnection:
+    """One keep-alive TLS connection per worker thread.
+
+    The gateway throttles by resetting *new* TLS handshakes: opening a fresh
+    connection for every request (urllib.request.urlopen) produced
+    ``EOF occurred in violation of protocol`` on roughly a third of calls and
+    pinned throughput near 1/min. Reusing one connection per thread removes the
+    handshake from the steady state; it is recreated only after a failure.
     """
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            return r.status, r.read()
-    except urllib.error.HTTPError as exc:
-        return exc.code, exc.read()
+    conn = getattr(_TLS, "conn", None)
+    if conn is None:
+        conn = http.client.HTTPSConnection(_URL.hostname, _URL.port or 443,
+                                           timeout=timeout)
+        _TLS.conn = conn
+    else:
+        conn.timeout = timeout
+    return conn
 
 
-async def call_api(payload: dict, max_retries: int = 5,
+def _post_sync(path: str, headers: dict, payload: dict,
+               timeout: float) -> tuple[int, bytes]:
+    body = json.dumps(payload).encode("utf-8")
+    for attempt in (1, 2):
+        conn = _connection(timeout)
+        try:
+            conn.request("POST", path, body=body, headers=headers)
+            resp = conn.getresponse()
+            return resp.status, resp.read()
+        except Exception:
+            try:
+                conn.close()
+            except Exception:  # noqa: BLE001
+                pass
+            _TLS.conn = None
+            if attempt == 2:
+                raise
+    raise RuntimeError("unreachable")
+
+
+async def call_api(payload: dict, max_retries: int = 8,
                    log: logging.Logger | None = None,
                    probe_id: str = "") -> tuple[dict, dict]:
     """POST with exponential backoff. Returns (response_json, attempt_meta)."""
-    url = BASE_URL.rstrip("/") + "/chat/completions"
+    path = _URL.path.rstrip("/") + "/chat/completions"
     headers = {"Authorization": f"Bearer {API_KEY}",
                "Content-Type": "application/json"}
-    delay = 3.0
+    delay = 2.0
     last: Exception | None = None
     for attempt in range(1, max_retries + 1):
         started = time.perf_counter()
         try:
             status, raw = await __import__("asyncio").to_thread(
-                _post_sync, url, headers, payload, 180.0)
+                _post_sync, path, headers, payload, 240.0)
             elapsed = time.perf_counter() - started
             if status in (429, 502, 503, 504):
                 raise Retryable(f"HTTP {status}")

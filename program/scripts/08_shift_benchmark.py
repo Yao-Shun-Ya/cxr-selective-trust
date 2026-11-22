@@ -122,6 +122,13 @@ def main() -> None:
                         help="seed for the manifest shuffle that --limit subsamples")
     parser.add_argument("--load-in-4bit", action="store_true")
     parser.add_argument("--max-new-tokens", type=int, default=256)
+    parser.add_argument("--max-edge", type=int, default=0,
+                        help="resize the image so its long edge equals this many "
+                             "pixels before applying the shift (0 = stored "
+                             "resolution); used by the controlled geometry sweep")
+    parser.add_argument("--vram-budget-gb", type=float, default=None,
+                        help="hard GPU budget; the loader fails instead of paging "
+                             "VRAM into host RAM when the model does not fit")
     parser.add_argument("--batch-size", type=int, default=1, help="Batch size for inference")
     parser.add_argument("--prompt-variant", default=None,
                         help="optional variant from prompts_ablation (e.g. r0_think_json); "
@@ -138,6 +145,8 @@ def main() -> None:
         root=ROOT,
         device_map="auto",
         load_in_4bit=args.load_in_4bit,
+        **({"max_memory": {0: f"{args.vram_budget_gb:g}GiB", "cpu": "0GiB"}}
+           if args.vram_budget_gb else {}),
     )
     model.load()
     if args.prompt_variant:
@@ -220,9 +229,16 @@ def main() -> None:
             images = []
             for row, condition, severity, param in chunk:
                 image = Image.open(images_root / row["image_relpath"]).convert("RGB")
+                if args.max_edge:
+                    w, h = image.size
+                    scale = args.max_edge / max(w, h)
+                    image = image.resize(
+                        (max(1, round(w * scale)), max(1, round(h * scale))),
+                        Image.LANCZOS)
                 if condition != "clean":
                     image = apply_shift(image, condition, severity)
                 images.append(image)
+            sizes = [list(im.size) for im in images]
 
             prompts = [prompt] * len(chunk)
 
@@ -267,6 +283,9 @@ def main() -> None:
                     "severity": severity,
                     "param": param,
                     "prompt_variant": args.prompt_variant or "simple",
+                    "requested_long_edge": args.max_edge or None,
+                    "sent_w": sizes[j][0],
+                    "sent_h": sizes[j][1],
                     "raw_output": raw,
                     "error": error,
                     "elapsed_sec": time_per_img,

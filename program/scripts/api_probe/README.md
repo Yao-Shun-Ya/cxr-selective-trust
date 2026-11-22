@@ -1,8 +1,9 @@
 # Frontier-API probe (`scripts/api_probe/`)
 
-A deliberately isolated arm that measures one closed-weight multimodal model on
-the same three CXR layers and the same three non-CXR modalities as the local
-matrix, without touching any existing artifact.
+A deliberately isolated arm that measures one frontier open-weight multimodal
+model, served through an OpenAI-compatible relay, on the same three CXR layers
+and the same three non-CXR modalities as the local matrix, without touching any
+existing artifact.
 
 ## Isolation contract
 

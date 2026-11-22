@@ -43,6 +43,12 @@ def _load(path: Path) -> pd.DataFrame:
         obj = json.loads(line)
         parsed = obj.get("parsed") or {}
         findings = parsed.get("findings") or {}
+        # A missing split unit is written as NaN by older runners (pandas reads
+        # an empty CSV cell as float NaN, which is truthy). Cluster on the image
+        # in that case, which is exactly what an image-level modality declares.
+        cluster_id = str(obj.get("cluster_id") or "").strip()
+        if cluster_id.lower() in ("", "nan", "none"):
+            cluster_id = obj["image_id"]
         rows.append({
             "image_id": obj["image_id"],
             # Identity comes from the record, not the directory: a renamed or
@@ -51,7 +57,7 @@ def _load(path: Path) -> pd.DataFrame:
             "model": obj.get("model") or path.parent.name,
             "modality": obj.get("modality", ""),
             "schema": obj.get("schema", ""),
-            "cluster_id": obj.get("cluster_id", "") or obj["image_id"],
+            "cluster_id": cluster_id,
             "cluster_level": obj.get("cluster_level", "image"),
             "condition": obj["condition"],
             "severity": obj["severity"],

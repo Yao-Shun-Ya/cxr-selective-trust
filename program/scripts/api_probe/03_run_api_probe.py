@@ -27,8 +27,12 @@ from common import (
 )
 from src.cxr_trust.inference.durable import DurableJsonl
 
-START, LO, HI = 8, 2, 10
-SUCCESS_STREAK = 50
+# Measured: with 8 concurrent TLS handshakes the gateway resets a third of the
+# connections, and halving on every hard failure pinned the effective concurrency
+# near 2 while recovery needed 50 consecutive successes. Start at 6, recover at
+# +1 per 20, and decay by 25% instead of 50%.
+START, LO, HI = 6, 2, 10
+SUCCESS_STREAK = 20
 
 
 class AIMD:
@@ -55,7 +59,7 @@ class AIMD:
                     self.streak = 0
             else:
                 self.streak = 0
-                self.limit = max(self.lo, self.limit // 2)
+                self.limit = max(self.lo, int(self.limit * 0.75))
             self.cond.notify()
 
 

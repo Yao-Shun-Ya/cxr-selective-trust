@@ -105,14 +105,24 @@ def p1(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(out)
 
 
+def _d_words(a: str, b: str) -> float:
+    """1 - Jaccard over lowercased word sets. Prose has no status vector."""
+    wa = {w.strip(".,;:()[]") for w in (a or "").lower().split() if w.strip()}
+    wb = {w.strip(".,;:()[]") for w in (b or "").lower().split() if w.strip()}
+    if not wa and not wb:
+        return 0.0
+    return 1.0 - len(wa & wb) / len(wa | wb)
+
+
 def p2(df: pd.DataFrame) -> pd.DataFrame:
     out = []
-    for cohort, g in df.groupby("cohort"):
+    # Schema is held at v0 here: the v1 blank is a separate contract question.
+    df = df[df["schema"].isin(["v0", "report"])]
+    for (cohort, dataset), g in df.groupby(["cohort", "dataset"]):
         labels = LABELS[cohort]
         g = g.copy()
         if cohort == "openi":
-            g["vec"] = [tuple(sorted(set(r.lower().split())))
-                        for r in g["raw"]]
+            g["vec"] = [tuple() for _ in range(len(g))]
         else:
             g["vec"] = [vec(f, labels, ok)
                         for f, ok in zip(g["findings"], g["parsed_ok"])]
@@ -127,13 +137,21 @@ def p2(df: pd.DataFrame) -> pd.DataFrame:
             both = [i for i in sub.index if i in clean.index and partner.get(i) in clean.index]
             if not both:
                 continue
-            d_blank = np.array([H._d_text(clean.loc[i, "vec"], sub.loc[i, "vec"]) for i in both])
-            d_pair = np.array([H._d_text(clean.loc[i, "vec"], clean.loc[partner[i], "vec"])
-                               for i in both])
+            if cohort == "openi":
+                d_blank = np.array([_d_words(clean.loc[i, "raw"], sub.loc[i, "raw"])
+                                    for i in both])
+                d_pair = np.array([_d_words(clean.loc[i, "raw"], clean.loc[partner[i], "raw"])
+                                   for i in both])
+            else:
+                d_blank = np.array([H._d_text(clean.loc[i, "vec"], sub.loc[i, "vec"])
+                                    for i in both])
+                d_pair = np.array([H._d_text(clean.loc[i, "vec"], clean.loc[partner[i], "vec"])
+                                   for i in both])
             delta = d_blank - d_pair
             clusters = np.array([clean.loc[i, "cluster_id"] for i in both])
             lo, hi = H._cluster_boot(delta, clusters)
-            out.append({"cohort": cohort, "blank": blank_kind, "n": len(both),
+            out.append({"cohort": cohort, "dataset": dataset, "blank": blank_kind,
+                        "n": len(both),
                         "D_real_blank": float(d_blank.mean()),
                         "D_real_realprime": float(d_pair.mean()),
                         "delta_null": float(delta.mean()),
@@ -143,7 +161,7 @@ def p2(df: pd.DataFrame) -> pd.DataFrame:
 
 def p3(df: pd.DataFrame) -> pd.DataFrame:
     out = []
-    for cohort, g in df.groupby("cohort"):
+    for (cohort, dataset), g in df.groupby(["cohort", "dataset"]):
         if cohort in ("openi", "mri"):
             continue
         clean = g[g["condition"].isin(["clean", "native"])]
@@ -157,7 +175,7 @@ def p3(df: pd.DataFrame) -> pd.DataFrame:
             if not pos and not neg:
                 continue
             out.append({
-                "cohort": cohort, "condition": cond,
+                "cohort": cohort, "dataset": dataset, "condition": cond,
                 "n_pos": len(pos), "n_neg": len(neg),
                 "positive_call_rate_on_neg": float(np.mean(neg)) if neg else float("nan"),
                 "recall_on_pos": float(np.mean(pos)) if pos else float("nan"),
