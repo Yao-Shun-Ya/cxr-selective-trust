@@ -229,6 +229,19 @@ python scripts\123_harness_experiments.py     # 五写入器 + 十故障矩阵
 python scripts\124_artifact_census.py --root outputs
 ```
 
+### 5.7 arXiv 源包
+
+```powershell
+make arxiv-packages
+# 或：python program\scripts\make_arxiv_packages.py
+# 输出：release/arxiv/main_v9_arxiv.zip
+#       release/arxiv/bench_v3_arxiv.zip
+```
+
+每个 zip 顶层是 `main.tex`，包含 `main.bbl`、`refs.bib`、已编译的 `sections/` 和
+PDF 图；不含 PDF 正文、PNG 预览、aux/log 或未使用的短摘要。两个包都在解压后从零
+编译验证过：v9 50 页、bench_v3 18 页，0 overfull / 0 undefined。
+
 ---
 
 ## 6. 数据与模型

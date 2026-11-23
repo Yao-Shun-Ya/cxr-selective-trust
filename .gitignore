@@ -211,3 +211,5 @@ Thumbs.db
 # The zip is uploaded to Zenodo; its checksums and README are versioned so the
 # archive can be verified without storing 67 MiB in git history.
 /release/*.zip
+# arXiv source packages are generated locally by make arxiv-packages.
+/release/arxiv/

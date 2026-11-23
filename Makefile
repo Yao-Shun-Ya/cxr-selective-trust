@@ -1,5 +1,5 @@
 .PHONY: help dirs lint test test-cxr test-resume audit manifest-lock \
-	audit-install audit-cli-test audit-demo
+	audit-install audit-cli-test audit-demo arxiv-packages
 
 PY ?= python
 PROGRAM_PY ?= program/.venv-vl/Scripts/python.exe
@@ -16,6 +16,7 @@ help:
 	@echo "  audit-install install the CPU-only cxr-audit CLI into .venv-audit"
 	@echo "  audit-cli-test run the audit CLI unit tests (4 tests, no data)"
 	@echo "  audit-demo    run the synthetic end-to-end demo (no data, no network)"
+	@echo "  arxiv-packages build release/arxiv/{main_v9,bench_v3}_arxiv.zip"
 
 dirs:
 	@mkdir -p artifacts logs figures tables
@@ -46,3 +47,6 @@ audit-cli-test:
 
 audit-demo:
 	$(AUDIT_PY) -m cxr_audit demo
+
+arxiv-packages:
+	$(PY) program/scripts/make_arxiv_packages.py
