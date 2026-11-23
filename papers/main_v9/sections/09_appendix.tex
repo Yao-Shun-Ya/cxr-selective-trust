@@ -382,11 +382,11 @@ Qwen3-VL contrast & status & $+3.44$ & $+0.19$ & $+2.51$ \\
 \begin{table}[H]
 \centering
 \small
-\caption{Fixed-rule rerun on 200 paired studies (InternVL3.5). The model was re-prompted for probabilities only, and the positive/negative status was assigned externally at 0.5. Because the decision rule cannot move in this run, the recall and positive-rate increase under both corruptions is a shift in the score distribution, not a changed discrete status. Qwen3-VL under the same probability-only contract returned 0.0 for every label (nonzero rate 1.0\%, positive rate at 0.5 $\le$ 1.0\%), so its cell is degenerate and excluded.}
+\caption{Fixed-rule rerun on 200 paired studies (InternVL3.5). The model was re-prompted for probabilities only, and the positive/negative status was assigned externally at 0.5. Because the decision rule cannot move in this run, the recall and positive-rate increase under both corruptions is a shift in the score distribution, not a changed discrete status. Recall is macro-averaged over the seven pathology labels; the positive rate is pooled over label slots. Qwen3-VL under the same probability-only contract returned 0.0 for every label (nonzero rate 1.0\%, positive rate at 0.5 $\le$ 1.0\%), so its cell is degenerate and excluded.}
 \label{tab:fixedrerun}
 \begin{tabular}{lrrrrr}
 \toprule
-Cell & $n$ & Recall clean & Recall severe & Pos.\ rate clean & Pos.\ rate severe \\
+Cell & $n$ & Macro recall clean & Macro recall severe & Pos.\ rate clean & Pos.\ rate severe \\
 \midrule
 contrast severe & 200 & 0.510 & \textbf{0.575} & 0.404 & \textbf{0.449} \\
 brightness severe & 200 & 0.510 & \textbf{0.584} & 0.404 & \textbf{0.457} \\
@@ -537,6 +537,11 @@ Open-i & LLaVA-Med & 947 & \textbf{2} & 0.671 & \textbf{yes} & $-0.059$ & n/a \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+The released CSV reports \texttt{gap\_text} as the Jaccard similarity difference
+$J(\text{real},\text{blank}) - J(\text{real},\text{real}')$; this table reports its
+negation, $D_{\text{text}}=1-J$, so positive values have the separation meaning
+defined above.
 
 \input{sections/09b_round2_appendix}
 

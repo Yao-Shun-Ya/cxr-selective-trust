@@ -120,11 +120,12 @@ Yonatan Geifman and Ran El-Yaniv.
 \newblock In \emph{Advances in Neural Information Processing Systems
   (NeurIPS)}, 2017.
 
-\bibitem[Oakden-Rayner et~al.(2021)Oakden-Rayner, Carneiro, Bessenyei, and
-  Searston]{oakdenrayner2021limits}
-Luke Oakden-Rayner, Gustavo Carneiro, Taryn Bessenyei, and Rachel Searston.
-\newblock The limits of global calibration in medical image classification.
-\newblock \emph{Medical Image Analysis}, 67:\penalty0 101862, 2021.
+\bibitem[Kompa et~al.(2021)Kompa, Snoek, and Beam]{kompa2021second}
+Benjamin Kompa, Jasper Snoek, and Andrew~L. Beam.
+\newblock Second opinion needed: communicating uncertainty in medical machine
+  learning.
+\newblock \emph{npj Digital Medicine}, 4\penalty0 (1):\penalty0 4, 2021.
+\newblock \doi{10.1038/s41746-020-00367-3}.
 
 \bibitem[Heiman et~al.(2025)]{heiman2025factchexcker}
 Gregory Heiman et~al.
