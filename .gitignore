@@ -206,8 +206,6 @@ Thumbs.db
 # Superseded benchmark manuscript generations.
 /papers/bench_v1/
 /papers/bench_v1_1/
-# A duplicate build of the v9 PDF (main.pdf is the tracked one).
-/papers/main_v9/v9.pdf
 
 # ---------- 12. Artifact archives (published out of band) ----------
 # The zip is uploaded to Zenodo; its checksums and README are versioned so the

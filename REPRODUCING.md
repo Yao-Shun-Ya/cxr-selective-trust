@@ -129,7 +129,7 @@ python -m pytest tests -q                       # 6 passed
 
 # authoritative cxr_trust package (parser, metrics, durable writer)
 cd program
-.\.venv-vl\Scripts\python.exe -m pytest tests -q          # 10 passed
+.\.venv-vl\Scripts\python.exe -m pytest tests -q          # 11 passed
 
 # the durable-JSONL and resume harness self-tests (no model loaded)
 .\.venv-vl\Scripts\python.exe scripts\41_test_durable.py         # 37 passed

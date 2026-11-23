@@ -27,7 +27,7 @@ python -m venv .venv-audit
 python -m pytest -q tests                                     # 6 passed
 
 # authoritative package
-cd program && .venv-vl/Scripts/python.exe -m pytest -q tests  # 10 passed
+cd program && .venv-vl/Scripts/python.exe -m pytest -q tests  # 11 passed
 ```
 
 `make test`, `make test-cxr`, `make audit-cli-test` and `make audit-demo` wrap

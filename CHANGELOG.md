@@ -7,6 +7,25 @@ its own semantic version.
 
 ## [Unreleased]
 
+### Fixed
+
+- Replaced a fabricated calibration reference in all manuscript generations
+  (`oakdenrayner2021limits`, whose DOI resolved to an unrelated paper) with
+  Kompa et al., *Second opinion needed*, npj Digital Medicine 4(1):4, 2021;
+  v7, v7_zh, v8 and v9 were rebuilt (0 overfull, 0 undefined).
+- `DurableJsonl.write_many` now persists replacements when a batch mixes new and
+  retried keys; previously the append-only branch left the failed row on disk.
+  Added a regression test (`program` suite: 11 passed).
+- The `sidecar_ahead` fault injection now writes the `bytes` key the reader
+  actually consumes; the fault had been a no-op.
+- Bench v3: corrected the Table 5 total (545.9 -> 501.0 MiB), replaced the
+  untraceable 231 GPU-hours with 207 GPU-hours from `run_accounting.json`, and
+  restated the durability cost at production batch sizes (about two minutes,
+  not eight), with the batch-1 measurement labelled as such.
+- Main v9: added the single-noise-realization limitation, labelled Table 34
+  recall as macro-averaged, disclosed CheXagent's six chance-level labels, and
+  noted the sign convention of the released `gap_text` column.
+
 ## [9] - 2026-11-22
 
 ### Added

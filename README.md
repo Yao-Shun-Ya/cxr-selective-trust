@@ -156,7 +156,7 @@ cd D:\Paper\program
 .\.venv-vl\Scripts\python.exe -m pytest -q tests
 ```
 
-覆盖解析器、指标、`DurableJsonl` 的续跑与撕裂尾部、以及**算子像素摘要**（10 项）。
+覆盖解析器、指标、`DurableJsonl` 的续跑、撕裂尾部与混合批次替换、以及**算子像素摘要**（11 项）。
 审计 CLI 另有 4 项独立测试（见第 0 节）；`make audit-cli-test` 与 `make audit-demo`
 是同一组命令。
 
