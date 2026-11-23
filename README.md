@@ -51,8 +51,8 @@ cxr-audit selective      risk_items_finding.csv
 
 | 项目 | 状态 |
 |---|---|
-| 主论文 | **v7 已投 arXiv**（`papers/main_v7/`，39 页，44 条参考文献）；中文镜像 `papers/main_v7_zh/`（44 页）；`main_v8/`（42 页）增加开放权重前沿模型臂；**`main_v9/`（50 页）增加四模型跨模态面板、readout probe、几何对照与选择性基线，总调用 326,830（请求 351,329）** |
-| 工程副论文 | **bench_v2 已投 arXiv**（`papers/bench_v2/`，16 页）；**bench_v3 增加远程 API 失效一节**（`papers/bench_v3/`，18 页，含 9,400 次远程调用的四类失效记录；timing 已按空闲重跑对账） |
+| 主论文 | **当前投稿版为 v9（arXiv 尚未上线）**：`main_v9/` 50 页，四模型跨模态面板、readout probe、几何对照与选择性基线，总调用 326,830（请求 351,329）。此前 `main_v7/`（39 页，44 条参考文献）、中文镜像 `main_v7_zh/`（44 页）、`main_v8/`（42 页）均为本地存档版本 |
+| 工程副论文 | **当前投稿版为 bench_v3（arXiv 尚未上线）**：18 页，含 9,400 次远程调用的四类失效记录，timing 已按空闲重跑对账。此前 `bench_v2/`（16 页）为本地存档版本 |
 | CXR 主矩阵 | **已完成**：6 模型 × 3 层，275,218 次调用，39 个冻结预测文件（0.49 GiB），0 丢失行 |
 | 跨模态本地臂 | **6 格面板已完成**：3 模型 × 1,788 图 × 6 格 = 32,184 次，另 151 次预算补跑（146 格 @2,048 + 5 格 @4,096，最终 100% 解析）；22 格全网格（314,688 次）留作第三篇 |
 | 跨模态 API 臂 | **已完成**：`deepseek-v4.1-flash`，9,400 次调用，0 传输错误、单一 provenance；含 2,085 次配额墙重跑（另有 2,700 次 lite 档未用） |
@@ -304,7 +304,7 @@ GitHub 会从 [`CITATION.cff`](CITATION.cff) 生成 “Cite this repository” �
   title  = {Responsiveness Before Reliance: Four Reversals in Measuring
             Medical Vision-Language Models},
   year   = {2026},
-  note   = {Manuscript under review},
+  note   = {Manuscript in preparation},
   url    = {https://github.com/Yao-Shun-Ya/cxr-selective-trust}
 }
 
