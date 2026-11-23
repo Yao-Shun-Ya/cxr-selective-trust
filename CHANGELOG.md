@@ -9,10 +9,10 @@ its own semantic version.
 
 ### Added
 
-- Reserved the Zenodo DOI `10.5281/zenodo.24483387` and inserted it into both
-  manuscripts' code-and-data availability sections, `CITATION.cff`, `README.md`,
-  `audit/README.md` and `release/README.md`. The DOI becomes resolvable when the
-  deposit is published; the final bundle is rebuilt with the DOI inside.
+- Published the v9 artifact on Zenodo: version DOI `10.5281/zenodo.24483387`
+  (record `24483387`) and concept DOI `10.5281/zenodo.24483386`. The version DOI
+  is inserted into both manuscripts' code-and-data availability sections,
+  `CITATION.cff`, `README.md`, `audit/README.md` and `release/README.md`.
 
 ### Fixed
 

@@ -5,6 +5,7 @@
 [![CPU CI](https://github.com/Yao-Shun-Ya/cxr-selective-trust/actions/workflows/ci.yml/badge.svg)](https://github.com/Yao-Shun-Ya/cxr-selective-trust/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](audit/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24483387.svg)](https://doi.org/10.5281/zenodo.24483387)
 [![Manuscript v9](https://img.shields.io/badge/manuscript-v9-6f42c1.svg)](papers/main_v9/main.pdf)
 [![Bench v3](https://img.shields.io/badge/bench-18%20pp-6f42c1.svg)](papers/bench_v3/main.pdf)
 
@@ -289,10 +290,13 @@ InternVL3.5-8B；LLaVA-Med 作为被测量的排除项单独记录。
 ## 9. 引用
 
 GitHub 会从 [`CITATION.cff`](CITATION.cff) 生成 “Cite this repository” 条目；
-`preferred-citation` 指向主论文，因此默认引用的是论文而不是代码。v9 工件包已归档到
-Zenodo，DOI 为 [10.5281/zenodo.24483387](https://doi.org/10.5281/zenodo.24483387)；
-`CITATION.cff` 的 `identifiers`、两篇论文的 code-and-data availability 段与
-[`audit/README.md`](audit/README.md) 使用同一 DOI。
+`preferred-citation` 指向主论文，因此默认引用的是论文而不是代码。v9 工件包的
+**version DOI** 为 [10.5281/zenodo.24483387](https://doi.org/10.5281/zenodo.24483387)
+（记录页 [zenodo.org/records/24483387](https://zenodo.org/records/24483387)）；
+**concept DOI**（所有版本）为
+[10.5281/zenodo.24483386](https://doi.org/10.5281/zenodo.24483386)。论文与
+`CITATION.cff` 引用 version DOI，保证读者拿到的是 v9 这一份冻结工件；
+后续发新版本时 concept DOI 不变。
 
 ```bibtex
 @article{huang2026responsiveness,

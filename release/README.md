@@ -39,19 +39,19 @@ breaks some archive readers).
 
 ## Upload
 
-The deposit and its DOI are already reserved: `10.5281/zenodo.24483387`.
-The DOI is written into both manuscript PDFs, `CITATION.cff`, `README.md`,
-`audit/README.md` and this bundle's metadata. It becomes resolvable only when
-the deposit is published.
+The deposit is published. There are two DOIs:
 
-1. Upload `cxr_trust_artifacts_v9.zip` to the existing deposit (the zip already
-   contains the reserved DOI).
-2. Verify the metadata imported from `.zenodo.json` (Software, MIT, ORCID
-   0009-0006-1226-8145, publication date 2026-11-24).
-3. Publish, then confirm `https://doi.org/10.5281/zenodo.24483387` resolves.
-4. Do not rebuild the zip after publishing; if a file must change, create a new
-   Zenodo version. The concept DOI above stays stable; the version DOI changes.
-5. The only remaining identifier is the arXiv id, to be added to `CITATION.cff`
+- **v9 version DOI** (cited in both manuscript PDFs): `10.5281/zenodo.24483387`
+- **concept DOI** (all versions): `10.5281/zenodo.24483386`
+
+The DOI is written into both manuscript PDFs, `CITATION.cff`, `README.md`,
+`audit/README.md` and this bundle's metadata.
+
+1. The published file is `cxr_trust_artifacts_v9.zip` (218 files, 66.8 MiB,
+   MD5 `9f1287ceea776b2384ca8b07dcd19053`); it already contains the version DOI.
+2. Do not rebuild the zip after publishing; if a file must change, create a new
+   Zenodo version. The concept DOI stays stable; the version DOI changes.
+3. The only remaining identifier is the arXiv id, to be added to `CITATION.cff`
    and the README after announcement.
 
 ## Licence boundary
