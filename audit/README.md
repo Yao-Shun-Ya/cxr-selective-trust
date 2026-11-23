@@ -109,6 +109,7 @@ releases. Code, manifests and derived tables are MIT; see `LICENSE` and
 
 ## Citation
 
-If you use this tool, cite the manuscript and the software record. See
-`CITATION.cff` at the repository root; a Zenodo DOI is added for the
-camera-ready version.
+If you use this tool, cite the manuscript and the software record:
+[10.5281/zenodo.24483387](https://doi.org/10.5281/zenodo.24483387). See
+`CITATION.cff` at the repository root; the archive and the DOI are versioned
+together.

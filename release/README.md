@@ -39,16 +39,20 @@ breaks some archive readers).
 
 ## Upload
 
-1. Create a Zenodo deposit (or use the institutional repository) and import
-   `.zenodo.json` as metadata; the software record and the artifact bundle share
-   one deposit.
-2. Upload the zip and `CITATION.cff`.
-3. Publish, then put the DOI into:
-   - `papers/main_v9/sections/08_conclusion.tex` (Code and data availability),
-   - `README.md` (§9 Citation),
-   - `CITATION.cff` (add an `identifiers` entry with `type: doi`),
-   - `audit/README.md` (Citation).
-4. Recompile `main.tex` and rebuild the bundle so the DOI is inside the archive.
+The deposit and its DOI are already reserved: `10.5281/zenodo.24483387`.
+The DOI is written into both manuscript PDFs, `CITATION.cff`, `README.md`,
+`audit/README.md` and this bundle's metadata. It becomes resolvable only when
+the deposit is published.
+
+1. Upload `cxr_trust_artifacts_v9.zip` to the existing deposit (the zip already
+   contains the reserved DOI).
+2. Verify the metadata imported from `.zenodo.json` (Software, MIT, ORCID
+   0009-0006-1226-8145, publication date 2026-11-24).
+3. Publish, then confirm `https://doi.org/10.5281/zenodo.24483387` resolves.
+4. Do not rebuild the zip after publishing; if a file must change, create a new
+   Zenodo version. The concept DOI above stays stable; the version DOI changes.
+5. The only remaining identifier is the arXiv id, to be added to `CITATION.cff`
+   and the README after announcement.
 
 ## Licence boundary
 

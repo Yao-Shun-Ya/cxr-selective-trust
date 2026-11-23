@@ -8,10 +8,13 @@ authors:
     orcid: "https://orcid.org/0009-0006-1226-8145"
     affiliation: "School of Medical Imaging, North Sichuan Medical College, Nanchong, Sichuan, China"
 version: "9"
-date-released: "2026-11-22"
+date-released: "2026-11-24"
 license: MIT
 repository-code: "https://github.com/Yao-Shun-Ya/cxr-selective-trust"
 url: "https://github.com/Yao-Shun-Ya/cxr-selective-trust"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.24483387
 keywords:
   - medical vision-language models
   - reproducibility
@@ -36,5 +39,5 @@ preferred-citation:
   year: 2026
   url: "https://github.com/Yao-Shun-Ya/cxr-selective-trust"
   notes: >-
-    Manuscript under review. The arXiv identifier and the Zenodo DOI of the
-    artifact record will be added here and in the README after announcement.
+    Manuscript under review. The arXiv identifier will be added here and in the
+    README after announcement; the v9 artifact is archived at the DOI above.

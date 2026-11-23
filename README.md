@@ -289,9 +289,10 @@ InternVL3.5-8B；LLaVA-Med 作为被测量的排除项单独记录。
 ## 9. 引用
 
 GitHub 会从 [`CITATION.cff`](CITATION.cff) 生成 “Cite this repository” 条目；
-`preferred-citation` 指向主论文，因此默认引用的是论文而不是代码。归档版本发布后，
-Zenodo DOI 会写入 `CITATION.cff`、`.zenodo.json`、本文件和论文的 code-and-data
-availability 段。
+`preferred-citation` 指向主论文，因此默认引用的是论文而不是代码。v9 工件包已归档到
+Zenodo，DOI 为 [10.5281/zenodo.24483387](https://doi.org/10.5281/zenodo.24483387)；
+`CITATION.cff` 的 `identifiers`、两篇论文的 code-and-data availability 段与
+[`audit/README.md`](audit/README.md) 使用同一 DOI。
 
 ```bibtex
 @article{huang2026responsiveness,
@@ -309,6 +310,7 @@ availability 段。
              vision-language model evaluation},
   year    = {2026},
   version = {9},
+  doi     = {10.5281/zenodo.24483387},
   url     = {https://github.com/Yao-Shun-Ya/cxr-selective-trust},
   note    = {Computer software}
 }
