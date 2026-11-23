@@ -398,7 +398,18 @@ class DurableJsonl:
             else:
                 appends.append(rec)
 
-        if appends:
+        if replaces:
+            # A mixed batch appends new keys *and* supersedes old ones.  The
+            # append-only path would write the new rows but leave the replaced
+            # failure on disk, so the file would still hold the failed attempt.
+            # Add the new records to the in-memory view, then rewrite once.
+            for rec in appends:
+                self.records.append(rec)
+                k = self._key_of(rec)
+                if k is not None:
+                    self._index[k] = len(self.records) - 1
+            self._rewrite(self.records)
+        elif appends:
             payload = b"".join(
                 (json.dumps(r, ensure_ascii=False) + "\n").encode("utf-8") for r in appends)
             self._fh.write(payload)
@@ -409,9 +420,6 @@ class DurableJsonl:
                 k = self._key_of(rec)
                 if k is not None:
                     self._index[k] = len(self.records) - 1
-        elif replaces:
-            # nothing to append, but the file still has to lose the superseded rows
-            self._rewrite(self.records)
 
         for rec in ordered:
             if rec.get("error") and self.retry_failed:

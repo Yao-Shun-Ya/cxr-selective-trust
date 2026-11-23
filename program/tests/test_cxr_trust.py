@@ -69,6 +69,31 @@ def test_durable_append_resume_and_replacement(tmp_path: Path):
     assert len(read_jsonl(path)) == 2
 
 
+def test_durable_mixed_batch_persists_replacement(tmp_path: Path):
+    """A batch that both retries a key and adds new keys must rewrite.
+
+    Regression test for the append-only branch: it wrote the new rows but left
+    the superseded failure on disk, so a resume observed the old error row.
+    """
+    path = tmp_path / "pred.jsonl"
+
+    def key(r):
+        return (r["image_id"], r["condition"])
+
+    with DurableJsonl(path, key=key) as out:
+        out.write_many([{"image_id": "a", "condition": "clean", "error": "boom"}])
+
+    with DurableJsonl(path, key=key) as out:
+        out.write_many([
+            {"image_id": "a", "condition": "clean", "error": ""},   # replacement
+            {"image_id": "b", "condition": "clean", "error": ""},   # new key
+        ])
+
+    rows = read_jsonl(path)
+    assert len(rows) == 2
+    assert {r["image_id"]: r["error"] for r in rows} == {"a": "", "b": ""}
+
+
 def test_durable_truncates_torn_tail(tmp_path: Path):
     path = tmp_path / "pred.jsonl"
 

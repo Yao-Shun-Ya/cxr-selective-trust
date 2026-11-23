@@ -397,7 +397,9 @@ def run_case(baseline: str, fault: str, n: int, kill_at: int, tmp: Path) -> dict
         sidecar.write_text("{not json", encoding="utf-8")
     elif fault == "sidecar_ahead" and sidecar.exists():
         obj = json.loads(sidecar.read_text(encoding="utf-8"))
-        obj["offset"] = path.stat().st_size + 10_000 if path.exists() else 10_000
+        # The reader keys on "bytes" (DurableJsonl._write_progress); setting
+        # "offset" here silently skipped the injection and the fault was a no-op.
+        obj["bytes"] = path.stat().st_size + 10_000 if path.exists() else 10_000
         sidecar.write_text(json.dumps(obj), encoding="utf-8")
     elif fault == "readonly_write" and path.exists():
         # A read-only artefact must reject the next append *and* leave the
